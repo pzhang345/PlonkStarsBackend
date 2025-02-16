@@ -42,6 +42,14 @@ def login():
     else:
         return jsonify({'message': 'Invalid credentials'}), 401
 
+@account_bp.route("/profile",methods=["GET"])
+def get_profile():
+    data = request.json()
+    user = User.query.filter_by(id=data["id"]).first()
+    return {
+        "username": user.username
+        },200
+
 # Delete account route
 @account_bp.route('/delete', methods=['DELETE'])
 @login_required
