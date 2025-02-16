@@ -3,7 +3,7 @@ import jwt
 import datetime
 from flask import request, jsonify
 from config import Config
-from models.user import User
+from models import User
 
 # Secret key for JWT (same as in config)
 JWT_SECRET_KEY = Config.JWT_SECRET_KEY

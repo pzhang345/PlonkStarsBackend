@@ -1,7 +1,6 @@
 from flask import Blueprint, request, jsonify
 from flask_bcrypt import Bcrypt
-from models.db import db
-from models.user import User
+from models import db,User
 from api.auth.auth import generate_token,login_required
 
 bcrypt = Bcrypt()
