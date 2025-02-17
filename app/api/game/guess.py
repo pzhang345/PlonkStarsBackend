@@ -5,7 +5,7 @@ def caculate_user(session,user_id):
 # guess score <int>
 def caculate_score(lat,lng,location_id):
     return 0
-    #1/n (inverde funvtion)
+    #1/n (inverse function)
 
 #guess score {"userid":{"username":username,"score":score}}
 def caculate_round(round_id):

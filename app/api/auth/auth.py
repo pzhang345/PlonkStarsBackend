@@ -17,6 +17,10 @@ def generate_token(user):
     token = jwt.encode(payload, JWT_SECRET_KEY, algorithm='HS256')  # Using HS256 algorithm
     return token
 
+def decode(token):
+    token = token.replace('Bearer ', '')
+    decoded_token = jwt.decode(token, JWT_SECRET_KEY, algorithms=['HS256'])
+    return decoded_token
 
 # Decorator to check for JWT token
 def login_required(f):
@@ -28,13 +32,7 @@ def login_required(f):
             return jsonify({'message': 'Token is missing!'}), 403
 
         try:
-            # Remove "Bearer " prefix from token
-            token = token.replace('Bearer ', '')
-            # Decode the token
-            print(token)
-            decoded_token = jwt.decode(token, JWT_SECRET_KEY, algorithms=['HS256'])
-            print(decoded_token)
-
+            decoded_token = decode(token)
             # Extract the user ID (sub) from the decoded token
             current_user_id = decoded_token.get('sub')
 

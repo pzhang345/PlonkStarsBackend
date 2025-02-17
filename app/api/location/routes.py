@@ -8,8 +8,8 @@ import random
 location_bp = Blueprint("location",__name__)
 
 @location_bp.route("/generate",methods=["GET"])
-# @login_required
-def generateLocation():
+@login_required
+def generateLocation(current_user):
     gen = generate()
     new_coord = SVLocation(latitude=gen["lat"],longitude=gen["lng"])
 
@@ -23,8 +23,8 @@ def generateLocation():
     }),200
 
 @location_bp.route("/get",methods=["GET"])
-# @login_required
-def getLocation():
+@login_required
+def getLocation(current_user):
     row_count = db.session.query(SVLocation).count()
     if row_count == 0:
         return jsonify({"error": "No items found in the database"}), 404
