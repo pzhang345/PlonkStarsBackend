@@ -34,16 +34,16 @@ def login_required(f):
         try:
             decoded_token = decode(token)
             # Extract the user ID (sub) from the decoded token
-            current_user_id = decoded_token.get('sub')
+            user_id = decoded_token.get('sub')
 
-            if not current_user_id:
+            if not user_id:
                 return jsonify({'message': 'Invalid token! No user ID (sub) found in token'}), 403
             
         except Exception as e:
             return jsonify({'message': 'Token is invalid or expired!'}), 403
 
         # Check if the user exists in the database
-        user = User.query.filter_by(id=int(current_user_id)).first()
+        user = User.query.filter_by(id=int(user_id)).first()
         
         if not user:
             return jsonify({'message': 'User not found in database'}), 404

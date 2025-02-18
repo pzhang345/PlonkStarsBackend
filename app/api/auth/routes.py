@@ -44,7 +44,7 @@ def login():
 
 @account_bp.route("/profile",methods=["GET"])
 def get_profile():
-    data = request.json()
+    data = request.get_json()
     user = User.query.filter_by(id=data["id"]).first()
     return {
         "username": user.username
@@ -53,9 +53,9 @@ def get_profile():
 # Delete account route
 @account_bp.route('/delete', methods=['DELETE'])
 @login_required
-def delete_account(current_user):
+def delete_account(user):
     # Delete the user from the database
-    db.session.delete(current_user)
+    db.session.delete(user)
     db.session.commit()
 
     return jsonify({'message': 'Account deleted successfully'}), 200

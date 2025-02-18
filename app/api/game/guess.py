@@ -1,16 +1,26 @@
-# user total for session {"1": 3, "2": 5000, "total": 5003}
-def caculate_user(session,user_id):
-    return 0
+from models import db, Round, Guess
+from api.map.map import haversine
+import math
 
-# guess score <int>
-def caculate_score(lat,lng,location_id):
-    return 0
-    #1/n (inverse function)
+def add_guess(user_id,lat,lng,round_id):
+    round = Round.query.filter_by(uuid=round_id).first_or_404("Round not found")
+    if Guess.query.filter_by(user_id=user_id,round_id=round.id).count() > 0:
+        raise Exception("user has already guessed")
+    
+    location = round.location
+    distance = haversine(lat,lng,location.latitude,location.longitude)
+    print(distance)
+    guess = Guess(
+        user_id=user_id,
+        round_id=round.id,
+        latitude=lat,
+        longitude=lng,
+        distance=distance,
+        score=caculate_score(distance,round.session.max_distance,5000)
+    )
+    db.session.add(guess)
+    db.session.commit()
+    return guess
 
-#guess score {"userid":{"username":username,"score":score}}
-def caculate_round(round_id):
-    return 0
-
-#guess score {"userid":{"username":username,"score":{"1":0,"2",7,"total":7}},"nextuserid":{}}
-def caculate_game(session):
-    return 0
+def caculate_score(distance, max_distance,max_score):
+    return max_score * math.e ** (-10*distance/max_distance)
