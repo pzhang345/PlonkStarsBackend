@@ -9,7 +9,10 @@ location_bp = Blueprint("location",__name__)
 @location_bp.route("/generate",methods=["GET"])
 @login_required
 def generateLocation(user):
-    new_coord = generate_location()
+    try:
+        new_coord = generate_location()
+    except Exception as e:
+        return jsonify({"error":str(e)}),400
     return jsonify({
         "id":new_coord.id,
         "lat":new_coord.latitude,

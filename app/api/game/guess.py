@@ -16,11 +16,11 @@ def add_guess(user_id,lat,lng,round_id):
         latitude=lat,
         longitude=lng,
         distance=distance,
-        score=caculate_score(distance,round.session.max_distance,5000)
+        score=caculate_score(float(distance),float(round.session.map.max_distance),5000)
     )
     db.session.add(guess)
     db.session.commit()
     return guess
 
-def caculate_score(distance, max_distance,max_score):
+def caculate_score(distance, max_distance, max_score):
     return max_score * math.e ** (-10*distance/max_distance)

@@ -1,4 +1,4 @@
-/venv
+/.venv
 **/__pycache__
 test*
 app/config.py

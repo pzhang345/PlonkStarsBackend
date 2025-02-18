@@ -9,10 +9,14 @@ game_bp = Blueprint("game",__name__)
 @game_bp.route("/create",methods=["POST"])
 @login_required
 def create_game(user):
-    data = request.get_json()
+    if request.is_json:
+        data = request.get_json()
+    else:
+        data = {}
+    
     map = data.get("map")
     if not map:
-        map = GameMap.query.first_or_404()
+        map = GameMap.query.first_or_404("No maps in the database")
     else:
         query = GameMap.query
         map_name = map.get("name")
@@ -26,7 +30,7 @@ def create_game(user):
         map_creator = map.get("creator")
         if map_creator:
             query.filter_by(uuid=map_creator)
-        map = query.first_or_404()
+        map = query.first_or_404("No maps found")
         
     session = Session(host_id=user.id,map_id=map.id)
     db.session.add(session)
@@ -51,7 +55,10 @@ def next_round(user):
         return jsonify({"error":"access denied"}),403
 
     map = session.map
-    location = generate_location(map)
+    try:
+        location = generate_location(map)
+    except Exception as e:
+        return jsonify({"error":str(e)}),400
     round = Round(
         location_id=location.id,
         session_id=session.id,

@@ -8,8 +8,8 @@ from models import db,SVLocation, MapBound
 GOOGLE_MAP_API_KEY = Config.GOOGLE_MAPS_API_KEY
 
 def randomize(bound):
-    lat = random.uniform(bound.start_latitude,bound.end_latitude)
-    lng = random.uniform(bound.start_longitude,bound.end_longitude)
+    lat = random.uniform(float(bound.start_latitude),float(bound.end_latitude))
+    lng = random.uniform(float(bound.start_longitude),float(bound.end_longitude))
     return (lat,lng)
     
 def does_exist(lat,lng):
@@ -29,22 +29,32 @@ def check_multiple_street_views(bound,num_checks=100):
     return {"lat":0,"lng":0,"status":"None"}
 
 def get_random_bounds(map):
-    num = random.random(0,map.total_weight)
+    num = random.uniform(0,map.total_weight)
     bounds = MapBound.query.filter_by(map_id=map.id).all()
     for bound in bounds:
         num -= bound.weight
         if num < 0:
-            return bound
+            return bound.bound
     raise Exception("total weight incorrect")
         
     
-    
-    
 def generate_location(map):
     bound = get_random_bounds(map)
+    count = 0
     gen = check_multiple_street_views(bound)
+    
     while gen["status"] != "OK":
+        if count == 5:
+            bound = get_random_bounds(map)
+        if count == 20:
+            raise Exception("could not a find location")
+    
         gen = check_multiple_street_views(bound)
+        count += 1
+    
+    new_coord = SVLocation.query.filter_by(latitude=gen["lat"],longitude=gen["lng"]).first()
+    if new_coord:
+        return new_coord
     
     new_coord = SVLocation(latitude=gen["lat"],longitude=gen["lng"])
 
