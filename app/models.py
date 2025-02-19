@@ -1,5 +1,6 @@
 from flask_sqlalchemy import SQLAlchemy
 import uuid
+from datetime import datetime
 db = SQLAlchemy()
 
 class User(db.Model):
@@ -12,6 +13,7 @@ class User(db.Model):
     guess = db.relationship("Guess", backref="user", cascade="all,delete")
     sessions = db.relationship("Session",backref="host",cascade="all,delete")
     maps = db.relationship("GameMap",backref="creator",cascade="all,delete")
+    player = db.relationship("Player",backref="user",cascade="all,delete")
 
     def __str__(self):
         return self.username
@@ -55,9 +57,11 @@ class Session(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     uuid = db.Column(db.String(36), default=lambda: str(uuid.uuid4()), unique=True)
 
-    current_round = db.Column(db.Integer, default=0, nullable=False)
+    max_rounds = db.Column(db.Integer, nullable=False, default=-1)
+    current_round = db.Column(db.Integer, nullable=False, default=0)
     host_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
     map_id = db.Column(db.Integer, db.ForeignKey("maps.id"), nullable=False)
+    time_limit = db.Column(db.Integer, nullable=False, default=-1)
     
     rounds = db.relationship("Round", backref="session", cascade="all,delete")
     players = db.relationship("Player",backref="session",cascade="all,delete")
@@ -75,11 +79,13 @@ class Round(db.Model):
     location_id = db.Column(db.Integer, db.ForeignKey("svlocations.id"), nullable=False)
     session_id = db.Column(db.Integer, db.ForeignKey("sessions.id"), nullable=False)
     round_number = db.Column(db.Integer, nullable=False)
+    time_limit = db.Column(db.Integer, nullable=False, default=-1)
 
     guesses = db.relationship("Guess", backref="round", cascade="all,delete")
 
     def __str__(self):
-        return str(self.location)
+        return f"{self.round_number}. {self.session.uuid[:4]} {self.location}"
+
     
 class Player(db.Model):
     __tablename__= "players"
@@ -88,6 +94,8 @@ class Player(db.Model):
 
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
     session_id = db.Column(db.Integer,db.ForeignKey("sessions.id"), nullable=False)
+    current_round = db.Column(db.Integer, nullable=False, default=0)
+    start_time = db.Column(db.DateTime, nullable=False,default=datetime.now)
 
 ############################################################################################
 #   MAP                                                                                    #

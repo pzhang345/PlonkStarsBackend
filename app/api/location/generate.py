@@ -5,6 +5,7 @@ import requests
 import random
 from config import Config
 from models import db,SVLocation, MapBound
+from sqlalchemy.sql.expression import func
 GOOGLE_MAP_API_KEY = Config.GOOGLE_MAPS_API_KEY
 
 def randomize(bound):
@@ -44,10 +45,17 @@ def generate_location(map):
     gen = check_multiple_street_views(bound)
     
     while gen["status"] != "OK":
-        if count == 5:
+        if count % 5 == 0:
             bound = get_random_bounds(map)
-        if count == 20:
-            raise Exception("could not a find location")
+        elif count > 20:
+            if count > 100:
+                raise Exception("can not find location")
+            bound = get_random_bounds(map)
+            loc = db_location(bound)
+            if loc:
+                return loc
+            
+            continue
     
         gen = check_multiple_street_views(bound)
         count += 1
@@ -62,11 +70,10 @@ def generate_location(map):
     db.session.commit()
     return new_coord
 
-def db_location():
-    row_count = db.session.query(SVLocation).count()
-    if row_count == 0:
-        raise Exception("No items found in the database")
-    
-    random_index = random.randint(0, row_count - 1)
-    random_coord = SVLocation.query.offset(random_index).first()
-    return random_coord
+def db_location(bound):
+    s_lat = bound.start_latitude
+    s_lng = bound.start_longitude
+    e_lat = bound.end_latitude
+    e_lng = bound.end_longitude
+    return SVLocation.query.filter(s_lat <= SVLocation.latitude,SVLocation.latitude <= e_lat,
+                                   s_lng <= SVLocation.longitude,SVLocation.longitude <= e_lng).order_by(func.rand()).first()

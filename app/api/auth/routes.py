@@ -45,10 +45,10 @@ def login():
 @account_bp.route("/profile",methods=["GET"])
 def get_profile():
     data = request.get_json()
-    user = User.query.filter_by(id=data["id"]).first()
-    return {
+    user = User.query.filter_by(id=data["id"]).first_or_404("Could not find id")
+    return jsonify({
         "username": user.username
-        },200
+    }),200
 
 # Delete account route
 @account_bp.route('/delete', methods=['DELETE'])

@@ -7,7 +7,10 @@ map_bp = Blueprint("map",__name__)
 @map_bp.route("/create",methods=["POST"])
 @login_required
 def create_map(user):
-    map = GameMap(creator_id=user.id,name=request.get_json().get("name"))
+    name=request.get_json().get("name")
+    if not name:
+        return jsonify({"error":"provided: name"}),400
+    map = GameMap(creator_id=user.id,name=name)
     db.session.add(map)
     db.session.commit()
     

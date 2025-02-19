@@ -8,7 +8,7 @@ from api.map.routes import map_bp
 
 from admin import admin
 from models import db
-from api.auth.socket import socketio
+from geosocket.socket import socketio
 from config import Config
 
 app = Flask(__name__)
@@ -23,7 +23,7 @@ socketio.init_app(app)
 admin.init_app(app)
 
 
-migrate = Migrate(app, db)
+migrate = Migrate(app, db,directory=app.config["MIGRATION_DIR"])
 
 app.register_blueprint(account_bp, url_prefix='/api/account')
 app.register_blueprint(location_bp, url_prefix='/api/location')
