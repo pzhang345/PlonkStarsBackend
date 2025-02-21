@@ -6,6 +6,7 @@ import random
 from config import Config
 from models import db,SVLocation, MapBound
 from sqlalchemy.sql.expression import func
+
 GOOGLE_MAP_API_KEY = Config.GOOGLE_MAPS_API_KEY
 
 def randomize(bound):
@@ -13,7 +14,7 @@ def randomize(bound):
     lng = random.uniform(float(bound.start_longitude),float(bound.end_longitude))
     return (lat,lng)
     
-def does_exist(lat,lng):
+def call_api(lat,lng):
     req = requests.get(f"https://maps.googleapis.com/maps/api/streetview/metadata?location={lat},{lng}&key={GOOGLE_MAP_API_KEY}")
     return req.json()
 
@@ -21,7 +22,7 @@ def check_multiple_street_views(bound,num_checks=100):
     locations = [randomize(bound) for _ in range(num_checks)]
     
     with ThreadPoolExecutor() as executor:
-        results = list(executor.map(lambda loc: does_exist(loc[0], loc[1]), locations))
+        results = list(executor.map(lambda loc: call_api(loc[0], loc[1]), locations))
     
     for d in results:
         if d["status"] == "OK":

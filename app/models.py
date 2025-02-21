@@ -1,7 +1,11 @@
 from flask_sqlalchemy import SQLAlchemy
 import uuid
+import enum
 from datetime import datetime
 db = SQLAlchemy()
+
+class GameType(enum.Enum):
+    CHALLENGE = "Challenge"
 
 class User(db.Model):
     __tablename__ = "users"
@@ -62,6 +66,7 @@ class Session(db.Model):
     host_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
     map_id = db.Column(db.Integer, db.ForeignKey("maps.id"), nullable=False)
     time_limit = db.Column(db.Integer, nullable=False, default=-1)
+    type = db.Column(db.Enum(GameType), nullable=False, default=GameType.CHALLENGE)
     
     rounds = db.relationship("Round", backref="session", cascade="all,delete")
     players = db.relationship("Player",backref="session",cascade="all,delete")

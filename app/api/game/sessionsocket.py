@@ -1,4 +1,4 @@
-from geosocket.socket import socketio
+from fsocket import socketio
 from api.auth.auth import login_required
 from flask_socketio import join_room
 
