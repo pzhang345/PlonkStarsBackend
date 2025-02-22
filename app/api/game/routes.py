@@ -2,13 +2,13 @@ from datetime import datetime,timedelta
 from flask import Blueprint,jsonify,request
 
 from api.auth.auth import login_required
-from api.game.games.challenge import ChallengeGame
-from models import db,Session,Round,GameMap, Player,GameType
+# from api.game.games.challenge import ChallengeGame
+from api.game.gametype import game_type
+from models import Session,Player,GameType
 
 game_bp = Blueprint("game",__name__)
 
 str_to_type = {"challenge":GameType.CHALLENGE}
-game_type = {GameType.CHALLENGE: ChallengeGame()}
 
 @game_bp.route("/create",methods=["POST"])
 @login_required

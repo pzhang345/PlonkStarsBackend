@@ -18,10 +18,12 @@ class BaseGame(ABC):
         
         session = Session(host_id=user.id,map_id=map.id,time_limit=time_limit,max_rounds=num_rounds,type=type)
         return {"session":session},200,session
-    
-    @abstractmethod
+
     def join(self,data,user,session):
-        pass
+        return {"message":"RESTAPI join is not supported"},400
+    
+    def socket_join(self,data,user,session):
+        return False
     
     @abstractmethod
     def next(self,data,user,session):

@@ -1,12 +1,13 @@
 from flask_sqlalchemy import SQLAlchemy
 import uuid
-import enum
 from datetime import datetime
+import enum
 db = SQLAlchemy()
 
 class GameType(enum.Enum):
-    CHALLENGE = "Challenge"
-
+    CHALLENGE = 0
+    LIVE = 1
+    
 class User(db.Model):
     __tablename__ = "users"
 
@@ -79,7 +80,6 @@ class Round(db.Model):
     __tablename__= "rounds"
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    uuid = db.Column(db.String(36), default=lambda: str(uuid.uuid4()), unique=True)
 
     location_id = db.Column(db.Integer, db.ForeignKey("svlocations.id"), nullable=False)
     session_id = db.Column(db.Integer, db.ForeignKey("sessions.id"), nullable=False)

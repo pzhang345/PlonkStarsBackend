@@ -19,7 +19,7 @@ def generate_token(user):
 
 def decode(token):
     token = token.replace('Bearer ', '')
-    decoded_token = jwt.decode(token, JWT_SECRET_KEY, algorithms=['HS256'])
+    decoded_token = jwt.decode(token, JWT_SECRET_KEY, algorithms=['HS256'], verify=True)
     return decoded_token
 
 # Decorator to check for JWT token

@@ -7,7 +7,7 @@ from api.map.routes import map_bp
 
 from admin import admin
 from models import db
-from fsocket import socketio
+from gsocket import socketio
 from config import Config
 
 app = Flask(__name__)
@@ -18,7 +18,7 @@ db.init_app(app)
 with app.app_context():
     db.create_all()
 
-socketio.init_app(app)
+socketio.init_app(app,manage_session=False)
 admin.init_app(app)
 
 
