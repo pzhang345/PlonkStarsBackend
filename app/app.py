@@ -1,5 +1,6 @@
 from flask import Flask
 from flask_migrate import Migrate
+from flask_cors import CORS
 
 from api.auth.routes import account_bp
 from api.game.routes import game_bp
@@ -11,6 +12,7 @@ from gsocket import socketio
 from config import Config
 
 app = Flask(__name__)
+CORS(app,origins=["*"])
 
 app.config.from_object(Config)
 
