@@ -2,7 +2,6 @@ from datetime import datetime,timedelta
 from flask import Blueprint,jsonify,request
 
 from api.auth.auth import login_required
-# from api.game.games.challenge import ChallengeGame
 from api.game.gametype import game_type
 from models import Session,Player,GameType
 
@@ -26,7 +25,7 @@ def create_game(user):
     except Exception as e:
         return jsonify({"error":str(e)}),400
     return jsonify(ret[0]),ret[1]
-    
+
 @game_bp.route("/play",methods=["POST"])
 @login_required
 def play(user):

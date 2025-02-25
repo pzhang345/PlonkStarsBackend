@@ -1,7 +1,7 @@
-from api.game.games import basegame
+from api.game.games.basegame import BaseGame
 from models import db,Player,GameType
 
-class LiveGame(basegame):
+class LiveGame(BaseGame):
     def create(self,data,user):
         ret = super().create(data,GameType.LIVE,user)
         if ret[1] != 200:
@@ -18,5 +18,10 @@ class LiveGame(basegame):
         db.session.commit()
         return True
     
+    def next():
+        pass
+    
+    def guess():
+        pass
     
     

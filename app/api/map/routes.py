@@ -35,6 +35,6 @@ def add_bound(user):
     if not (-90 <= s_lat <= e_lat <= 90 and -180 <= s_lng <= e_lng <= 180):
         return jsonify({"error":"invalid input"}),400
     
-    map_add_bound(map,s_lat,s_lng,e_lat,e_lng,weight)
+    res = map_add_bound(map,s_lat,s_lng,e_lat,e_lng,weight)
     
-    return jsonify({"message":"Bound added"}),200
+    return jsonify(res[0]),res[1]

@@ -1,6 +1,8 @@
 import math
 
 from models import db,Bound,MapBound
+from api.location.generate import check_multiple_street_views
+
 def haversine(lat1, lng1, lat2, lng2):
     # Convert latitude and lnggitude from degrees to radians
     lat1 = math.radians(lat1)
@@ -62,6 +64,16 @@ def map_add_bound(map,s_lat,s_lng,e_lat,e_lng,weight):
             end_latitude=e_lat,
             end_longitude=e_lng
         )
+        found = False
+        for i in range(10):
+            status = check_multiple_street_views(bound,100)
+            if status["status"] != "None":
+                found = True
+                break
+        
+        if not found:
+            return {"error":"No street views found"},400
+        
         db.session.add(bound)
         db.session.commit()
     
@@ -71,7 +83,7 @@ def map_add_bound(map,s_lat,s_lng,e_lat,e_lng,weight):
         map.end_latitude=e_lat
         map.end_longitude=e_lng
         map_max_distance(map)
-        
+    
     change = False
     
     if s_lat < map.start_latitude:
@@ -102,3 +114,4 @@ def map_add_bound(map,s_lat,s_lng,e_lat,e_lng,weight):
     
     db.session.add(conn)
     db.session.commit()
+    return {"message":"Bound added"},200
