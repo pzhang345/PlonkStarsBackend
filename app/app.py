@@ -12,7 +12,7 @@ from gsocket import socketio
 from config import Config
 
 app = Flask(__name__)
-CORS(app,origins=["*"])
+CORS(app,origins=["http://localhost:3000","https://plonkstars.vercel.app"])
 
 app.config.from_object(Config)
 
