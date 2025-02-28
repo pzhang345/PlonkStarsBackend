@@ -36,6 +36,7 @@ propcache==0.2.1
 pycparser==2.22
 PyJWT==2.10.1
 PyMySQL==1.1.1
+python-dotenv==1.0.1
 python-engineio==4.11.2
 python-socketio==5.12.1
 requests==2.32.3
