@@ -36,6 +36,7 @@ class ChallengeGame(BaseGame):
         db.session.commit()
         
         return {
+            "round":player.current_round,
             "lat":location.latitude,
             "lng":location.longitude,
             "time": player.start_time + timedelta(seconds=round.time_limit) if round.time_limit != -1 else -1
