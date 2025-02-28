@@ -141,7 +141,7 @@ class Bound(db.Model):
     map_bounds = db.relationship("MapBound", backref="bound", cascade="all,delete")
     
     def __str__(self):
-        return f'({self.start_latitude},{self.start_longitude})-({self.end_latitude},{self.end_longitude})'
+        return f"({self.start_latitude},{self.start_longitude})-({self.end_latitude},{self.end_longitude})"
 
 class MapBound(db.Model):
     __tablename__="mapbounds"

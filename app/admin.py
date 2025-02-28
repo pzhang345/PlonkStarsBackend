@@ -11,7 +11,7 @@ class ChildView(ModelView):
         self.column_filters = [c_attr.key for c_attr in inspect(model).mapper.column_attrs]
         super().__init__(model,db.session)
 
-admin = Admin(name='My Admin Panel',template_mode='bootstrap4')
+admin = Admin(name="My Admin Panel",template_mode="bootstrap4")
 
 for model in db.Model.__subclasses__():
     admin.add_view(ChildView(model))
