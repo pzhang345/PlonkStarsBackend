@@ -3,4 +3,4 @@
 **/__pycache__
 app/.migrations
 test*
-app/config.py
+app/.env*
