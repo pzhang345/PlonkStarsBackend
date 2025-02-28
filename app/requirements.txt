@@ -33,6 +33,7 @@ mysql-connector==2.2.9
 mysqlclient==2.2.7
 packaging==24.2
 propcache==0.2.1
+psycopg2==2.9.10
 pycparser==2.22
 PyJWT==2.10.1
 PyMySQL==1.1.1
