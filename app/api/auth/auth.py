@@ -12,7 +12,7 @@ JWT_SECRET_KEY = Config.SECRET_KEY
 def generate_token(user):
     payload = {
         "sub": str(user.id),  # Subject: typically the user ID
-        "exp": datetime.datetime.now() + datetime.timedelta(days=1)  # Token expiration time (e.g., 1 day)
+        "exp": datetime.datetime.now() + datetime.timedelta(days=30)  # Token expiration time (e.g., 1 day)
     }
     token = jwt.encode(payload, JWT_SECRET_KEY, algorithm="HS256")  # Using HS256 algorithm
     return token
