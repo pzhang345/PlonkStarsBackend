@@ -38,7 +38,7 @@ class ChallengeGame(BaseGame):
         return {
             "lat":location.latitude,
             "lng":location.longitude,
-            "time":round.time_limit
+            "time":player.start_time + timedelta(seconds=round.time_limit)
         },200
     
     def guess(self,data,user,session):
