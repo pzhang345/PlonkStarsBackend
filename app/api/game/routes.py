@@ -49,7 +49,7 @@ def play(user):
 @game_bp.route("/next",methods=["GET"])
 @login_required
 def next_round(user):
-    data = request.get_json()
+    data = request.args
     session_id = data.get("id")
     if not session_id:
         return jsonify({"error":"provided session id"}),400
