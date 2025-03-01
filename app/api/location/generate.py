@@ -46,19 +46,15 @@ def generate_location(map):
     gen = check_multiple_street_views(bound)
     
     while gen["status"] != "OK":
-        if count % 5 == 0:
-            bound = get_random_bounds(map)
+        bound = get_random_bounds(map)
+        if count < 10:
             gen = check_multiple_street_views(bound)
-        elif count > 20:
-            print("Fail")
+        else:
             if count > 100:
                 raise Exception("can not find location")
-            bound = get_random_bounds(map)
             loc = db_location(bound)
             if loc:
                 return loc
-        else:
-            gen = check_multiple_street_views(bound)
         count += 1
     
     new_coord = SVLocation.query.filter_by(latitude=gen["lat"],longitude=gen["lng"]).first()
