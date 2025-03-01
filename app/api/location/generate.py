@@ -7,7 +7,7 @@ from config import Config
 from models import db,SVLocation, MapBound
 from sqlalchemy.sql.expression import func
 
-GOOGLE_MAP_API_KEY = Config.GOOGLE_MAPS_API_KEY
+GOOGLE_MAPS_API_KEY = Config.GOOGLE_MAPS_API_KEY
 session = requests.Session()
 session.get("https://maps.googleapis.com/maps/api/streetview/metadata")
 
@@ -17,7 +17,7 @@ def randomize(bound):
     return (lat,lng)
     
 def call_api(lat,lng):
-    req = session.get(f"https://maps.googleapis.com/maps/api/streetview/metadata?location={lat},{lng}&key={GOOGLE_MAP_API_KEY}")
+    req = session.get(f"https://maps.googleapis.com/maps/api/streetview/metadata?location={lat},{lng}&key={GOOGLE_MAPS_API_KEY}")
     return req.json()
 
 def check_multiple_street_views(bound,num_checks=10,looptime=10):

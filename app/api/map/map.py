@@ -64,7 +64,7 @@ def map_add_bound(map,s_lat,s_lng,e_lat,e_lng,weight):
             end_latitude=e_lat,
             end_longitude=e_lng
         )
-        status = check_multiple_street_views(bound,200)
+        status = check_multiple_street_views(bound,10,30)
         if status["status"] == "None":
             return {"error":"No street views found"},400
         
