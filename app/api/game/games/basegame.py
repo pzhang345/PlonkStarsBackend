@@ -12,10 +12,10 @@ class BaseGame(ABC):
         num_rounds = data.get("rounds") if data.get("rounds") else 5
 
         
-        map = find_map(map_data) if map_data else GameMap.query.first_or_404("No maps in the database")
-    
-        session = Session(host_id=user.id,map_id=map.id,time_limit=time_limit,max_rounds=num_rounds)
-        
+        map = find_map(map_data) if map_data else GameMap.query.first()
+        if not map:
+            raise Exception("Map not found")
+            
         session = Session(host_id=user.id,map_id=map.id,time_limit=time_limit,max_rounds=num_rounds,type=type)
         return {"session":session},200,session
 
@@ -99,7 +99,10 @@ def find_map(map):
     map_creator = map.get("creator")
     if map_creator:
         query.filter_by(uuid=map_creator)
-    map = query.first("No maps found")
+    
+    return query.first()
+    
+    
 
 
 def caculate_score(distance, max_distance, max_score):
