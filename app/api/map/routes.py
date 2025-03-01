@@ -29,8 +29,8 @@ def add_bound(user):
     if map.creator_id != user.id:
         return jsonify({"error":"Not your map. Access denied"}),403
     
-    if not (s_lat and s_lng and e_lat and e_lng):
-        return jsonify({"error":"please provided these arguments: \"s_lat\", \"s_lng\",\"e_lat\" and \"e_lng\","}),400
+    if s_lat == None or s_lng == None or e_lat == None and e_lng == None:
+        return jsonify({"error":"please provided these arguments: s_lat, s_lng, e_lat and e_lng"}),400
     
     if not (-90 <= s_lat <= e_lat <= 90 and -180 <= s_lng <= e_lng <= 180):
         return jsonify({"error":"invalid input"}),400
