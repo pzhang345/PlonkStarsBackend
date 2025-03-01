@@ -47,7 +47,7 @@ def generate_location(map):
     
     while gen["status"] != "OK":
         bound = get_random_bounds(map)
-        if count < 10:
+        if count < 20:
             gen = check_multiple_street_views(bound)
         else:
             if count > 100:
