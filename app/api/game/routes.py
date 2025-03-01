@@ -23,6 +23,7 @@ def create_game(user):
     try:
         ret = game_type[type].create(data,user)
     except Exception as e:
+        print(e)
         return jsonify({"error":str(e)}),400
     return jsonify(ret[0]),ret[1]
 
@@ -42,6 +43,7 @@ def play(user):
     try:
         ret = game_type[session.type].join(data,user,session)
     except Exception as e:
+        print(e)
         return jsonify({"error":str(e)}),400
     return jsonify(ret[0]),ret[1]
     
@@ -59,6 +61,7 @@ def next_round(user):
     try:
         ret = game_type[session.type].next(data,user,session)
     except Exception as e:
+        print(e)
         return jsonify({"error":str(e)}),400
     return jsonify(ret[0]),ret[1]
 
@@ -71,7 +74,7 @@ def submit_guess(user):
     if not session_id:
         return jsonify({"error":"provided session id"}),400
     
-    session = Session.query.filter_by(uuid=data["id"]).first_or_404("Session not found")
+    session = Session.query.filter_by(uuid=session_id).first_or_404("Session not found")
     
     try:
         ret = game_type[session.type].guess(data,user,session)
