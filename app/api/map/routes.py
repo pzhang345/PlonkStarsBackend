@@ -23,7 +23,7 @@ def add_bound(user):
     data = request.get_json()
     s_lat, s_lng, e_lat, e_lng = data.get("s_lat"),data.get("s_lng"),data.get("e_lat"),data.get("e_lng")
     weight = data.get("weight")
-    weight = max(1,weight) if weight else max(1,(e_lat-s_lat) * (e_lng-s_lng) * 1000)
+    weight = max(1,weight) if weight else max(1,(e_lat-s_lat) * (e_lng-s_lng) * 10000)
     
     map = GameMap.query.filter_by(uuid=data.get("id")).first_or_404("Cannot find map")
     if map.creator_id != user.id:

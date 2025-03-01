@@ -64,18 +64,15 @@ def map_add_bound(map,s_lat,s_lng,e_lat,e_lng,weight):
             end_latitude=e_lat,
             end_longitude=e_lng
         )
-        found = False
-        for i in range(10):
-            status = check_multiple_street_views(bound,100)
-            if status["status"] != "None":
-                found = True
-                break
-        
-        if not found:
+        status = check_multiple_street_views(bound,200)
+        if status["status"] == "None":
             return {"error":"No street views found"},400
         
         db.session.add(bound)
         db.session.commit()
+    
+    if MapBound.query.filter_by(bound_id=bound.id,map_id=map.id).first():
+        return {"error":"Bound already added"},400
     
     if map.max_distance == -1:
         map.start_latitude=s_lat
