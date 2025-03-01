@@ -18,7 +18,7 @@ def call_api(lat,lng):
     req = requests.get(f"https://maps.googleapis.com/maps/api/streetview/metadata?location={lat},{lng}&key={GOOGLE_MAP_API_KEY}")
     return req.json()
 
-def check_multiple_street_views(bound,num_checks=25):
+def check_multiple_street_views(bound,num_checks=100):
     locations = [randomize(bound) for _ in range(num_checks)]
     
     with ThreadPoolExecutor() as executor:
@@ -47,7 +47,7 @@ def generate_location(map):
     
     while gen["status"] != "OK":
         bound = get_random_bounds(map)
-        if count < 20:
+        if count < 10:
             gen = check_multiple_street_views(bound)
         else:
             if count > 100:
