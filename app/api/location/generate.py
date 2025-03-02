@@ -69,9 +69,10 @@ def generate_location(map):
     return new_coord
 
 def db_location(bound):
+    random_func = func.rand() if db.engine.dialect.name == 'mysql' else func.random()
     s_lat = bound.start_latitude
     s_lng = bound.start_longitude
     e_lat = bound.end_latitude
     e_lng = bound.end_longitude
     return SVLocation.query.filter(s_lat <= SVLocation.latitude,SVLocation.latitude <= e_lat,
-                                   s_lng <= SVLocation.longitude,SVLocation.longitude <= e_lng).order_by(func.rand()).first()
+                                   s_lng <= SVLocation.longitude,SVLocation.longitude <= e_lng).order_by(random_func).first()

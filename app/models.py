@@ -2,6 +2,7 @@ from flask_sqlalchemy import SQLAlchemy
 import uuid
 from datetime import datetime
 import enum
+
 db = SQLAlchemy()
 
 class GameType(enum.Enum):
