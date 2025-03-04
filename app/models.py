@@ -37,6 +37,7 @@ class Guess(db.Model):
 
     distance = db.Column(db.Numeric(10, 3),nullable=False)
     score = db.Column(db.Integer, nullable=False)
+    time = db.Column(db.Integer, nullable=False, default=0)
 
     def __str__(self):
         return f"({self.latitude},{self.longitude})"

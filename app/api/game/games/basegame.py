@@ -59,7 +59,7 @@ class BaseGame(ABC):
 
         return round
     
-    def add_guess(self,lat,lng,user,round):
+    def add_guess(self,lat,lng,user,round,time):
         if Guess.query.filter_by(user_id=user.id,round_id=round.id).count() > 0:
             raise Exception("user has already guessed")
         
@@ -71,7 +71,8 @@ class BaseGame(ABC):
             latitude=lat,
             longitude=lng,
             distance=distance,
-            score=caculate_score(float(distance),float(round.session.map.max_distance),5000)
+            score=caculate_score(float(distance),float(round.session.map.max_distance),5000),
+            time = time
         )
         db.session.add(guess)
         db.session.commit()

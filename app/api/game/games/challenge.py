@@ -62,10 +62,12 @@ class ChallengeGame(BaseGame):
         player = super().get_player(user,session)
         round = super().get_round(player,session)
         
-        if round.time_limit != -1 and player.start_time + timedelta(seconds=round.time_limit) < now:
+        time = (now - player.start_time).total_seconds()
+        
+        if round.time_limit != -1 and time > round.time_limit:
             raise Exception("timed out")
         
-        guess = super().add_guess(lat,lng,user,round)
+        guess = super().add_guess(lat,lng,user,round,time)
         return {"message":"guess added"},200
     
     def results(self,data,user,session):
@@ -83,6 +85,7 @@ class ChallengeGame(BaseGame):
         return {
             "distance":guess.distance,
             "score": guess.score,
+            "time": guess.time,
             "userLat": guess.latitude,
             "userLng": guess.longitude,
             "correctLat": guess.round.location.latitude,
