@@ -1,0 +1,37 @@
+html, body {
+    height: 100%;
+    margin: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: black;
+}
+
+.outer-div {
+    border-radius: 20%;
+    border-color: black;
+    border-width: 2px;
+    border-style: solid;
+    background-color: rgb(68, 60, 60);
+    padding: 10%;
+    width: 50vw;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.inner-div {
+    /* display: flex; */
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+}
+
+.input {
+    color: lightgray;
+    padding: 3%;
+}
+
+input {
+    background-color: lightblue;
+}

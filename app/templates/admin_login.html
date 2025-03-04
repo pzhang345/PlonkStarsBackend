@@ -2,28 +2,31 @@
 <html>
 <head>
     <title>Admin Login</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 <body>
-<h2>Admin Login</h2>
-{% with messages = get_flashed_messages(with_categories=true) %}
-{% if messages %}
-{% for category, message in messages %}
-<div>{{ message }}</div>
-{% endfor %}
-{% endif %}
-{% endwith %}
-<form method="POST" action="/admin/login">
-    <label>Username:</label>
-    <input type="text" name="username" required>
-    <br>
-    <label>Password:</label>
-    <input type="password" name="password" required>
-    <br>
-    <button type="submit">Login</button>
-</form>
-
-{% if logged_in %}
-<a href="/admin/logout">Logout</a>
-{% endif %}
+    <div class="outer-div">
+        <div class="inner-div">
+            <h2><label style="color:red">Plonk</label><label style="color:white">Stars</label> Admin</h2>
+            {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+            {% for category, message in messages %}
+            <div>{{ message }}</div>
+            {% endfor %}
+            {% endif %}
+            {% endwith %}
+            <form method="POST" action="/admin/login">
+                <div class="input">
+                    <label>Username:</label>
+                    <input type="text" name="username" required>
+                </div>
+                <div class="input">
+                    <label>Password:</label>
+                    <input type="password" name="password" required>
+                </div>
+                <button type="submit">Login</button>
+            </form>
+        </div>
+    </div>
 </body>
 </html>
