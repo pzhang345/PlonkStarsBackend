@@ -33,6 +33,10 @@ class BaseGame(ABC):
     def guess(self,data,user,session):
         pass
     
+    @abstractmethod
+    def results(self,data,user,session):
+        pass
+    
     def create_round(self,session,time_limit):
         map = session.map
         location = generate_location(map)

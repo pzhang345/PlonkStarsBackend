@@ -65,6 +65,21 @@ class ChallengeGame(BaseGame):
             return {"error":"timed out"},400
         
         guess = super().add_guess(lat,lng,user,round)
+        return {"message":"guess added"},200
+    
+    def results(self,data,user,session):
+        round_num = data.get("round")
+        if not data.get("round"):
+            return {"error":"not implemented yet"},400
+        
+        round = Round.query.filter_by(session_id=session.id,round_number=round_num).first()
+        if not round:
+            return {"error":"No round found"},400
+        
+        guess = Guess.query.filter_by(user_id=user.id,round_id=round_num).first()
+        if not guess:
+            return {"error":"No guess found"},400
+        
         return {
             "distance":guess.distance,
             "score": guess.score

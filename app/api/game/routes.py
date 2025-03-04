@@ -83,4 +83,19 @@ def submit_guess(user):
         return jsonify({"error":str(e)}),400
     return jsonify(ret[0]),ret[1]
     
+@game_bp.route("/results",methods=["GET"])
+@login_required
+def get_result(user):
+    data = request.args
+    session_id = data.get("id")
+    if not session_id:
+        return jsonify({"error":"provided session id"}),400
     
+    session = Session.query.filter_by(uuid=session_id).first_or_404("Session not found")
+    
+    try:
+        ret = game_type[session.type].results(data,user,session)
+    except Exception as e:
+        print(e)
+        return jsonify({"error":str(e)}),400
+    return jsonify(ret[0]),ret[1]
