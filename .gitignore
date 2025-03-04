@@ -1,6 +1,5 @@
 /.venv
 /.vscode
 **/__pycache__
-app/.migrations
 test*
 app/.env*
