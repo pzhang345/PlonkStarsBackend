@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 
 from api.game.games.basegame import BaseGame
-from models import db,Round,GameType,Player
+from models import db,Round,GameType,Player,Guess
 
 class ChallengeGame(BaseGame):
     def create(self,data,user):
@@ -20,8 +20,18 @@ class ChallengeGame(BaseGame):
         db.session.commit()
         return {"message":"session joined"},200
     
-    def next(self,data,user,session):
+    def get_round(self,data,user,session):
         player = super().get_player(user,session)
+        round = super().get_round(player,session)
+        
+        if Guess.query.filter_by(user_id=user.id,round_id=round.id).count() == 0 and (round.time_limit == -1 or player.start_time + timedelta(seconds=round.time_limit) > datetime.now()):
+            location = round.location
+            return {
+                "round":player.current_round,
+                "lat":location.latitude,
+                "lng":location.longitude,
+                "time": player.start_time + timedelta(seconds=round.time_limit) if round.time_limit != -1 else -1
+            },200
         
         if player.current_round + 1 > session.current_round:
             if session.max_rounds == session.current_round:
@@ -29,7 +39,7 @@ class ChallengeGame(BaseGame):
             super().create_round(session,session.time_limit)
         player.current_round += 1
         
-        round = Round.query.filter_by(round_number=player.current_round,session_id=session.id).first()
+        round = super().get_round(player,session)
         location = round.location
         
         player.start_time = datetime.now()

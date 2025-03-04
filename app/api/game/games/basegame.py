@@ -26,7 +26,7 @@ class BaseGame(ABC):
         return False
     
     @abstractmethod
-    def next(self,data,user,session):
+    def get_round(self,data,user,session):
         pass
     
     @abstractmethod

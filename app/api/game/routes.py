@@ -48,9 +48,9 @@ def play(user):
     return jsonify(ret[0]),ret[1]
     
 
-@game_bp.route("/next",methods=["GET"])
+@game_bp.route("/round",methods=["GET"])
 @login_required
-def next_round(user):
+def get_round(user):
     data = request.args
     session_id = data.get("id")
     if not session_id:
@@ -59,7 +59,7 @@ def next_round(user):
     session = Session.query.filter_by(uuid=session_id).first_or_404("Session not found")
     
     try:
-        ret = game_type[session.type].next(data,user,session)
+        ret = game_type[session.type].get_round(data,user,session)
     except Exception as e:
         print(e)
         return jsonify({"error":str(e)}),400
