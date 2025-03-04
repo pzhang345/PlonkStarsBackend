@@ -15,4 +15,4 @@ Frontend - React.js, TailwindCSS, Next.js
 Backend - pyFlask, SQL (Postgres)
 
 Server-side is hosted on Render<br>
-client-side is hosted on Vercel
+Client-side is hosted on Vercel
