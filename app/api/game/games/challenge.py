@@ -72,8 +72,16 @@ class ChallengeGame(BaseGame):
     
     def results(self,data,user,session):
         round_num = int(data.get("round"))
+        
         if not data.get("round"):
             raise Exception("not implemented yet")
+        
+        player = Player.query.filter_by(user_id=user.id,session_id=session.id).first()
+        if not player:
+            raise Exception("No player found")
+        
+        if player.current_round < round_num:
+            raise Exception("Round not played yet")
         
         round = Round.query.filter_by(session_id=session.id,round_number=round_num).first()
         if not round:
@@ -81,7 +89,12 @@ class ChallengeGame(BaseGame):
         
         guess = Guess.query.filter_by(user_id=user.id,round_id=round.id).first()
         if not guess:
-            raise Exception("No guess found")
+            return {
+                "score": 0,
+                "correctLat": round.location.latitude,
+                "correctLng": round.location.longitude,
+            },200
+
         return {
             "distance":guess.distance,
             "score": guess.score,
