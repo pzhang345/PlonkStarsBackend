@@ -18,10 +18,12 @@ class LiveGame(BaseGame):
         db.session.commit()
         return True
     
-    def next():
+    def next(self, data, user, session):
         pass
     
-    def guess():
+    def guess(self, data, user, session):
         pass
     
+    def results(self, data, user, session):
+        pass
     

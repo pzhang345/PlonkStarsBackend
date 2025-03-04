@@ -20,7 +20,7 @@ class BaseGame(ABC):
         return {"session":session},200,session
 
     def join(self,data,user,session):
-        return {"error":"RESTAPI join is not supported"},400
+        raise Exception("RESTAPI join is not supported")
     
     def socket_join(self,data,user,session):
         return False

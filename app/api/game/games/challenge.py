@@ -22,20 +22,21 @@ class ChallengeGame(BaseGame):
     
     def get_round(self,data,user,session):
         player = super().get_player(user,session)
-        round = super().get_round(player,session)
-        
-        if Guess.query.filter_by(user_id=user.id,round_id=round.id).count() == 0 and (round.time_limit == -1 or player.start_time + timedelta(seconds=round.time_limit) > datetime.now()):
-            location = round.location
-            return {
-                "round":player.current_round,
-                "lat":location.latitude,
-                "lng":location.longitude,
-                "time": player.start_time + timedelta(seconds=round.time_limit) if round.time_limit != -1 else -1
-            },200
+        if player.current_round != 0:
+            round = super().get_round(player,session)
+            
+            if Guess.query.filter_by(user_id=user.id,round_id=round.id).count() == 0 and (round.time_limit == -1 or player.start_time + timedelta(seconds=round.time_limit) > datetime.now()):
+                location = round.location
+                return {
+                    "round":player.current_round,
+                    "lat":location.latitude,
+                    "lng":location.longitude,
+                    "time": player.start_time + timedelta(seconds=round.time_limit) if round.time_limit != -1 else -1
+                },200
         
         if player.current_round + 1 > session.current_round:
             if session.max_rounds == session.current_round:
-                return {"error":"No more rounds are available"},400
+                raise Exception("No more rounds are available")
             super().create_round(session,session.time_limit)
         player.current_round += 1
         
@@ -56,31 +57,34 @@ class ChallengeGame(BaseGame):
         now = datetime.now()
         lat,lng = data.get("lat"),data.get("lng")
         if lat == None or lng == None:
-            return {"error":"provided: lat, lng"},400
+            raise Exception("provided: lat, lng")
         
         player = super().get_player(user,session)
         round = super().get_round(player,session)
         
         if round.time_limit != -1 and player.start_time + timedelta(seconds=round.time_limit) < now:
-            return {"error":"timed out"},400
+            raise Exception("timed out")
         
         guess = super().add_guess(lat,lng,user,round)
         return {"message":"guess added"},200
     
     def results(self,data,user,session):
-        round_num = data.get("round")
+        round_num = int(data.get("round"))
         if not data.get("round"):
-            return {"error":"not implemented yet"},400
+            raise Exception("not implemented yet")
         
         round = Round.query.filter_by(session_id=session.id,round_number=round_num).first()
         if not round:
-            return {"error":"No round found"},400
+            raise Exception("No round found")
         
-        guess = Guess.query.filter_by(user_id=user.id,round_id=round_num).first()
+        guess = Guess.query.filter_by(user_id=user.id,round_id=round.id).first()
         if not guess:
-            return {"error":"No guess found"},400
-        
+            raise Exception("No guess found")
         return {
             "distance":guess.distance,
-            "score": guess.score
+            "score": guess.score,
+            "userLat": guess.latitude,
+            "userLng": guess.longitude,
+            "correctLat": guess.round.location.latitude,
+            "correctLng": guess.round.location.longitude
         },200
