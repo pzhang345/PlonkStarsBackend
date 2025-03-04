@@ -2,7 +2,7 @@ import math
 from abc import ABC,abstractmethod
 
 from models import db,Round,GameMap,Guess,Session,Player
-from api.location.generate import generate_location
+from api.location.generate import generate_location,get_random_bounds,db_location
 from api.map.map import haversine
 
 class BaseGame(ABC):
@@ -36,12 +36,11 @@ class BaseGame(ABC):
     def create_round(self,session,time_limit):
         map = session.map
         location = generate_location(map)
-        count = 0
-        while Round.query.filter_by(session_id=session.id,location_id=location.id).count() > 0:
-            if count == 100:
-                raise Exception("Cannot find new location")
-            location = generate_location(map)
-            count += 1
+        for _ in range(100):
+            if Round.query.filter_by(session_id=session.id,location_id=location.id).count() == 0:
+                break
+            bound = get_random_bounds(map)
+            location = db_location(bound)
             
         round = Round(
             location_id=location.id,

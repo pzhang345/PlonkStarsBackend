@@ -6,6 +6,7 @@ import random
 from config import Config
 from models import db,SVLocation, MapBound
 from sqlalchemy.sql.expression import func
+import math
 
 GOOGLE_MAPS_API_KEY = Config.GOOGLE_MAPS_API_KEY
 session = requests.Session()
@@ -41,38 +42,40 @@ def get_random_bounds(map):
     raise Exception("total weight incorrect")
         
     
-def generate_location(map):
-    bound = get_random_bounds(map)
-    count = 0
-    gen = check_multiple_street_views(bound)
-    
-    while gen["status"] != "OK":
+def generate_location(map):    
+    for _ in range(10):
         bound = get_random_bounds(map)
-        if count < 10:
-            gen = check_multiple_street_views(bound)
-        else:
-            if count > 100:
-                raise Exception("can not find location")
-            loc = db_location(bound)
-            if loc:
-                return loc
-        count += 1
+        gen = check_multiple_street_views(bound)
+        if gen["status"] == "OK":
+            break
     
-    new_coord = SVLocation.query.filter_by(latitude=gen["lat"],longitude=gen["lng"]).first()
+    if gen["status"] == "None":
+        bound = get_random_bounds(map)
+        return db_location(bound)
+    
+    return add_coord(gen["lat"],gen["lng"])
+
+def add_coord(lat,lng):
+    new_coord = SVLocation.query.filter_by(latitude=lat,longitude=lng).first()
     if new_coord:
         return new_coord
     
-    new_coord = SVLocation(latitude=gen["lat"],longitude=gen["lng"])
+    new_coord = SVLocation(latitude=lat,longitude=lng)
 
     db.session.add(new_coord)
     db.session.commit()
     return new_coord
 
+r_earth = 6371000
+def add_meters(lat,lng,d_lat,d_lng):
+    new_lat = lat + (d_lat / r_earth) * (180 / math.pi)
+    new_lng = lng + (d_lng / r_earth) * (180 / math.pi) / max(0.01,math.cos(lat * math.pi / 180))
+    return new_lat,new_lng
+
 def db_location(bound):
     random_func = func.rand() if db.engine.dialect.name == 'mysql' else func.random()
-    s_lat = bound.start_latitude
-    s_lng = bound.start_longitude
-    e_lat = bound.end_latitude
-    e_lng = bound.end_longitude
+    s_lat,s_lng = add_meters(float(bound.start_latitude),float(bound.start_longitude),-50,-50)
+    e_lat,e_lng = add_meters(float(bound.end_latitude),float(bound.end_longitude),50,50)
+    print(s_lat,s_lng,e_lat,e_lng)
     return SVLocation.query.filter(s_lat <= SVLocation.latitude,SVLocation.latitude <= e_lat,
                                    s_lng <= SVLocation.longitude,SVLocation.longitude <= e_lng).order_by(random_func).first()
