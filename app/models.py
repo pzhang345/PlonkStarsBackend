@@ -15,6 +15,7 @@ class User(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     username = db.Column(db.String(150), unique=True, nullable=False)
     password = db.Column(db.String(150), nullable=False)
+    is_admin = db.Column(db.Boolean, nullable=False, default=False)
 
     guess = db.relationship("Guess", backref="user", cascade="all,delete")
     sessions = db.relationship("Session",backref="host",cascade="all,delete")
