@@ -15,6 +15,7 @@ def generate_token(user):
         "exp": datetime.datetime.now() + datetime.timedelta(days=30) 
     }
     token = jwt.encode(payload, JWT_SECRET_KEY, algorithm="HS256")
+    return token
 
 def decode(token):
     token = token.replace("Bearer ", "")
