@@ -4,7 +4,7 @@ from abc import ABC,abstractmethod
 from models import db,Round,GameMap,Guess,Session,Player
 from api.location.generate import generate_location,get_random_bounds,db_location
 from api.map.map import haversine
-
+from api.game.gameutils import find_map,caculate_score
 class BaseGame(ABC):
     def create(self,data,type,user):
         map_data = data.get("map")
@@ -89,25 +89,3 @@ class BaseGame(ABC):
         if not round:
             raise Exception("Round not found")
         return round
-    
-def find_map(map):
-    query = GameMap.query
-    map_name = map.get("name")
-    if map_name:
-        query = query.filter_by(name=map_name)
-    
-    map_id = map.get("id")
-    if map_id:
-        query = query.filter_by(uuid=map_id)
-    
-    map_creator = map.get("creator")
-    if map_creator:
-        query = query.filter_by(uuid=map_creator)
-    
-    return query.first()
-    
-    
-
-
-def caculate_score(distance, max_distance, max_score):
-    return max_score * math.e ** (-10*distance/max_distance)
