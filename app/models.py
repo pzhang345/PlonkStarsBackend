@@ -21,6 +21,8 @@ class User(db.Model):
     sessions = db.relationship("Session",backref="host",cascade="all,delete")
     maps = db.relationship("GameMap",backref="creator",cascade="all,delete")
     player = db.relationship("Player",backref="user",cascade="all,delete")
+    round_stats = db.relationship("RoundStats",backref="user",cascade="all,delete")
+
 
     def __str__(self):
         return self.username
@@ -74,6 +76,7 @@ class Session(db.Model):
     
     rounds = db.relationship("Round", backref="session", cascade="all,delete")
     players = db.relationship("Player",backref="session",cascade="all,delete")
+    round_tracker = db.relationship("RoundStats",backref="session",cascade="all,delete")
 
     def __str__(self):
         return self.uuid
@@ -104,6 +107,18 @@ class Player(db.Model):
     session_id = db.Column(db.Integer,db.ForeignKey("sessions.id"), nullable=False)
     current_round = db.Column(db.Integer, nullable=False, default=0)
     start_time = db.Column(db.DateTime, nullable=False,default=datetime.now)
+
+class RoundStats(db.Model):
+    __tablename__ = "roundstats"
+    
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    session_id = db.Column(db.Integer,db.ForeignKey("sessions.id"), nullable=False)
+    round = db.Column(db.Integer, nullable=False)
+    total_time = db.Column(db.Integer, nullable=False, default=0)
+    total_score = db.Column(db.Integer, nullable=False, default=0)
+    total_distance = db.Column(db.Numeric(12, 3), nullable=False, default=0)
 
 ############################################################################################
 #   MAP                                                                                    #
