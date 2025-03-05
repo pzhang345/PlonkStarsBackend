@@ -66,7 +66,7 @@ def map_add_bound(map,s_lat,s_lng,e_lat,e_lng,weight):
         )
         
         if SVLocation.query.filter(s_lat <= SVLocation.latitude,SVLocation.latitude <= e_lat,
-                                   s_lng <= SVLocation.longitude,SVLocation.longitude <= e_lng).count() > 0:
+                                   s_lng <= SVLocation.longitude,SVLocation.longitude <= e_lng).count() == 0:
             status = check_multiple_street_views(bound,10,30)
             if status["status"] == "None":
                 return {"error":"No street views found"},400
