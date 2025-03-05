@@ -1,7 +1,7 @@
 import math
 
-from models import db,Bound,MapBound
-from api.location.generate import check_multiple_street_views,add_coord,db_location
+from models import db,Bound,MapBound,SVLocation
+from api.location.generate import check_multiple_street_views,add_coord
 
 def haversine(lat1, lng1, lat2, lng2):
     # Convert latitude and lnggitude from degrees to radians
@@ -65,7 +65,8 @@ def map_add_bound(map,s_lat,s_lng,e_lat,e_lng,weight):
             end_longitude=e_lng
         )
         
-        if not db_location(bound):
+        if SVLocation.query.filter(s_lat <= SVLocation.latitude,SVLocation.latitude <= e_lat,
+                                   s_lng <= SVLocation.longitude,SVLocation.longitude <= e_lng).count() > 0:
             status = check_multiple_street_views(bound,10,30)
             if status["status"] == "None":
                 return {"error":"No street views found"},400
