@@ -1,4 +1,4 @@
-For the Frontend Repo: [Click Here](https://github.com/Bartavius/Plonkstars) 
+Link to the frontend repo: https://github.com/Bartavius/Plonkstars
 
 ## What is Plonkstars?
 Plonkstars, inspired by GeoGuessr, is a completely free (both developer side and user side) geolocation guessing game using Google Streetview Embeds and React Leaflet's functionality to create a seamlessly addictive game.
