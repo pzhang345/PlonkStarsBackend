@@ -5,17 +5,16 @@ from flask import request, jsonify
 from config import Config
 from models import User
 
-# Secret key for JWT (same as in config)
+
 JWT_SECRET_KEY = Config.SECRET_KEY
 
-# Function to generate JWT token
 def generate_token(user):
     payload = {
-        "sub": str(user.id),  # Subject: typically the user ID
-        "exp": datetime.datetime.now() + datetime.timedelta(days=30)  # Token expiration time (e.g., 1 day)
+        "sub": str(user.id),
+        "name": user.username,
+        "exp": datetime.datetime.now() + datetime.timedelta(days=30) 
     }
-    token = jwt.encode(payload, JWT_SECRET_KEY, algorithm="HS256")  # Using HS256 algorithm
-    return token
+    token = jwt.encode(payload, JWT_SECRET_KEY, algorithm="HS256")
 
 def decode(token):
     token = token.replace("Bearer ", "")
