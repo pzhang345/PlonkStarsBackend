@@ -102,5 +102,4 @@ class ChallengeGame(BaseGame):
         if not round:
             raise Exception("No round found")
         
-        print(guess_to_json(user,round))
         return guess_to_json(user,round),200

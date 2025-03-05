@@ -1,4 +1,5 @@
 import math
+from datetime import datetime
 
 from models import db,GameMap,Guess,Round,RoundStats
 from api.location.generate import generate_location,get_random_bounds,db_location
@@ -46,6 +47,9 @@ def guess_to_json(user,round):
 
 def create_round(session,time_limit):
     map = session.map
+    stats = map.stats
+    before = datetime.now()
+    
     location = generate_location(map)
     for _ in range(100):
         if Round.query.filter_by(session_id=session.id,location_id=location.id).count() == 0:
@@ -53,6 +57,10 @@ def create_round(session,time_limit):
         bound = get_random_bounds(map)
         location = db_location(bound)
         
+    stats.total_generation_time += (datetime.now() - before).total_seconds()
+    stats.total_loads += 1
+    db.session.commit()
+    
     round = Round(
         location_id=location.id,
         session_id=session.id,
@@ -60,7 +68,6 @@ def create_round(session,time_limit):
         time_limit=time_limit
     )
     session.current_round += 1
-
     db.session.add(round)
     db.session.commit()
 
@@ -69,7 +76,6 @@ def create_round(session,time_limit):
 def create_guess(lat,lng,user,round,time):
     if Guess.query.filter_by(user_id=user.id,round_id=round.id).count() > 0:
         raise Exception("user has already guessed")
-    
     location = round.location
     distance = haversine(lat,lng,location.latitude,location.longitude)
     guess = Guess(
@@ -79,8 +85,17 @@ def create_guess(lat,lng,user,round,time):
         longitude=lng,
         distance=distance,
         score=caculate_score(float(distance),float(round.session.map.max_distance),5000),
-        time = time
+        time=time
     )
+    
+    print(guess.score)
+    stats = round.session.map.stats
+    stats.total_distance = float(stats.total_distance) + distance
+    stats.total_score += guess.score
+    stats.total_time += time
+    stats.total_guesses += 1
+    db.session.commit()
+    
     return guess
 
 def create_round_stats(user,session,guess):

@@ -1,6 +1,6 @@
 from flask import Blueprint,request, jsonify
 from api.auth.auth import login_required
-from models import db,GameMap
+from models import db,GameMap,MapStats
 from api.map.map import map_add_bound
 map_bp = Blueprint("map",__name__)
 
@@ -10,10 +10,14 @@ def create_map(user):
     name=request.get_json().get("name")
     if not name:
         return jsonify({"error":"provided: name"}),400
+    
     map = GameMap(creator_id=user.id,name=name)
     db.session.add(map)
-    db.session.commit()
+    db.session.flush()
+    map_stats = MapStats(map_id=map.id)
+    db.session.add(map_stats)
     
+    db.session.commit()
     return jsonify({"map_id":map.uuid}),200
 
 

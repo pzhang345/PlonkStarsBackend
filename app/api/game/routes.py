@@ -1,4 +1,3 @@
-from datetime import datetime,timedelta
 from flask import Blueprint,jsonify,request
 
 from api.auth.auth import login_required
@@ -43,7 +42,7 @@ def play(user):
     try:
         ret = game_type[session.type].join(data,user,session)
     except Exception as e:
-        print(e)
+        print(e.__traceback__)
         return jsonify({"error":str(e)}),400
     return jsonify(ret[0]),ret[1]
     
@@ -61,7 +60,7 @@ def get_round(user):
     try:
         ret = game_type[session.type].get_round(data,user,session)
     except Exception as e:
-        print(e)
+        print(e.__traceback__)
         return jsonify({"error":str(e)}),400
     return jsonify(ret[0]),ret[1]
 
@@ -79,7 +78,7 @@ def submit_guess(user):
     try:
         ret = game_type[session.type].guess(data,user,session)
     except Exception as e:
-        print(e)
+        print(e.with_traceback())
         return jsonify({"error":str(e)}),400
     return jsonify(ret[0]),ret[1]
     
@@ -96,6 +95,6 @@ def get_result(user):
     try:
         ret = game_type[session.type].results(data,user,session)
     except Exception as e:
-        print(e)
+        print(e.__traceback__)
         return jsonify({"error":str(e)}),400
     return jsonify(ret[0]),ret[1]

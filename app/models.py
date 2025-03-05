@@ -141,10 +141,24 @@ class GameMap(db.Model):
     
     map_bounds = db.relationship("MapBound", backref="map", cascade="all,delete")
     sessions = db.relationship("Session", backref="map", cascade="all,delete")
+    stats = db.relationship('MapStats', backref='map', uselist=False)
     
     def __str__(self):
         return self.name
+
+class MapStats(db.Model):
+    __tablename__="mapstats"
     
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    
+    map_id = db.Column(db.Integer, db.ForeignKey("maps.id"), nullable=False)
+    total_time = db.Column(db.Integer, nullable=False, default=0)
+    total_score = db.Column(db.Integer, nullable=False, default=0)
+    total_distance = db.Column(db.Numeric(12, 3), nullable=False, default=0)
+    total_guesses = db.Column(db.Integer, nullable=False, default=0)
+    
+    total_generation_time = db.Column(db.Integer, nullable=False, default=0)
+    total_loads = db.Column(db.Integer, nullable=False, default=0)
 
 class Bound(db.Model):
     __tablename__="bounds"
