@@ -1,5 +1,6 @@
 import math
 from datetime import datetime
+import pytz
 
 from models import db,GameMap,Guess,Round,RoundStats
 from api.location.generate import generate_location,get_random_bounds,db_location
@@ -48,7 +49,7 @@ def guess_to_json(user,round):
 def create_round(session,time_limit):
     map = session.map
     stats = map.stats
-    before = datetime.now()
+    before = datetime.now(tz=pytz.utc)
     
     location = generate_location(map)
     for _ in range(100):
@@ -57,7 +58,7 @@ def create_round(session,time_limit):
         bound = get_random_bounds(map)
         location = db_location(bound)
         
-    stats.total_generation_time += (datetime.now() - before).total_seconds()
+    stats.total_generation_time += (datetime.now(tz=pytz.utc) - before).total_seconds()
     stats.total_loads += 1
     db.session.commit()
     

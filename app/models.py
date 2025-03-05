@@ -1,6 +1,7 @@
 from flask_sqlalchemy import SQLAlchemy
 import uuid
 from datetime import datetime
+import pytz
 import enum
 
 db = SQLAlchemy()
@@ -111,7 +112,7 @@ class Player(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
     session_id = db.Column(db.Integer,db.ForeignKey("sessions.id"), nullable=False)
     current_round = db.Column(db.Integer, nullable=False, default=0)
-    start_time = db.Column(db.DateTime, nullable=False,default=datetime.now)
+    start_time = db.Column(db.DateTime, nullable=False,default=datetime.now(tz=pytz.utc))
 
 class RoundStats(db.Model):
     __tablename__ = "roundstats"

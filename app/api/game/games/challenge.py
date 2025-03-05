@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+import pytz
 
 from api.game.games.basegame import BaseGame
 from models import db,Round,GameType,Player,Guess, RoundStats
@@ -30,14 +31,17 @@ class ChallengeGame(BaseGame):
             
             round = super().get_round(player,session)
             
-            if Guess.query.filter_by(user_id=user.id,round_id=round.id).count() == 0 and (round.time_limit == -1 or player.start_time + timedelta(seconds=round.time_limit) > datetime.now()):
+            if Guess.query.filter_by(user_id=user.id,round_id=round.id).count() == 0 and (round.time_limit == -1 or pytz.utc.localize(player.start_time) + timedelta(seconds=round.time_limit) > datetime.now(tz=pytz.utc)):
                 location = round.location
-                return {
+                ret = {
                     "round":player.current_round,
                     "lat":location.latitude,
                     "lng":location.longitude,
-                    "time": player.start_time + timedelta(seconds=round.time_limit) if round.time_limit != -1 else -1
-                },200
+                }
+                if round.time_limit != -1:
+                    ret["time"] = pytz.utc.localize(player.start_time) + timedelta(seconds=round.time_limit)
+                    print(ret["time"])
+                return ret,200
             
         if player.current_round + 1 > session.current_round:
             if session.max_rounds == session.current_round:
@@ -48,7 +52,7 @@ class ChallengeGame(BaseGame):
         round = super().get_round(player,session)
         location = round.location
         
-        player.start_time = datetime.now()
+        player.start_time = datetime.now(tz=pytz.utc)
         db.session.commit()
         ret =  {
             "round":player.current_round,
@@ -56,12 +60,12 @@ class ChallengeGame(BaseGame):
             "lng":location.longitude,
         }
         if(round.time_limit != -1):
-            ret["time"] =  player.start_time + timedelta(seconds=round.time_limit)
+            ret["time"] =  pytz.utc.localize(player.start_time) + timedelta(seconds=round.time_limit)
         
         return ret,200
     
     def guess(self,data,user,session):
-        now = datetime.now()
+        now = datetime.now(tz=pytz.utc)
         lat,lng = data.get("lat"),data.get("lng")
         if lat == None or lng == None:
             raise Exception("provided: lat, lng")
@@ -69,7 +73,7 @@ class ChallengeGame(BaseGame):
         player = super().get_player(user,session)
         round = super().get_round(player,session)
         
-        time = (now - player.start_time).total_seconds()
+        time = (now - pytz.utc.localize(player.start_time)).total_seconds()
         
         if round.time_limit != -1 and time > round.time_limit:
             raise Exception("timed out")
@@ -100,7 +104,7 @@ class ChallengeGame(BaseGame):
         
         
         if player.current_round < round_num or (player.current_round == round_num and
-            (Guess.query.filter_by(user_id=user.id,round_id=round.id).count() == 0 and (round.time_limit == -1 or player.start_time + timedelta(seconds=round.time_limit) > datetime.now()))):
+            (Guess.query.filter_by(user_id=user.id,round_id=round.id).count() == 0 and (round.time_limit == -1 or pytz.utc.localize(player.start_time) + timedelta(seconds=round.time_limit) > datetime.now(tz=pytz.utc)))):
             raise Exception("Round not played yet")
         
         return guess_to_json(user,round),200

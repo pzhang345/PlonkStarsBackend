@@ -1,10 +1,11 @@
 from functools import wraps
 import jwt
-import datetime
+from datetime import datetime
+import pytz
 from flask import request, jsonify
+
 from config import Config
 from models import User
-
 
 JWT_SECRET_KEY = Config.SECRET_KEY
 
@@ -12,7 +13,7 @@ def generate_token(user):
     payload = {
         "sub": str(user.id),
         "name": user.username,
-        "exp": datetime.datetime.now() + datetime.timedelta(days=30) 
+        "exp": datetime.now(tz=pytz.utc) + datetime.timedelta(days=30) 
     }
     token = jwt.encode(payload, JWT_SECRET_KEY, algorithm="HS256")
     return token
