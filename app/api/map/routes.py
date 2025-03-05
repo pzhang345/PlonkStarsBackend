@@ -42,3 +42,39 @@ def add_bound(user):
     res = map_add_bound(map,s_lat,s_lng,e_lat,e_lng,weight)
     
     return jsonify(res[0]),res[1]
+
+@map_bp.route("/search",methods=["GET"])
+@login_required
+def get_all_maps(user):
+    name = request.args.get("name","")
+    page = request.args.get("page", 1, type=int)
+    per_page = request.args.get("per_page", 10, type=int)
+    query = GameMap.query.filter(GameMap.name.ilike(f"%{name}%"))
+    maps = query.paginate(page=page,per_page=per_page)
+    return jsonify([{
+        "name":map.name,
+        "id":map.uuid, 
+        "creator":map.creator.to_dict(),
+    } for map in maps]),200
+    
+@map_bp.route("/info",methods=["GET"])
+@login_required
+def get_map_info(user):
+    id = request.args.get("id")
+    if not id:
+        return jsonify({"error":"provided: id"}),400
+    
+    map = GameMap.query.filter_by(uuid=id).first_or_404("Cannot find map")
+    stats = map.stats
+    return jsonify({
+        "name":map.name,
+        "id":map.uuid, 
+        "creator":map.creator.to_dict(),
+        "average_generation_time": stats.total_time/stats.total_loads,
+        "average_score": stats.total_score/stats.total_guesses,
+        "average_distance": stats.total_distance/stats.total_guesses,
+        "average_time": stats.total_time/stats.total_guesses,
+        "total_guesses": stats.total_guesses,
+        "max_distance": map.max_distance,
+        "bounds":[bounds.bound.to_dict() for bounds in map.map_bounds]
+    }),200

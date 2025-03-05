@@ -27,6 +27,11 @@ class User(db.Model):
     def __str__(self):
         return self.username
 
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "name": self.username,
+        }
 
 class Guess(db.Model):
     __tablename__ = "guesses"
@@ -159,7 +164,7 @@ class MapStats(db.Model):
     
     total_generation_time = db.Column(db.Integer, nullable=False, default=0)
     total_loads = db.Column(db.Integer, nullable=False, default=0)
-
+    
 class Bound(db.Model):
     __tablename__="bounds"
     
@@ -174,6 +179,12 @@ class Bound(db.Model):
     
     def __str__(self):
         return f"({self.start_latitude},{self.start_longitude})-({self.end_latitude},{self.end_longitude})"
+    
+    def to_dict(self):
+        return {
+            "start":(self.start_latitude,self.start_longitude),
+            "end":(self.end_latitude,self.end_longitude)
+        }
 
 class MapBound(db.Model):
     __tablename__="mapbounds"
