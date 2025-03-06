@@ -1,6 +1,6 @@
 from functools import wraps
 import jwt
-from datetime import datetime
+from datetime import datetime, timedelta
 import pytz
 from flask import request, jsonify
 
@@ -13,7 +13,7 @@ def generate_token(user):
     payload = {
         "sub": str(user.id),
         "name": user.username,
-        "exp": datetime.now(tz=pytz.utc) + datetime.timedelta(days=30) 
+        "exp": datetime.now(tz=pytz.utc) + timedelta(days=30) 
     }
     token = jwt.encode(payload, JWT_SECRET_KEY, algorithm="HS256")
     return token
