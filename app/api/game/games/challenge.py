@@ -25,12 +25,8 @@ class ChallengeGame(BaseGame):
     def get_round(self,data,user,session):
         player = super().get_player(user,session)
         prev_round_stats = RoundStats.query.filter_by(user_id=user.id,session_id=session.id,round=player.current_round).first()
+        
         if player.current_round != 0:
-            if not prev_round_stats:
-                stats = create_round_stats(user,session,round_num=player.current_round)
-                db.session.add(stats)
-                db.session.commit()
-            
             round = super().get_round(player,session)
             
             if Guess.query.filter_by(user_id=user.id,round_id=round.id).count() == 0 and (round.time_limit == -1 or pytz.utc.localize(player.start_time) + timedelta(seconds=round.time_limit) > datetime.now(tz=pytz.utc)):
@@ -39,12 +35,19 @@ class ChallengeGame(BaseGame):
                     "round":player.current_round,
                     "lat":location.latitude,
                     "lng":location.longitude,
-                    "total":prev_round_stats.total_score
+                    "total":prev_round_stats.total_score if prev_round_stats else 0
                 }
                 if round.time_limit != -1:
                     ret["time"] = pytz.utc.localize(player.start_time) + timedelta(seconds=round.time_limit)
                     ret["time_limit"] = round.time_limit
                 return ret,200
+            
+        
+        if not prev_round_stats and player.current_round != 0:
+            stats = create_round_stats(user,session,round_num=player.current_round)
+            db.session.add(stats)
+            db.session.commit()
+            
             
         if player.current_round + 1 > session.current_round:
             if session.max_rounds == session.current_round:

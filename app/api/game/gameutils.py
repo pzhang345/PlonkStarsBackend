@@ -89,7 +89,6 @@ def create_guess(lat,lng,user,round,time):
         time=time
     )
     
-    print(guess.score)
     stats = round.session.map.stats
     stats.total_distance = float(stats.total_distance) + distance
     stats.total_score += guess.score

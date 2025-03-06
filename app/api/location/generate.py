@@ -76,6 +76,5 @@ def db_location(bound):
     random_func = func.rand() if db.engine.dialect.name == 'mysql' else func.random()
     s_lat,s_lng = add_meters(float(bound.start_latitude),float(bound.start_longitude),-50,-50)
     e_lat,e_lng = add_meters(float(bound.end_latitude),float(bound.end_longitude),50,50)
-    print(s_lat,s_lng,e_lat,e_lng)
     return SVLocation.query.filter(s_lat <= SVLocation.latitude,SVLocation.latitude <= e_lat,
                                    s_lng <= SVLocation.longitude,SVLocation.longitude <= e_lng).order_by(random_func).first()
