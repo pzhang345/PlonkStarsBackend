@@ -24,10 +24,10 @@ class ChallengeGame(BaseGame):
     
     def get_round(self,data,user,session):
         player = super().get_player(user,session)
+        prev_round_stats = RoundStats.query.filter_by(user_id=user.id,session_id=session.id,round=player.current_round).first()
         if player.current_round != 0:
-            prev_round_stats = RoundStats.query.filter_by(user_id=user.id,session_id=session.id,round=player.current_round).first()
             if not prev_round_stats:
-                pass
+                create_round_stats(user,session)
             
             round = super().get_round(player,session)
             
@@ -37,6 +37,7 @@ class ChallengeGame(BaseGame):
                     "round":player.current_round,
                     "lat":location.latitude,
                     "lng":location.longitude,
+                    "total":prev_round_stats.total_score
                 }
                 if round.time_limit != -1:
                     ret["time"] = pytz.utc.localize(player.start_time) + timedelta(seconds=round.time_limit)
@@ -58,6 +59,7 @@ class ChallengeGame(BaseGame):
             "round":player.current_round,
             "lat":location.latitude,
             "lng":location.longitude,
+            "total":prev_round_stats.total_score if prev_round_stats else 0
         }
         if(round.time_limit != -1):
             ret["time"] =  pytz.utc.localize(player.start_time) + timedelta(seconds=round.time_limit)
@@ -107,5 +109,6 @@ class ChallengeGame(BaseGame):
         if player.current_round < round_num or (player.current_round == round_num and
             (Guess.query.filter_by(user_id=user.id,round_id=round.id).count() == 0 and (round.time_limit == -1 or pytz.utc.localize(player.start_time) + timedelta(seconds=round.time_limit) > datetime.now(tz=pytz.utc)))):
             raise Exception("Round not played yet")
-        
-        return guess_to_json(user,round),200
+        json = guess_to_json(user,round)
+        json["total"] = RoundStats.query.filter_by(user_id=user.id,session_id=session.id,round=round_num).first().total_score
+        return json,200

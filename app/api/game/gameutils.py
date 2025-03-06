@@ -99,9 +99,20 @@ def create_guess(lat,lng,user,round,time):
     
     return guess
 
-def create_round_stats(user,session,guess):
+def create_round_stats(user,session,guess=None):
     prevRoundStats = RoundStats.query.filter_by(user_id=user.id,session_id=session.id,round=guess.round.round_number-1).first()
-        
+    
+    if not guess:
+        guess = Guess(
+            user_id=0,
+            round_id=0,
+            latitude=0,
+            longitude=0,
+            distance=0,
+            score=0,
+            time=0
+        )
+    
     if not prevRoundStats:
         round_stats = RoundStats(
             user_id=user.id,
