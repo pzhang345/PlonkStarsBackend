@@ -9,6 +9,11 @@ class BaseGame(ABC):
         time_limit = data.get("time") if data.get("time") else -1
         num_rounds = data.get("rounds") if data.get("rounds") else 5
 
+        if num_rounds <= 0 and num_rounds != -1:
+            raise Exception("Invalid number of rounds")
+        
+        if time_limit <= 0 and time_limit != -1:
+            raise Exception("Invalid time limit")
         
         map = find_map(map_data) if map_data else GameMap.query.first()
         if not map:
