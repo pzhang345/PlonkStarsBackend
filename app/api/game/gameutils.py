@@ -99,9 +99,10 @@ def create_guess(lat,lng,user,round,time):
     
     return guess
 
-def create_round_stats(user,session,guess=None):
-    prevRoundStats = RoundStats.query.filter_by(user_id=user.id,session_id=session.id,round=guess.round.round_number-1).first()
-    
+def create_round_stats(user,session,round_num = None,guess=None):
+    if round_num == None:
+        round_num = guess.round.round_number
+    prev_round_stats = RoundStats.query.filter_by(user_id=user.id,session_id=session.id,round=round_num-1).first()
     if not guess:
         guess = Guess(
             user_id=0,
@@ -113,11 +114,11 @@ def create_round_stats(user,session,guess=None):
             time=0
         )
     
-    if not prevRoundStats:
+    if not prev_round_stats:
         round_stats = RoundStats(
             user_id=user.id,
             session_id=session.id,
-            round=guess.round.round_number,
+            round=round_num,
             total_time=guess.time,
             total_score=guess.score,
             total_distance=guess.distance
@@ -126,9 +127,9 @@ def create_round_stats(user,session,guess=None):
         round_stats = RoundStats(
             user_id=user.id,
             session_id=session.id,
-            round=guess.round.round_number,
-            total_time=prevRoundStats.total_time + guess.time,
-            total_score=prevRoundStats.total_score + guess.score,
-            total_distance=float(prevRoundStats.total_distance) + guess.distance
+            round=round_num,
+            total_time=prev_round_stats.total_time + guess.time,
+            total_score=prev_round_stats.total_score + guess.score,
+            total_distance=float(prev_round_stats.total_distance) + guess.distance
         )
     return round_stats

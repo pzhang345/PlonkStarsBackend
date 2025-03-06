@@ -27,7 +27,9 @@ class ChallengeGame(BaseGame):
         prev_round_stats = RoundStats.query.filter_by(user_id=user.id,session_id=session.id,round=player.current_round).first()
         if player.current_round != 0:
             if not prev_round_stats:
-                create_round_stats(user,session)
+                stats = create_round_stats(user,session,round_num=player.current_round)
+                db.session.add(stats)
+                db.session.commit()
             
             round = super().get_round(player,session)
             
@@ -84,7 +86,7 @@ class ChallengeGame(BaseGame):
         guess = create_guess(lat,lng,user,round,time)
         db.session.add(guess)
         db.session.flush()
-        round_stat = create_round_stats(user,session,guess)
+        round_stat = create_round_stats(user,session,guess=guess)
         db.session.add(round_stat)
         db.session.commit()
        
@@ -110,5 +112,11 @@ class ChallengeGame(BaseGame):
             (Guess.query.filter_by(user_id=user.id,round_id=round.id).count() == 0 and (round.time_limit == -1 or pytz.utc.localize(player.start_time) + timedelta(seconds=round.time_limit) > datetime.now(tz=pytz.utc)))):
             raise Exception("Round not played yet")
         json = guess_to_json(user,round)
-        json["total"] = RoundStats.query.filter_by(user_id=user.id,session_id=session.id,round=round_num).first().total_score
+        
+        stats = RoundStats.query.filter_by(user_id=user.id,session_id=session.id,round=round_num).first()
+        if not stats:
+            stats = create_round_stats(user,session,round_num=round_num)
+            db.session.add(stats)
+            db.session.commit()
+        json["total"] = stats.total_score
         return json,200
