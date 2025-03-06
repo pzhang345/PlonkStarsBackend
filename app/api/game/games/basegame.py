@@ -1,7 +1,7 @@
 import math
 from abc import ABC,abstractmethod
 
-from models import db,Round,GameMap,Guess,Session,Player
+from models import db,Round,GameMap,Session,Player
 from api.game.gameutils import find_map
 class BaseGame(ABC):
     def create(self,data,type,user):
