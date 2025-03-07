@@ -1,4 +1,5 @@
 
+from decimal import Decimal
 from flask import jsonify
 from concurrent.futures import ThreadPoolExecutor
 import requests
@@ -56,15 +57,17 @@ def generate_location(map):
     return add_coord(gen["lat"],gen["lng"])
 
 def add_coord(lat,lng):
-    new_coord = SVLocation.query.filter_by(latitude=lat,longitude=lng).first()
-    if new_coord:
-        return new_coord
+    lat = Decimal(str(round(lat,7)))
+    lng = Decimal(str(round(lng,7)))
     
-    new_coord = SVLocation(latitude=lat,longitude=lng)
+    coord = SVLocation.query.filter_by(latitude=lat,longitude=lng).first()
+    if coord:
+        return coord
 
-    db.session.add(new_coord)
+    coord = SVLocation(latitude=lat,longitude=lng)
+    db.session.add(coord)
     db.session.commit()
-    return new_coord
+    return coord
 
 r_earth = 6371000
 def add_meters(lat,lng,d_lat,d_lng):

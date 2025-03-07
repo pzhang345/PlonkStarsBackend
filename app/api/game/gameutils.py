@@ -85,7 +85,7 @@ def create_guess(lat,lng,user,round,time):
         latitude=lat,
         longitude=lng,
         distance=distance,
-        score=caculate_score(float(distance),float(round.session.map.max_distance),5000),
+        score=caculate_score(max(0,float(distance)-0.05),float(round.session.map.max_distance),5000),
         time=time
     )
     

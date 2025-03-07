@@ -25,7 +25,13 @@ def create_map(user):
 @login_required
 def add_bound(user):
     data = request.get_json()
-    s_lat, s_lng, e_lat, e_lng = data.get("s_lat"),data.get("s_lng"),data.get("e_lat"),data.get("e_lng")
+    if data.get("start") and data.get("end"):
+        s_lat,s_lng = data.get("start")
+        e_lat,e_lng = data.get("end")
+    else:
+        s_lat, s_lng, e_lat, e_lng = data.get("s_lat"),data.get("s_lng"),data.get("e_lat"),data.get("e_lng")
+    print(s_lat,s_lng,e_lat,e_lng)
+    
     weight = data.get("weight")
     weight = max(1,weight) if weight else max(1,(e_lat-s_lat) * (e_lng-s_lng) * 10000)
     
