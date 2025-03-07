@@ -50,6 +50,19 @@ class Guess(db.Model):
 
     def __str__(self):
         return f"({self.latitude},{self.longitude})"
+    
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "user": self.user.to_dict(), ##########################################
+            "session_id": self.round.session_id,
+            "round_number": self.round.round_number, ##########################################
+            "latitude": self.latitude,
+            "longitude": self.longitude,
+            "distance": self.distance,
+            "score": self.score,
+            "time": self.time
+        }
 
 
 class SVLocation(db.Model):

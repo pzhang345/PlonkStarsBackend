@@ -123,3 +123,13 @@ class ChallengeGame(BaseGame):
             db.session.commit()
         json["total"] = stats.total_score
         return json,200
+    
+    def summary(self, user, session):
+        total = Guess.query.join(Round).filter(
+        Round.session_id == session.id,
+        Guess.user_id == user.id
+    ).all()
+        if not total:
+            raise Exception("Cannot find summary.")
+        json = [(guess.to_dict()) for guess in total]
+        return json, 200
