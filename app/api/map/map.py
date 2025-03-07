@@ -47,7 +47,7 @@ def map_max_distance(map):
             dist = haversine(lat1, lng1, lat2, lng2)
             max_dist = max(max_dist, dist)
     
-    map.max_distance = max_dist
+    map.max_distance = max(max_dist,1)
     
 def map_add_bound(map,s_lat,s_lng,e_lat,e_lng,weight):
     bound = Bound.query.filter_by(
