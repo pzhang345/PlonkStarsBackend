@@ -31,7 +31,7 @@ class User(db.Model):
     def to_dict(self):
         return {
             "id": self.id,
-            "name": self.username,
+            "username": self.username,
         }
 
 class Guess(db.Model):
