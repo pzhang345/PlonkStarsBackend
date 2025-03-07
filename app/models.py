@@ -59,6 +59,8 @@ class Guess(db.Model):
             "round_number": self.round.round_number,
             "latitude": self.latitude,
             "longitude": self.longitude,
+            "correct_lat": self.round.location.latitude,
+            "correct_lng": self.round.location.longitude,
             "distance": self.distance,
             "score": self.score,
             "time": self.time
