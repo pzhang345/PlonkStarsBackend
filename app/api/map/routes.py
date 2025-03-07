@@ -36,8 +36,8 @@ def add_bound(user):
     weight = max(1,weight) if weight else max(1,(e_lat-s_lat) * (e_lng-s_lng) * 10000)
     
     map = GameMap.query.filter_by(uuid=data.get("id")).first_or_404("Cannot find map")
-    if map.creator_id != user.id:
-        return jsonify({"error":"Not your map. Access denied"}),403
+    # if map.creator_id != user.id:
+    #     return jsonify({"error":"Not your map. Access denied"}),403
     
     if s_lat == None or s_lng == None or e_lat == None and e_lng == None:
         return jsonify({"error":"please provided these arguments: s_lat, s_lng, e_lat and e_lng"}),400
@@ -80,10 +80,10 @@ def get_map_info(user):
         "name":map.name,
         "id":map.uuid, 
         "creator":map.creator.to_dict(),
-        "average_generation_time": stats.total_time/stats.total_loads,
-        "average_score": stats.total_score/stats.total_guesses,
-        "average_distance": stats.total_distance/stats.total_guesses,
-        "average_time": stats.total_time/stats.total_guesses,
+        "average_generation_time": stats.total_time/stats.total_loads if stats.total_loads != 0 else 0,
+        "average_score": stats.total_score/stats.total_guesses if stats.total_guesses != 0 else 0,
+        "average_distance": stats.total_distance/stats.total_guesses if stats.total_guesses != 0 else 0,
+        "average_time": stats.total_time/stats.total_guesses if stats.total_guesses != 0 else 0,
         "total_guesses": stats.total_guesses,
         "max_distance": map.max_distance,
         "bounds":[bounds.bound.to_dict() for bounds in map.map_bounds]

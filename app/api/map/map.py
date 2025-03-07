@@ -1,3 +1,4 @@
+from decimal import Decimal
 import math
 
 from models import db,Bound,MapBound,SVLocation
@@ -50,6 +51,11 @@ def map_max_distance(map):
     map.max_distance = max(max_dist,1)
     
 def map_add_bound(map,s_lat,s_lng,e_lat,e_lng,weight):
+    s_lat = Decimal(str(round(s_lat,7)))
+    s_lng = Decimal(str(round(s_lng,7)))
+    e_lat = Decimal(str(round(e_lat,7)))
+    e_lng = Decimal(str(round(e_lng,7)))
+    
     bound = Bound.query.filter_by(
         start_latitude=s_lat,
         start_longitude=s_lng,
