@@ -51,11 +51,15 @@ def get_all_maps(user):
     per_page = request.args.get("per_page", 10, type=int)
     query = GameMap.query.filter(GameMap.name.ilike(f"%{name}%"))
     maps = query.paginate(page=page,per_page=per_page)
-    return jsonify([{
-        "name":map.name,
-        "id":map.uuid, 
-        "creator":map.creator.to_dict(),
-    } for map in maps]),200
+    return jsonify(
+    {
+        "maps":[{
+                "name":map.name,
+                "id":map.uuid, 
+                "creator":map.creator.to_dict(),
+            } for map in maps],
+        "pages": maps.pages
+    }),200
     
 @map_bp.route("/info",methods=["GET"])
 @login_required
