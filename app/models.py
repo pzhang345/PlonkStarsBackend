@@ -54,9 +54,9 @@ class Guess(db.Model):
     def to_dict(self):
         return {
             "id": self.id,
-            "user": self.user.to_dict(), ##########################################
+            "user": self.user.to_dict(),
             "session_id": self.round.session_id,
-            "round_number": self.round.round_number, ##########################################
+            "round_number": self.round.round_number,
             "latitude": self.latitude,
             "longitude": self.longitude,
             "distance": self.distance,
