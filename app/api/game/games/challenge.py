@@ -131,5 +131,16 @@ class ChallengeGame(BaseGame):
     ).all()
         if not total:
             raise Exception("Cannot find summary.")
-        json = [(guess.to_dict()) for guess in total]
+        dictionary = [(guess.to_dict()) for guess in total]
+        json = [
+                {
+                "user": 
+                    {"lat": guess["latitude"] if guess["latitude"] else None,
+                    "lng": guess["longitude"] if guess["longitude"] else None},
+                "correct":
+                    {"lat": guess["correct_lat"],
+                     "lng": guess["correct_lng"]}
+                
+                } for guess in dictionary]
+    
         return json, 200
