@@ -62,7 +62,7 @@ def get_all_maps(user):
         "maps":[{
                 "name":map.name,
                 "id":map.uuid, 
-                "creator":map.creator.to_dict(),
+                "creator":map.creator.to_json(),
             } for map in maps],
         "pages": maps.pages
     }),200
@@ -79,7 +79,7 @@ def get_map_info(user):
     return jsonify({
         "name":map.name,
         "id":map.uuid, 
-        "creator":map.creator.to_dict(),
+        "creator":map.creator.to_json(),
         "average_generation_time": stats.total_time/stats.total_loads if stats.total_loads != 0 else 0,
         "average_score": stats.total_score/stats.total_guesses if stats.total_guesses != 0 else 0,
         "average_distance": stats.total_distance/stats.total_guesses if stats.total_guesses != 0 else 0,
