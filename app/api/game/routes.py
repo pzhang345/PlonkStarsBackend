@@ -104,11 +104,12 @@ def get_result(user):
 def get_summary(user):
     data = request.args
     session_id = data.get("session")
+    
     if not session_id:
         return jsonify({"error":"provided bad session id"}), 400
     session = Session.query.filter_by(uuid=session_id).first_or_404("Session not found")
     try:
-        ret = game_type[session.type].summary(user,session)
+        ret = game_type[session.type].summary(data,user,session)
     except Exception as e:
         print(e)
         return jsonify({"error":str(e)}),400

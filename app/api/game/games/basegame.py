@@ -40,6 +40,10 @@ class BaseGame(ABC):
     def results(self,data,user,session):
         pass
     
+    @abstractmethod
+    def summary(self,data,user,session):
+        pass
+    
     def get_player(self,user,session):
         player = Player.query.filter_by(user_id=user.id,session_id=session.id).first()
         if not player:

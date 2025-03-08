@@ -27,3 +27,5 @@ class LiveGame(BaseGame):
     def results(self, data, user, session):
         pass
     
+    def summary(self, data, user, session):
+        pass

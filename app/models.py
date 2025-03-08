@@ -28,9 +28,8 @@ class User(db.Model):
     def __str__(self):
         return self.username
 
-    def to_dict(self):
+    def to_json(self):
         return {
-            "id": self.id,
             "username": self.username,
         }
 
@@ -51,7 +50,7 @@ class Guess(db.Model):
     def __str__(self):
         return f"({self.latitude},{self.longitude})"
     
-    def to_dict(self):
+    def to_json(self):
         return {
             "id": self.id,
             "user": self.user.to_dict(),

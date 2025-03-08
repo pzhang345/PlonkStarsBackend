@@ -29,21 +29,21 @@ def caculate_score(distance, max_distance, max_score):
 
 def guess_to_json(user,round):
     guess = Guess.query.filter_by(user_id=user.id,round_id=round.id).first()
+    stats = RoundStats.query.filter_by(user_id=user.id,session_id=round.session.id,round=round.round_number).first()
+    
     if not guess:
         return {
+            "user": user.to_json(),
             "score": 0,
-            "correctLat": round.location.latitude,
-            "correctLng": round.location.longitude,
         }
 
     return {
+        "user": user.username,
         "distance":guess.distance,
         "score": guess.score,
         "time": guess.time,
-        "userLat": guess.latitude,
-        "userLng": guess.longitude,
-        "correctLat": guess.round.location.latitude,
-        "correctLng": guess.round.location.longitude
+        "lat": guess.latitude,
+        "lng": guess.longitude
     }
 
 def create_round(session,time_limit):

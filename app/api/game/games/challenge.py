@@ -96,14 +96,17 @@ class ChallengeGame(BaseGame):
         return {"message":"guess added"},200
     
     def results(self,data,user,session):
-        round_num = int(data.get("round"))
+        round_num = data.get("round")
         
         if not data.get("round"):
-            raise Exception("not implemented yet")
+            raise Exception("provided round number")
         
-        top = data.get("top") if data.get("top") else 10
-        if top < 1:
-            raise Exception("top must be greater than 0")
+        round_num = data.get("round",0,type=int)
+        page = data.get("page", 1, type=int)
+        per_page = data.get("per_page", 10, type=int)
+        
+        if round_num < 1 or per_page < 1:
+            raise Exception("Please provide valid inputs")
         
         player = super().get_player(user,session)
         round = Round.query.filter_by(session_id=session.id,round_number=round_num).first()
@@ -114,34 +117,74 @@ class ChallengeGame(BaseGame):
         if player.current_round < round_num or (player.current_round == round_num and
             (Guess.query.filter_by(user_id=user.id,round_id=round.id).count() == 0 and (round.time_limit == -1 or pytz.utc.localize(player.start_time) + timedelta(seconds=round.time_limit) > datetime.now(tz=pytz.utc)))):
             raise Exception("Round not played yet")
-        json = guess_to_json(user,round)
+
+        json = {
+            "round_number":round_num,
+            "correct":{
+                "lat":round.location.latitude,
+                "lng":round.location.longitude
+            }
+        }
         
+        json["this_user"] = guess_to_json(user,round)
         stats = RoundStats.query.filter_by(user_id=user.id,session_id=session.id,round=round_num).first()
         if not stats:
             stats = create_round_stats(user,session,round_num=round_num)
             db.session.add(stats)
             db.session.commit()
-        json["total"] = stats.total_score
+        json["this_user"]["total_score"] = stats.total_score
+        
+        json["top"] = []
+        top_stats = RoundStats.query.filter_by(session_id=session.id,round=round_num).order_by(RoundStats.total_score.desc(),RoundStats.total_time).paginate(page=page,per_page=per_page,error_out=False)
+        for stats in top_stats.items:
+            json["top"] += [guess_to_json(stats.user,round)]
+            json["top"][-1]["total_score"] = stats.total_score
+        
         return json,200
     
-    def summary(self, user, session):
-        total = Guess.query.join(Round).filter(
-        Round.session_id == session.id,
-        Guess.user_id == user.id
-    ).all()
-        if not total:
-            raise Exception("Cannot find summary.")
-        dictionary = [(guess.to_dict()) for guess in total]
-        json = [
-                {"coordinates": {
-                    "user": 
-                        {"lat": guess["latitude"] if guess["latitude"] else None,
-                        "lng": guess["longitude"] if guess["longitude"] else None},
-                    "correct":
-                        {"lat": guess["correct_lat"],
-                        "lng": guess["correct_lng"]}
-                    },
-                "data": guess
-                } for guess in dictionary]
-    
+    def summary(self, data, user, session):
+        page = data.get("page", 1, type=int)
+        per_page = data.get("per_page", 10, type=int)
+        
+        if per_page < 1:
+            raise Exception("Please provide valid inputs")
+        
+        player = super().get_player(user,session)
+        round = Round.query.filter_by(session_id=session.id,round_number=session.max_rounds).first()
+        if player.current_round < session.max_rounds or (player.current_round == session.max_rounds and
+            (Guess.query.filter_by(user_id=user.id,round_id=round.id).count() == 0 and (round.time_limit == -1 or pytz.utc.localize(player.start_time) + timedelta(seconds=round.time_limit) > datetime.now(tz=pytz.utc)))):
+            raise Exception("The game is not finished first")
+        
+        
+        rounds = Round.query.filter_by(session_id=session.id).order_by(Round.round_number).all()
+        user_stats = RoundStats.query.filter_by(user_id=user.id,session_id=session.id,round=session.max_rounds).first()
+        if not user_stats:
+            user_stats = create_round_stats(user,session,round_num=session.max_rounds)
+            db.session.add(user_stats)
+            db.session.commit()
+        
+        top_stats = RoundStats.query.filter_by(session_id=session.id,round=session.max_rounds).order_by(RoundStats.total_score.desc(),RoundStats.total_time).paginate(page=page,per_page=per_page,error_out=False).items
+        
+        json = {"stats":{},"rounds":[]}
+        
+        json["stats"]["this_user"] = {"user":user.username,"score":user_stats.total_score,"distance":user_stats.total_distance,"time":user_stats.total_time}
+
+        json["stats"]["top"] = []
+        for stats in top_stats:
+            json["stats"]["top"] += [{"user":stats.user.username,"score":stats.total_score,"distance":stats.total_distance,"time":stats.total_time}]
+        
+        for round in rounds:
+            current_round = {
+                "correct":{
+                    "lat":round.location.latitude,
+                    "lng":round.location.longitude
+                },
+                "top":[]
+            }
+            
+            current_round["this_user"] = guess_to_json(user,round)
+            for stat in top_stats:
+                current_round["top"] += [guess_to_json(stat.user,round)]
+            json["rounds"] += [current_round]
+                
         return json, 200
