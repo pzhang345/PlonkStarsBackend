@@ -197,8 +197,8 @@ class Bound(db.Model):
     
     def to_dict(self):
         return {
-            "start":(self.start_latitude,self.start_longitude),
-            "end":(self.end_latitude,self.end_longitude)
+            "start":{"lat":self.start_latitude,"lng":self.start_longitude},
+            "end":{"lat":self.end_latitude,"lng":self.end_longitude}
         }
 
 class MapBound(db.Model):
