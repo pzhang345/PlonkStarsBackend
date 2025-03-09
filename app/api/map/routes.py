@@ -1,7 +1,8 @@
+from decimal import Decimal
 from flask import Blueprint,request, jsonify
 from api.auth.auth import login_required
-from models import db,GameMap,MapStats
-from api.map.map import map_add_bound
+from models import db,GameMap,MapStats,MapBound,Bound
+from api.map.map import map_add_bound,bound_recalculate
 map_bp = Blueprint("map",__name__)
 
 @map_bp.route("/create",methods=["POST"])
@@ -21,7 +22,7 @@ def create_map(user):
     return jsonify({"map_id":map.uuid}),200
 
 
-@map_bp.route("/addbound",methods=["POST"])
+@map_bp.route("bound/add",methods=["POST"])
 @login_required
 def add_bound(user):
     data = request.get_json()
@@ -48,6 +49,49 @@ def add_bound(user):
     res = map_add_bound(map,s_lat,s_lng,e_lat,e_lng,weight)
     
     return jsonify(res[0]),res[1]
+
+@map_bp.route("bound/remove",methods=["POST"])
+@login_required
+def remove_bound(user):
+    data = request.get_json()
+    map_id = data.get("id")
+    if data.get("start") and data.get("end"):
+        s_lat,s_lng = data.get("start")
+        e_lat,e_lng = data.get("end")
+    else:
+        s_lat, s_lng, e_lat, e_lng = data.get("s_lat"),data.get("s_lng"),data.get("e_lat"),data.get("e_lng")
+    
+    if s_lat == None or s_lng == None or e_lat == None and e_lng == None or not map_id:
+        return jsonify({"error":"please provided these arguments: s_lat, s_lng, e_lat and e_lng"}),400
+    
+    s_lat = Decimal(str(round(s_lat,7)))
+    s_lng = Decimal(str(round(s_lng,7)))
+    e_lat = Decimal(str(round(e_lat,7)))
+    e_lng = Decimal(str(round(e_lng,7)))
+    
+    bound = Bound.query.filter_by(start_latitude=s_lat,start_longitude=s_lng,end_latitude=e_lat,end_longitude=e_lng).first()
+    if not bound:
+        return {"error":"Cannot find bound"},404
+    
+    map = GameMap.query.filter_by(uuid=data.get("id")).first()
+    if not bound:
+        return {"error":"Cannot find map"},404
+    
+    
+    mapbound = MapBound.query.filter_by(bound_id=bound.id,map_id=map.id).first()
+    if not mapbound:
+        return {"error":"Cannot find map bound"},404
+    
+    weight = mapbound.weight
+    map.total_weight -= weight
+    
+    db.session.delete(mapbound)
+    db.session.flush()
+    if bound.start_latitude == map.start_latitude or bound.start_longitude == map.start_longitude or bound.end_latitude == map.end_latitude or bound.end_longitude == map.end_longitude:
+        bound_recalculate(map)
+    db.session.commit()
+    
+    return jsonify({"message":"bound removed"}),200
 
 @map_bp.route("/search",methods=["GET"])
 @login_required

@@ -123,3 +123,26 @@ def map_add_bound(map,s_lat,s_lng,e_lat,e_lng,weight):
     db.session.add(conn)
     db.session.commit()
     return {"message":"Bound added"},200
+
+def bound_recalculate(map):
+    bounds = MapBound.query.filter_by(map_id=map.id)
+    if bounds.count() == 0:
+        map.max_distance = -1
+        db.session.commit()
+        return
+        
+    map.start_latitude = 90
+    map.start_longitude = 180
+    map.end_latitude = -90
+    map.end_longitude = -180
+    for bound in bounds.all():
+        if bound.bound.start_latitude < map.start_latitude:
+            map.start_latitude = bound.bound.start_latitude
+        if bound.bound.start_longitude < map.start_longitude:
+            map.start_longitude = bound.bound.start_longitude
+        if map.end_latitude < bound.bound.end_latitude:
+            map.end_latitude = bound.bound.end_latitude
+        if map.end_longitude < bound.bound.end_longitude:
+            map.end_longitude = bound.bound.end_longitude
+    map_max_distance(map)
+    db.session.commit()
