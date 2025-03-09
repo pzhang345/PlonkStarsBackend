@@ -63,6 +63,9 @@ def get_all_maps(user):
                 "name":map.name,
                 "id":map.uuid, 
                 "creator":map.creator.to_json(),
+                "average_score":map.stats.total_score/map.stats.total_guesses if map.stats.total_guesses != 0 else 0,
+                "average_generation_time": map.stats.total_generation_time/map.stats.total_loads if map.stats.total_loads != 0 else 0,
+                "total_guesses": map.stats.total_guesses,
             } for map in maps],
         "pages": maps.pages
     }),200
@@ -80,7 +83,7 @@ def get_map_info(user):
         "name":map.name,
         "id":map.uuid, 
         "creator":map.creator.to_json(),
-        "average_generation_time": stats.total_time/stats.total_loads if stats.total_loads != 0 else 0,
+        "average_generation_time": stats.total_generation_time/stats.total_loads if stats.total_loads != 0 else 0,
         "average_score": stats.total_score/stats.total_guesses if stats.total_guesses != 0 else 0,
         "average_distance": stats.total_distance/stats.total_guesses if stats.total_guesses != 0 else 0,
         "average_time": stats.total_time/stats.total_guesses if stats.total_guesses != 0 else 0,
