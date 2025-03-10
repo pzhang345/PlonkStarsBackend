@@ -28,8 +28,9 @@ class ChallengeGame(BaseGame):
         
         if player.current_round != 0:
             round = super().get_round(player,session)
-            
+
             if Guess.query.filter_by(user_id=user.id,round_id=round.id).count() == 0 and (round.time_limit == -1 or pytz.utc.localize(player.start_time) + timedelta(seconds=round.time_limit) > datetime.now(tz=pytz.utc)):
+                prev_round_stats = RoundStats.query.filter_by(user_id=user.id,session_id=session.id,round=player.current_round-1).first()
                 location = round.location
                 ret = {
                     "round":player.current_round,

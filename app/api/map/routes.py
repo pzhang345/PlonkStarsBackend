@@ -50,7 +50,7 @@ def add_bound(user):
     
     return jsonify(res[0]),res[1]
 
-@map_bp.route("bound/remove",methods=["POST"])
+@map_bp.route("bound/remove",methods=["DELETE"])
 @login_required
 def remove_bound(user):
     data = request.get_json()
