@@ -63,7 +63,7 @@ def create_round(session,time_limit):
     stats.total_loads += 1
     db.session.commit()
     
-    if session.current_round != new_round_number + 1:
+    if session.current_round >= new_round_number:
         return Round.query.filter_by(session_id=session.id,round_number=new_round_number).first()
     
     round = Round(

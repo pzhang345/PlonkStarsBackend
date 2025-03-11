@@ -50,10 +50,12 @@ class ChallengeGame(BaseGame):
             db.session.commit()
             
             
-        if player.current_round + 1 > session.current_round:
-            if session.max_rounds == session.current_round:
+        if session.max_rounds == player.current_round:
                 raise Exception("No more rounds are available")
+        
+        if player.current_round + 1 > session.current_round:
             create_round(session,session.time_limit)
+        
         player.current_round += 1
         
         round = super().get_round(player,session)
