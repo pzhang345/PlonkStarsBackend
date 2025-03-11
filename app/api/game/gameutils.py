@@ -47,6 +47,7 @@ def guess_to_json(user,round):
     }
 
 def create_round(session,time_limit):
+    new_round_number = session.current_round + 1
     map = session.map
     stats = map.stats
     before = datetime.now(tz=pytz.utc)
@@ -61,6 +62,9 @@ def create_round(session,time_limit):
     stats.total_generation_time += (datetime.now(tz=pytz.utc) - before).total_seconds()
     stats.total_loads += 1
     db.session.commit()
+    
+    if session.current_round != new_round_number + 1:
+        return Round.query.filter_by(session_id=session.id,round_number=new_round_number).first()
     
     round = Round(
         location_id=location.id,
