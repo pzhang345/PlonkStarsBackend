@@ -30,7 +30,7 @@ def login_required(f):
         token = request.headers.get("Authorization")
 
         if not token:
-            return jsonify({"error": "Token is missing!"}), 403
+            return jsonify({"error": "login required"}), 403
 
         try:
             decoded_token = decode(token)
@@ -38,16 +38,16 @@ def login_required(f):
             user_id = decoded_token.get("sub")
 
             if not user_id:
-                return jsonify({"error": "Invalid token! No user ID (sub) found in token"}), 403
+                return jsonify({"error": "login required"}), 403
             
         except Exception as e:
-            return jsonify({"error": "Token is invalid or expired!"}), 403
+            return jsonify({"error": "login required"}), 403
 
         # Check if the user exists in the database
         user = User.query.filter_by(id=int(user_id)).first()
         
         if not user:
-            return jsonify({"error": "User not found in database"}), 404
+            return jsonify({"error": "login required"}), 403
 
         return f(user, *args, **kwargs)
     return decorated_function
