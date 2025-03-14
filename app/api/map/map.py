@@ -3,6 +3,7 @@ import math
 
 from models import db,Bound,MapBound,SVLocation
 from api.location.generate import check_multiple_street_views,add_coord
+from utils import coord_at, float_equals
 
 def haversine(lat1, lng1, lat2, lng2):
     # Convert latitude and lnggitude from degrees to radians
@@ -50,17 +51,12 @@ def map_max_distance(map):
     
     map.max_distance = max(max_dist,1)
     
-def map_add_bound(map,s_lat,s_lng,e_lat,e_lng,weight):
-    s_lat = Decimal(str(round(s_lat,7)))
-    s_lng = Decimal(str(round(s_lng,7)))
-    e_lat = Decimal(str(round(e_lat,7)))
-    e_lng = Decimal(str(round(e_lng,7)))
-    
-    bound = Bound.query.filter_by(
-        start_latitude=s_lat,
-        start_longitude=s_lng,
-        end_latitude=e_lat,
-        end_longitude=e_lng
+def map_add_bound(map,s_lat,s_lng,e_lat,e_lng,weight):    
+    bound = Bound.query.filter(
+        coord_at(Bound.start_latitude,s_lat),
+        coord_at(Bound.start_longitude,s_lng),
+        coord_at(Bound.end_latitude,e_lat),
+        coord_at(Bound.end_longitude,e_lng)
     ).first()
     
     if not bound:
@@ -73,7 +69,7 @@ def map_add_bound(map,s_lat,s_lng,e_lat,e_lng,weight):
         
         if SVLocation.query.filter(s_lat <= SVLocation.latitude,SVLocation.latitude <= e_lat,
                                    s_lng <= SVLocation.longitude,SVLocation.longitude <= e_lng).count() == 0:
-            if s_lat==e_lat and s_lng==e_lng:
+            if float_equals(s_lat,e_lat) and float_equals(s_lng,e_lng):
                 status = check_multiple_street_views(bound,1,1)
             else:
                 status = check_multiple_street_views(bound,10,30)
@@ -84,7 +80,7 @@ def map_add_bound(map,s_lat,s_lng,e_lat,e_lng,weight):
             add_coord(status["lat"],status["lng"])
             
             print(s_lat,s_lng,e_lat,e_lng)
-            if (s_lat==e_lat) and (s_lng==e_lng) and (s_lng != Decimal(str(round(status["lng"],7))) or s_lat != Decimal(str(round(status["lat"],7)))):
+            if float_equals(s_lat,e_lat) and float_equals(s_lng,e_lng) and (not float_equals(s_lng,status["lng"]) or not float_equals(s_lat,status["lat"])):
                 return map_add_bound(map,status["lat"],status["lng"],status["lat"],status["lng"],weight)
         
         db.session.add(bound)
@@ -93,7 +89,7 @@ def map_add_bound(map,s_lat,s_lng,e_lat,e_lng,weight):
     if MapBound.query.filter_by(bound_id=bound.id,map_id=map.id).first():
         return {"error":"Bound already added"},400
     
-    if map.max_distance == -1:
+    if float_equals(map.max_distance,-1):
         map.start_latitude=s_lat
         map.start_longitude=s_lng
         map.end_latitude=e_lat

@@ -3,6 +3,7 @@ from flask import Blueprint,request, jsonify
 from api.auth.auth import login_required
 from models import db,GameMap,MapStats,MapBound,Bound
 from api.map.map import map_add_bound,bound_recalculate
+from utils import coord_at, float_equals
 map_bp = Blueprint("map",__name__)
 
 @map_bp.route("/create",methods=["POST"])
@@ -72,12 +73,12 @@ def remove_bound(user):
     if s_lat == None or s_lng == None or e_lat == None and e_lng == None or not map_id:
         return jsonify({"error":"please provided these arguments: s_lat, s_lng, e_lat and e_lng"}),400
     
-    s_lat = Decimal(str(round(s_lat,7)))
-    s_lng = Decimal(str(round(s_lng,7)))
-    e_lat = Decimal(str(round(e_lat,7)))
-    e_lng = Decimal(str(round(e_lng,7)))
-    
-    bound = Bound.query.filter_by(start_latitude=s_lat,start_longitude=s_lng,end_latitude=e_lat,end_longitude=e_lng).first()
+    bound = Bound.query.filter(
+        coord_at(Bound.start_latitude,s_lat),
+        coord_at(Bound.start_longitude,s_lng),
+        coord_at(Bound.end_latitude,e_lat),
+        coord_at(Bound.end_longitude,e_lng)
+    ).first()
     if not bound:
         return {"error":"Cannot find bound"},404
     
@@ -95,7 +96,7 @@ def remove_bound(user):
     
     db.session.delete(mapbound)
     db.session.flush()
-    if bound.start_latitude == map.start_latitude or bound.start_longitude == map.start_longitude or bound.end_latitude == map.end_latitude or bound.end_longitude == map.end_longitude:
+    if float_equals(bound.start_latitude,map.start_latitude) or float_equals(bound.start_longitude,map.start_longitude) or float_equals(bound.end_latitude,map.end_latitude) or float_equals(bound.end_longitude,map.end_longitude):
         bound_recalculate(map)
     db.session.commit()
     

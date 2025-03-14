@@ -89,12 +89,12 @@ def create_guess(lat,lng,user,round,time):
         latitude=lat,
         longitude=lng,
         distance=distance,
-        score=caculate_score(max(0,float(distance)-0.05),float(round.session.map.max_distance),5000),
+        score=caculate_score(max(0,distance-0.05),round.session.map.max_distance,5000),
         time=time
     )
     
     stats = round.session.map.stats
-    stats.total_distance = float(stats.total_distance) + distance
+    stats.total_distance = stats.total_distance + distance
     stats.total_score += guess.score
     stats.total_time += time
     stats.total_guesses += 1
@@ -133,6 +133,6 @@ def create_round_stats(user,session,round_num = None,guess=None):
             round=round_num,
             total_time=prev_round_stats.total_time + guess.time,
             total_score=prev_round_stats.total_score + guess.score,
-            total_distance=float(prev_round_stats.total_distance) + guess.distance
+            total_distance=prev_round_stats.total_distance + guess.distance
         )
     return round_stats

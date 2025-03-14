@@ -7,6 +7,8 @@ import random
 from config import Config
 from models import db,SVLocation, MapBound
 from sqlalchemy.sql.expression import func
+from sqlalchemy import and_
+from utils import coord_at
 import math
 
 GOOGLE_MAPS_API_KEY = Config.GOOGLE_MAPS_API_KEY
@@ -14,8 +16,8 @@ session = requests.Session()
 session.get("https://maps.googleapis.com/maps/api/streetview/metadata")
 
 def randomize(bound):
-    lat = random.uniform(float(bound.start_latitude),float(bound.end_latitude))
-    lng = random.uniform(float(bound.start_longitude),float(bound.end_longitude))
+    lat = random.uniform(bound.start_latitude,bound.end_latitude)
+    lng = random.uniform(bound.start_longitude,bound.end_longitude)
     return (lat,lng)
     
 def call_api(lat,lng):
@@ -57,10 +59,7 @@ def generate_location(map):
     return add_coord(gen["lat"],gen["lng"])
 
 def add_coord(lat,lng):
-    lat = Decimal(str(round(lat,7)))
-    lng = Decimal(str(round(lng,7)))
-    
-    coord = SVLocation.query.filter_by(latitude=lat,longitude=lng).first()
+    coord = SVLocation.query.filter(and_(coord_at(SVLocation.latitude,lat),coord_at(SVLocation.longitude,lng))).first()
     if coord:
         return coord
 
@@ -77,7 +76,7 @@ def add_meters(lat,lng,d_lat,d_lng):
 
 def db_location(bound):
     random_func = func.rand() if db.engine.dialect.name == 'mysql' else func.random()
-    s_lat,s_lng = add_meters(float(bound.start_latitude),float(bound.start_longitude),-50,-50)
-    e_lat,e_lng = add_meters(float(bound.end_latitude),float(bound.end_longitude),50,50)
+    s_lat,s_lng = add_meters(bound.start_latitude,bound.start_longitude,-50,-50)
+    e_lat,e_lng = add_meters(bound.end_latitude,bound.end_longitude,50,50)
     return SVLocation.query.filter(s_lat <= SVLocation.latitude,SVLocation.latitude <= e_lat,
                                    s_lng <= SVLocation.longitude,SVLocation.longitude <= e_lng).order_by(random_func).first()

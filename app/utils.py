@@ -1,0 +1,8 @@
+from sqlalchemy import and_
+
+tolerance = 1e-7
+def coord_at(model,num):
+    return model.between(num - tolerance, num + tolerance)
+
+def float_equals(num1,num2):
+    return abs(num1 - num2) < tolerance

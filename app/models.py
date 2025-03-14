@@ -23,6 +23,7 @@ class User(db.Model):
     maps = db.relationship("GameMap",backref="creator",cascade="all,delete")
     player = db.relationship("Player",backref="user",cascade="all,delete")
     round_stats = db.relationship("RoundStats",backref="user",cascade="all,delete")
+    user_map_stats = db.relationship("UserMapStats",backref="user",cascade="all,delete")
 
 
     def __str__(self):
@@ -40,10 +41,10 @@ class Guess(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
     round_id = db.Column(db.Integer, db.ForeignKey("rounds.id"), nullable=False)
 
-    latitude = db.Column(db.Numeric(10, 7), nullable=False)
-    longitude = db.Column(db.Numeric(10, 7), nullable=False)
+    latitude = db.Column(db.Float(precision=53), nullable=False)
+    longitude = db.Column(db.Float(precision=53), nullable=False)
 
-    distance = db.Column(db.Numeric(10, 3),nullable=False)
+    distance = db.Column(db.Float(precision=53),nullable=False)
     score = db.Column(db.Integer, nullable=False)
     time = db.Column(db.Integer, nullable=False, default=0)
 
@@ -70,8 +71,8 @@ class SVLocation(db.Model):
     __tablename__ = "svlocations"
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    latitude = db.Column(db.Numeric(10, 7), nullable=False)
-    longitude = db.Column(db.Numeric(10, 7), nullable=False)
+    latitude = db.Column(db.Float(precision=53), nullable=False)
+    longitude = db.Column(db.Float(precision=53), nullable=False)
 
     rounds = db.relationship("Round", backref="location", cascade="all,delete")
 
@@ -138,7 +139,7 @@ class RoundStats(db.Model):
     round = db.Column(db.Integer, nullable=False)
     total_time = db.Column(db.Integer, nullable=False, default=0)
     total_score = db.Column(db.Integer, nullable=False, default=0)
-    total_distance = db.Column(db.Numeric(12, 3), nullable=False, default=0)
+    total_distance = db.Column(db.Float(precision=53), nullable=False, default=0)
 
 ############################################################################################
 #   MAP                                                                                    #
@@ -151,17 +152,18 @@ class GameMap(db.Model):
     uuid = db.Column(db.String(36), default=lambda: str(uuid.uuid4()), unique=True)
     creator_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
     
-    start_latitude = db.Column(db.Numeric(10, 7), nullable=False,default=-1)
-    start_longitude = db.Column(db.Numeric(10, 7), nullable=False,default=-1)
-    end_latitude = db.Column(db.Numeric(10, 7), nullable=False,default=-1)
-    end_longitude = db.Column(db.Numeric(10, 7), nullable=False,default=-1)
+    start_latitude = db.Column(db.Float(precision=53), nullable=False,default=-1)
+    start_longitude = db.Column(db.Float(precision=53), nullable=False,default=-1)
+    end_latitude = db.Column(db.Float(precision=53), nullable=False,default=-1)
+    end_longitude = db.Column(db.Float(precision=53), nullable=False,default=-1)
     
     total_weight = db.Column(db.Integer, nullable=False, default=0)
-    max_distance = db.Column(db.Numeric(10, 3), nullable=False,default=-1)
+    max_distance = db.Column(db.Float(precision=53), nullable=False,default=-1)
     
     map_bounds = db.relationship("MapBound", backref="map", cascade="all,delete")
     sessions = db.relationship("Session", backref="map", cascade="all,delete")
     stats = db.relationship('MapStats', backref='map', uselist=False)
+    user_map_stats = db.relationship("UserMapStats",backref="map",cascade="all,delete")
     
     def __str__(self):
         return self.name
@@ -174,7 +176,7 @@ class MapStats(db.Model):
     map_id = db.Column(db.Integer, db.ForeignKey("maps.id"), nullable=False)
     total_time = db.Column(db.Integer, nullable=False, default=0)
     total_score = db.Column(db.Integer, nullable=False, default=0)
-    total_distance = db.Column(db.Numeric(12, 3), nullable=False, default=0)
+    total_distance = db.Column(db.Float(precision=53), nullable=False, default=0)
     total_guesses = db.Column(db.Integer, nullable=False, default=0)
     
     total_generation_time = db.Column(db.Integer, nullable=False, default=0)
@@ -185,10 +187,10 @@ class Bound(db.Model):
     
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     
-    start_latitude = db.Column(db.Numeric(10, 7), nullable=False)
-    start_longitude = db.Column(db.Numeric(10, 7), nullable=False)
-    end_latitude = db.Column(db.Numeric(10, 7), nullable=False)
-    end_longitude = db.Column(db.Numeric(10, 7), nullable=False)
+    start_latitude = db.Column(db.Float(precision=53), nullable=False)
+    start_longitude = db.Column(db.Float(precision=53), nullable=False)
+    end_latitude = db.Column(db.Float(precision=53), nullable=False)
+    end_longitude = db.Column(db.Float(precision=53), nullable=False)
     
     map_bounds = db.relationship("MapBound", backref="bound", cascade="all,delete")
     
