@@ -34,6 +34,22 @@ class User(db.Model):
             "username": self.username,
         }
 
+class UserMapStats(db.Model):
+    __tablename__ = "usermapstats"
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    map_id = db.Column(db.Integer, db.ForeignKey("maps.id"), nullable=False)
+    total_time = db.Column(db.Integer, nullable=False, default=0)
+    total_score = db.Column(db.Integer, nullable=False, default=0)
+    total_distance = db.Column(db.Float(precision=53), nullable=False, default=0)
+    total_guesses = db.Column(db.Integer, nullable=False, default=0)
+
+    high_average_score = db.Column(db.Integer, nullable=False, default=0)
+    high_average_distance = db.Column(db.Float(precision=53), nullable=False, default=0)
+    high_average_time = db.Column(db.Integer, nullable=False, default=0)
+    high_round_number = db.Column(db.Integer, nullable=False, default=0)
+
 class Guess(db.Model):
     __tablename__ = "guesses"
 
