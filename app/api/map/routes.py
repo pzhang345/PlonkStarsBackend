@@ -35,7 +35,6 @@ def add_bound(user):
             e_lat,e_lng = data.get("end")
     else:
         s_lat, s_lng, e_lat, e_lng = data.get("s_lat"),data.get("s_lng"),data.get("e_lat"),data.get("e_lng")
-    print(s_lat,s_lng,e_lat,e_lng)
     
     weight = data.get("weight")
     weight = max(1,weight) if weight else max(1,(e_lat-s_lat) * (e_lng-s_lng) * 10000)
@@ -50,6 +49,7 @@ def add_bound(user):
     if not (-90 <= s_lat <= e_lat <= 90 and -180 <= s_lng <= e_lng <= 180):
         return jsonify({"error":"invalid input"}),400
     
+    print(s_lat,s_lng,e_lat,e_lng)
     res = map_add_bound(map,s_lat,s_lng,e_lat,e_lng,weight)
     
     return jsonify(res[0]),res[1]

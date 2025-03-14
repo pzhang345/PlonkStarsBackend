@@ -82,8 +82,9 @@ def map_add_bound(map,s_lat,s_lng,e_lat,e_lng,weight):
                 return {"error":"No street views found"},400
         
             add_coord(status["lat"],status["lng"])
-        
-            if(s_lat==e_lat and s_lng==e_lng and (s_lng != Decimal(str(round(status["lng"],7)))) or s_lat != Decimal(str(round(status["lat"],7)))):
+            
+            print(s_lat,s_lng,e_lat,e_lng)
+            if (s_lat==e_lat) and (s_lng==e_lng) and (s_lng != Decimal(str(round(status["lng"],7))) or s_lat != Decimal(str(round(status["lat"],7)))):
                 return map_add_bound(map,status["lat"],status["lng"],status["lat"],status["lng"],weight)
         
         db.session.add(bound)
