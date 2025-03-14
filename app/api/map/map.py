@@ -73,11 +73,18 @@ def map_add_bound(map,s_lat,s_lng,e_lat,e_lng,weight):
         
         if SVLocation.query.filter(s_lat <= SVLocation.latitude,SVLocation.latitude <= e_lat,
                                    s_lng <= SVLocation.longitude,SVLocation.longitude <= e_lng).count() == 0:
-            status = check_multiple_street_views(bound,10,30)
+            if s_lat==e_lat and s_lng==e_lng:
+                status = check_multiple_street_views(bound,1,1)
+            else:
+                status = check_multiple_street_views(bound,10,30)
+            
             if status["status"] == "None":
                 return {"error":"No street views found"},400
         
             add_coord(status["lat"],status["lng"])
+        
+            if(s_lat==e_lat and s_lng==e_lng and (s_lng != Decimal(str(round(status["lng"],7)))) or s_lat != Decimal(str(round(status["lat"],7)))):
+                return map_add_bound(map,status["lat"],status["lng"],status["lat"],status["lng"],weight)
         
         db.session.add(bound)
         db.session.commit()
