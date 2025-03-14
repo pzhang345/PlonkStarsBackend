@@ -37,8 +37,8 @@ def add_bound(user):
     weight = max(1,weight) if weight else max(1,(e_lat-s_lat) * (e_lng-s_lng) * 10000)
     
     map = GameMap.query.filter_by(uuid=data.get("id")).first_or_404("Cannot find map")
-    # if map.creator_id != user.id:
-    #     return jsonify({"error":"Not your map. Access denied"}),403
+    if map.creator_id != user.id:
+        return jsonify({"error":"Don't have access to the map"}),403
     
     if s_lat == None or s_lng == None or e_lat == None and e_lng == None:
         return jsonify({"error":"please provided these arguments: s_lat, s_lng, e_lat and e_lng"}),400
