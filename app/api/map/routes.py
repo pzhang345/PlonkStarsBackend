@@ -27,8 +27,12 @@ def create_map(user):
 def add_bound(user):
     data = request.get_json()
     if data.get("start") and data.get("end"):
-        s_lat,s_lng = data.get("start")
-        e_lat,e_lng = data.get("end")
+        if "lat" in data.get("start"):
+            s_lat,s_lng = data.get("start").get("lat"),data.get("start").get("lng")
+            e_lat,e_lng = data.get("end").get("lat"),data.get("end").get("lng")
+        else:
+            s_lat,s_lng = data.get("start")
+            e_lat,e_lng = data.get("end")
     else:
         s_lat, s_lng, e_lat, e_lng = data.get("s_lat"),data.get("s_lng"),data.get("e_lat"),data.get("e_lng")
     print(s_lat,s_lng,e_lat,e_lng)
@@ -56,8 +60,12 @@ def remove_bound(user):
     data = request.get_json()
     map_id = data.get("id")
     if data.get("start") and data.get("end"):
-        s_lat,s_lng = data.get("start")
-        e_lat,e_lng = data.get("end")
+        if "lat" in data.get("start"):
+            s_lat,s_lng = data.get("start").get("lat"),data.get("start").get("lng")
+            e_lat,e_lng = data.get("end").get("lat"),data.get("end").get("lng")
+        else:
+            s_lat,s_lng = data.get("start")
+            e_lat,e_lng = data.get("end")
     else:
         s_lat, s_lng, e_lat, e_lng = data.get("s_lat"),data.get("s_lng"),data.get("e_lat"),data.get("e_lng")
     
