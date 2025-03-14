@@ -129,7 +129,7 @@ def map_add_bound(map,s_lat,s_lng,e_lat,e_lng,weight):
     
     db.session.add(conn)
     db.session.commit()
-    return {"message":"Bound added"},200
+    return {"message":"Bound added","bound":bound.to_dict()},200
 
 def bound_recalculate(map):
     bounds = MapBound.query.filter_by(map_id=map.id)
