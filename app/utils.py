@@ -1,4 +1,4 @@
-tolerance = 1e-9
+tolerance = 1e-10
 def coord_at(model,num):
     return model.between(num - tolerance, num + tolerance)
 
