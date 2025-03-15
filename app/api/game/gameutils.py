@@ -2,7 +2,7 @@ import math
 from datetime import datetime
 import pytz
 
-from models import db,GameMap,Guess,Round,RoundStats
+from models import db,GameMap,Guess,Round,RoundStats,UserMapStats
 from api.location.generate import generate_location,get_random_bounds,db_location
 from api.map.map import haversine
 
@@ -135,4 +135,16 @@ def create_round_stats(user,session,round_num = None,guess=None):
             total_score=prev_round_stats.total_score + guess.score,
             total_distance=prev_round_stats.total_distance + guess.distance
         )
+    
+    user_stat = UserMapStats.query.filter_by(user_id=user.id,map_id=session.map_id).first()
+    if not user_stat:
+        user_stat = UserMapStats(user_id=user.id,map_id=session.map_id)
+        db.session.add(user_stat)
+        db.session.flush()
+    
+    user_stat.total_time += guess.time
+    user_stat.total_distance += guess.distance
+    user_stat.total_score += guess.score
+    user_stat.total_guesses += 1
+    db.session.commit()
     return round_stats

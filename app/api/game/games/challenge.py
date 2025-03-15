@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 import pytz
 
 from api.game.games.basegame import BaseGame
-from models import db,Round,GameType,Player,Guess, RoundStats
+from models import db,Round,GameType,Player,Guess, RoundStats, UserMapStats
 from api.game.gameutils import guess_to_json,create_round,create_guess,create_round_stats
 
 class ChallengeGame(BaseGame):
@@ -88,7 +88,7 @@ class ChallengeGame(BaseGame):
         
         if round.time_limit != -1 and time > round.time_limit:
             raise Exception("timed out")
-        
+
         guess = create_guess(lat,lng,user,round,time)
         db.session.add(guess)
         db.session.flush()
@@ -189,5 +189,18 @@ class ChallengeGame(BaseGame):
             for stat in top_stats:
                 current_round["top"] += [guess_to_json(stat.user,round)]
             json["rounds"] += [current_round]
-                
+        
+        user_map_stat = UserMapStats.query.filter_by(user_id=user.id,map_id=session.map_id).first()
+        if not user_map_stat:
+            user_map_stat = UserMapStats(user_id=user.id,map_id=session.map_id)
+            db.session.add(user_map_stat)
+            db.session.commit()
+            
+        if (user_map_stat.high_average_score,user_map_stat.high_round_number,-user_map_stat.high_average_time) < (user_stats.total_score/session.max_rounds,session.max_rounds,-user_stats.total_time/session.max_rounds):
+            user_map_stat.high_round_number = session.max_rounds
+            user_map_stat.high_average_score = user_stats.total_score/session.max_rounds
+            user_map_stat.high_average_distance = user_stats.total_distance/session.max_rounds
+            user_map_stat.high_average_time = user_stats.total_time/session.max_rounds
+            db.session.commit()
+        
         return json, 200
