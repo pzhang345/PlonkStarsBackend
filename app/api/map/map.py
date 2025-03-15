@@ -80,7 +80,7 @@ def map_add_bound(map,s_lat,s_lng,e_lat,e_lng,weight):
             add_coord(status["lat"],status["lng"])
             
             print(s_lat,s_lng,e_lat,e_lng)
-            if float_equals(s_lat,e_lat) and float_equals(s_lng,e_lng) and (not float_equals(s_lng,status["lng"]) or not float_equals(s_lat,status["lat"])):
+            if float_equals(s_lat,e_lat) and float_equals(s_lng,e_lng) and (s_lng != status["lng"] or s_lat != status["lat"]):
                 return map_add_bound(map,status["lat"],status["lng"],status["lat"],status["lng"],weight)
         
         db.session.add(bound)
