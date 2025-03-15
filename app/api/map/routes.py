@@ -41,7 +41,7 @@ def add_bound(user):
     weight = max(1,weight) if weight else max(1,(e_lat-s_lat) * (e_lng-s_lng) * 10000)
     
     map = GameMap.query.filter_by(uuid=data.get("id")).first_or_404("Cannot find map")
-    if map.creator_id != user.id:
+    if map.creator_id != user.id and not user.is_admin:
         return jsonify({"error":"Don't have access to the map"}),403
     
     if s_lat == None or s_lng == None or e_lat == None and e_lng == None:
@@ -50,7 +50,6 @@ def add_bound(user):
     if not (-90 <= s_lat <= e_lat <= 90 and -180 <= s_lng <= e_lng <= 180):
         return jsonify({"error":"invalid input"}),400
     
-    print(s_lat,s_lng,e_lat,e_lng)
     res = map_add_bound(map,s_lat,s_lng,e_lat,e_lng,weight)
     
     return jsonify(res[0]),res[1]
@@ -69,6 +68,9 @@ def remove_bound(user):
             e_lat,e_lng = data.get("end")
     else:
         s_lat, s_lng, e_lat, e_lng = data.get("s_lat"),data.get("s_lng"),data.get("e_lat"),data.get("e_lng")
+    
+    if map.creator_id != user.id and not user.is_admin:
+        return jsonify({"error":"Don't have access to the map"}),403
     
     if s_lat == None or s_lng == None or e_lat == None and e_lng == None or not map_id:
         return jsonify({"error":"please provided these arguments: s_lat, s_lng, e_lat and e_lng"}),400
