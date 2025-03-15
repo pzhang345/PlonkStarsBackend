@@ -1,6 +1,4 @@
-from sqlalchemy import and_
-
-tolerance = 1e-8
+tolerance = 1e-9
 def coord_at(model,num):
     return model.between(num - tolerance, num + tolerance)
 
