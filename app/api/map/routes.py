@@ -1,7 +1,7 @@
 from decimal import Decimal
 from flask import Blueprint,request, jsonify
 from api.auth.auth import login_required
-from models import db,GameMap,MapStats,MapBound,Bound
+from models import db,GameMap,MapStats,MapBound,Bound, UserMapStats
 from api.map.map import map_add_bound,bound_recalculate
 from utils import coord_at, float_equals
 map_bp = Blueprint("map",__name__)
@@ -70,6 +70,7 @@ def remove_bound(user):
         s_lat, s_lng, e_lat, e_lng = data.get("s_lat"),data.get("s_lng"),data.get("e_lat"),data.get("e_lng")
     
     map = GameMap.query.filter_by(uuid=data.get("id")).first_or_404("Cannot find map")
+    user_stats = UserMapStats.query.filter_by(user_id=user.id,map_id=map.id).first()
     if map.creator_id != user.id and not user.is_admin:
         return jsonify({"error":"Don't have access to the map"}),403
     
@@ -130,15 +131,39 @@ def get_map_info(user):
     
     map = GameMap.query.filter_by(uuid=id).first_or_404("Cannot find map")
     stats = map.stats
-    return jsonify({
+    ret = {
         "name":map.name,
         "id":map.uuid, 
         "creator":map.creator.to_json(),
-        "average_generation_time": stats.total_generation_time/stats.total_loads if stats.total_loads != 0 else 0,
-        "average_score": stats.total_score/stats.total_guesses if stats.total_guesses != 0 else 0,
-        "average_distance": stats.total_distance/stats.total_guesses if stats.total_guesses != 0 else 0,
-        "average_time": stats.total_time/stats.total_guesses if stats.total_guesses != 0 else 0,
-        "total_guesses": stats.total_guesses,
-        "max_distance": map.max_distance,
+        "map_stats":{
+            "average_generation_time": stats.total_generation_time/stats.total_loads if stats.total_loads != 0 else 0,
+            "average_score": stats.total_score/stats.total_guesses if stats.total_guesses != 0 else 0,
+            "average_distance": stats.total_distance/stats.total_guesses if stats.total_guesses != 0 else 0,
+            "average_time": stats.total_time/stats.total_guesses if stats.total_guesses != 0 else 0,
+            "total_guesses": stats.total_guesses,
+            "max_distance": map.max_distance,
+        },
         "bounds":[bounds.bound.to_dict() for bounds in map.map_bounds]
-    }),200
+    }
+    
+    user_stats = UserMapStats.query.filter_by(user_id=user.id,map_id=map.id).first()
+    if user_stats and not user_stats.total_guesses == 0:
+        ret["user_stats"] = {
+            "average":{
+                "score": user_stats.total_score/user_stats.total_guesses,
+                "distance": user_stats.total_distance/user_stats.total_guesses,
+                "time": user_stats.total_time/user_stats.total_guesses,
+                "guesses": user_stats.total_guesses,
+            }
+        }
+        
+        if user_stats.high_session_id != None:
+            ret["user_stats"]["high"] = {
+                "score": user_stats.high_average_score,
+                "distance": user_stats.high_average_distance,
+                "time": user_stats.high_average_time,
+                "rounds": user_stats.high_round_number,
+                "session": user_stats.high_session.uuid
+            }
+    
+    return jsonify(ret),200
