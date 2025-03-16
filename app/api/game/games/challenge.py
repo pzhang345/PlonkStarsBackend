@@ -201,6 +201,7 @@ class ChallengeGame(BaseGame):
             user_map_stat.high_average_score = user_stats.total_score/session.max_rounds
             user_map_stat.high_average_distance = user_stats.total_distance/session.max_rounds
             user_map_stat.high_average_time = user_stats.total_time/session.max_rounds
+            user_map_stat.high_session_id = session.id
             db.session.commit()
         
         return json, 200

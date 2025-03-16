@@ -49,6 +49,7 @@ class UserMapStats(db.Model):
     high_average_distance = db.Column(db.Double, nullable=False, default=0)
     high_average_time = db.Column(db.Integer, nullable=False, default=0)
     high_round_number = db.Column(db.Integer, nullable=False, default=0)
+    high_session_id = db.Column(db.Integer, db.ForeignKey("sessions.id"))
 
 class Guess(db.Model):
     __tablename__ = "guesses"
@@ -114,7 +115,8 @@ class Session(db.Model):
     rounds = db.relationship("Round", backref="session", cascade="all,delete")
     players = db.relationship("Player",backref="session",cascade="all,delete")
     round_tracker = db.relationship("RoundStats",backref="session",cascade="all,delete")
-
+    high_scores = db.relationship("UserMapStats",backref="high_session",cascade="all,delete")
+    
     def __str__(self):
         return self.uuid
 
