@@ -69,6 +69,7 @@ def remove_bound(user):
     else:
         s_lat, s_lng, e_lat, e_lng = data.get("s_lat"),data.get("s_lng"),data.get("e_lat"),data.get("e_lng")
     
+    map = GameMap.query.filter_by(uuid=data.get("id")).first_or_404("Cannot find map")
     if map.creator_id != user.id and not user.is_admin:
         return jsonify({"error":"Don't have access to the map"}),403
     
@@ -83,11 +84,6 @@ def remove_bound(user):
     ).first()
     if not bound:
         return {"error":"Cannot find bound"},404
-    
-    map = GameMap.query.filter_by(uuid=data.get("id")).first()
-    if not bound:
-        return {"error":"Cannot find map"},404
-    
     
     mapbound = MapBound.query.filter_by(bound_id=bound.id,map_id=map.id).first()
     if not mapbound:
