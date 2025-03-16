@@ -47,7 +47,7 @@ class UserMapStats(db.Model):
 
     high_average_score = db.Column(db.Float, nullable=False, default=0)
     high_average_distance = db.Column(db.Double, nullable=False, default=0)
-    high_average_time = db.Column(db.Integer, nullable=False, default=0)
+    high_average_time = db.Column(db.Float, nullable=False, default=0)
     high_round_number = db.Column(db.Integer, nullable=False, default=0)
     high_session_id = db.Column(db.Integer, db.ForeignKey("sessions.id"))
 
