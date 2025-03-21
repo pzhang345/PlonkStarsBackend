@@ -168,3 +168,24 @@ def get_map_info(user):
             }
     
     return jsonify(ret),200
+
+@map_bp.route("/info/leaderboard",methods=["POST"])
+@login_required
+def get_map_leaderboard(user):
+    data = request.get_json()
+    map_id = data.get("id")
+    page = request.args.get("page", 1, type=int)
+    per_page = request.args.get("per_page", 10, type=int)
+    if not map_id:
+        return jsonify({"error":"provided: id"}),400
+    
+    map = GameMap.query.filter_by(uuid=map_id).first_or_404("Cannot find map")
+    stats = UserMapStats.query.filter_by(map_id=map.id).order_by(UserMapStats.high_average_score.desc(),UserMapStats.high_round_number.desc(),UserMapStats.high_average_time()).paginate(page=page,per_page=per_page)
+    return jsonify([{
+        "user":stat.user.to_json(),
+        "average_score":stat.high_average_score,
+        "average_distance":stat.high_average_distance,
+        "average_time":stat.high_average_time,
+        "rounds":stat.high_round_number,
+        "placement": per_page*(page - 1) + i + 1
+    } for i,stat in enumerate(stats)]),200
