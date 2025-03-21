@@ -216,10 +216,16 @@ class Bound(db.Model):
         return f"({self.start_latitude},{self.start_longitude})-({self.end_latitude},{self.end_longitude})"
     
     def to_dict(self):
-        return {
-            "start":{"lat":self.start_latitude,"lng":self.start_longitude},
-            "end":{"lat":self.end_latitude,"lng":self.end_longitude}
-        }
+        if self.start_latitude == self.end_latitude and self.start_longitude == self.end_longitude:
+            return {
+                "lat":self.start_latitude,
+                "lng":self.start_longitude
+            }
+        else:
+            return {
+                "start":{"lat":self.start_latitude,"lng":self.start_longitude},
+                "end":{"lat":self.end_latitude,"lng":self.end_longitude}
+            }
 
 class MapBound(db.Model):
     __tablename__="mapbounds"
