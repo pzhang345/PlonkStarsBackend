@@ -135,6 +135,7 @@ def get_map_info(user):
         "name":map.name,
         "id":map.uuid, 
         "creator":map.creator.to_json(),
+        "can_edit": map.creator_id == user.id or user.is_admin,
         "map_stats":{
             "average_generation_time": stats.total_generation_time/stats.total_loads if stats.total_loads != 0 else 0,
             "average_score": stats.total_score/stats.total_guesses if stats.total_guesses != 0 else 0,
