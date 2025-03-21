@@ -121,8 +121,8 @@ def get_all_maps(user):
             } for map in maps],
         "pages": maps.pages
     }),200
-    
-@map_bp.route("/info",methods=["GET"])
+
+@map_bp.route("/stats",methods=["GET"])
 @login_required
 def get_map_info(user):
     id = request.args.get("id")
@@ -135,7 +135,6 @@ def get_map_info(user):
         "name":map.name,
         "id":map.uuid, 
         "creator":map.creator.to_json(),
-        "can_edit": map.creator_id == user.id or user.is_admin,
         "map_stats":{
             "average_generation_time": stats.total_generation_time/stats.total_loads if stats.total_loads != 0 else 0,
             "average_score": stats.total_score/stats.total_guesses if stats.total_guesses != 0 else 0,
@@ -144,7 +143,6 @@ def get_map_info(user):
             "total_guesses": stats.total_guesses,
             "max_distance": map.max_distance,
         },
-        "bounds":[bounds.bound.to_dict() for bounds in map.map_bounds]
     }
     
     user_stats = UserMapStats.query.filter_by(user_id=user.id,map_id=map.id).first()
@@ -169,6 +167,27 @@ def get_map_info(user):
     
     return jsonify(ret),200
 
+@map_bp.route("/bounds",methods=["GET"])
+@login_required
+def get_map_bounds(user):
+    id = request.args.get("id")
+    if not id:
+        return jsonify({"error":"provided: id"}),400
+    
+    map = GameMap.query.filter_by(uuid=id).first_or_404("Cannot find map")
+    return jsonify([bound.bound.to_dict() for bound in map.map_bounds]),200
+
+@map_bp.route("/edit",methods=["GET"])
+@login_required
+def can_edit_map(user):
+    id = request.args.get("id")
+    if not id:
+        return jsonify({"error":"provided: id"}),400
+    
+    map = GameMap.query.filter_by(uuid=id).first_or_404("Cannot find map")
+    return jsonify({"can_edit": map.creator_id == user.id or user.is_admin}),200
+    
+
 @map_bp.route("/leaderboard",methods=["GET"])
 @login_required
 def get_map_leaderboard(user):
@@ -181,7 +200,6 @@ def get_map_leaderboard(user):
     
     map = GameMap.query.filter_by(uuid=map_id).first_or_404("Cannot find map")
     stats = UserMapStats.query.filter_by(map_id=map.id).order_by(UserMapStats.high_average_score.desc(),UserMapStats.high_round_number.desc(),UserMapStats.high_average_time).paginate(page=page,per_page=per_page)
-    print(stats)
     return jsonify([{
         "user":stat.user.to_json(),
         "average_score":stat.high_average_score,
