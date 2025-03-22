@@ -1,7 +1,8 @@
 from decimal import Decimal
 from flask import Blueprint,request, jsonify
+from sqlalchemy import case
 from api.auth.auth import login_required
-from models import db,GameMap,MapStats,MapBound,Bound, UserMapStats
+from models import Guess, Round, Session, db,GameMap,MapStats,MapBound,Bound, UserMapStats
 from api.map.map import map_add_bound,bound_recalculate
 from utils import coord_at, float_equals
 map_bp = Blueprint("map",__name__)
@@ -164,6 +165,42 @@ def get_map_info(user):
                 "rounds": user_stats.high_round_number,
                 "session": user_stats.high_session.uuid
             }
+    
+    ret["other"] = {}
+    
+    top_guesses_stats = UserMapStats.query.filter_by(map_id=map.id).order_by(UserMapStats.total_guesses).first()
+    
+    if top_guesses_stats:
+        ret["other"]["top_guesses"] = {
+            "user":top_guesses_stats.user.to_json(),
+            "stat":top_guesses_stats.total_guesses
+        }
+    
+    fast_guesser_stats = UserMapStats.query.filter_by(map_id=map.id).order_by(
+        case(
+            (UserMapStats.total_guesses == 0, None),  
+            else_=UserMapStats.total_time / UserMapStats.total_guesses
+        )).first()
+    if fast_guesser_stats:
+        ret["other"]["fast_guesser"] = {
+            "user":fast_guesser_stats.user.to_json(),
+            "stat":fast_guesser_stats.total_time/fast_guesser_stats.total_guesses
+        }
+    
+    best_average_stats = UserMapStats.query.filter_by(map_id=map.id).order_by(
+        case(
+            (UserMapStats.total_guesses == 0, None),  
+            else_=UserMapStats.total_score / UserMapStats.total_guesses
+        ).desc()).first()
+    
+    if best_average_stats:
+        ret["other"]["best_average"] = {
+            "user":best_average_stats.user.to_json(),
+            "stat":best_average_stats.total_score/best_average_stats.total_guesses
+        }
+    
+    number_of_5ks = Guess.query.filter_by(score=5000).join(Round).join(Session).filter(Session.map_id == map.id).count()
+    ret["other"]["5ks"] = number_of_5ks
     
     return jsonify(ret),200
 
