@@ -168,7 +168,7 @@ def get_map_info(user):
     
     ret["other"] = {}
     
-    top_guesses_stats = UserMapStats.query.filter_by(map_id=map.id).order_by(UserMapStats.total_guesses).first()
+    top_guesses_stats = UserMapStats.query.filter_by(map_id=map.id).order_by(UserMapStats.total_guesses.desc()).first()
     
     if top_guesses_stats:
         ret["other"]["top_guesses"] = {
