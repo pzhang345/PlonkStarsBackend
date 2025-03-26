@@ -2,7 +2,7 @@ from decimal import Decimal
 from flask import Blueprint,request, jsonify
 from sqlalchemy import case
 from api.auth.auth import login_required
-from models import Guess, Round, Session, db,GameMap,MapStats,MapBound,Bound, UserMapStats
+from models import Guess, Round, Session, User, db,GameMap,MapStats,MapBound,Bound, UserMapStats
 from api.map.map import map_add_bound,bound_recalculate
 from utils import coord_at, float_equals
 map_bp = Blueprint("map",__name__)
@@ -246,3 +246,42 @@ def get_map_leaderboard(user):
         } for stat in stats],
         "pages":stats.pages
     }),200
+    
+@map_bp.route("/leaderboard/game",methods=["GET"])
+@login_required
+def get_leaderboard_game(user):
+    data = request.args
+    map_id = data.get("id")
+    user = data.get("user")
+    
+    if not map_id or not user:
+        return jsonify({"error":"provided: id and user"}),400
+    
+    map = GameMap.query.filter_by(uuid=map_id).first_or_404("Cannot find map")
+    user = User.query.filter_by(username=user).first_or_404("Cannot find user")
+    session = UserMapStats.query.filter_by(map_id=map.id,user_id=user.id).first_or_404("Cannot find user stats")
+    
+    if session.high_session_id == None:
+        return jsonify({"error":"User has not played the game"}),400
+    
+    rounds = session.high_session.rounds
+    
+    ret = {"user":user.to_json(),"rounds":[]}
+    for round in rounds:
+        guess = Guess.query.filter_by(user_id=user.id,round_id=round.id).first()
+        stat = {
+            "correct": {
+                "lat":round.location.latitude,
+                "lng":round.location.longitude
+            }
+        }
+        if guess:
+            stat["guess"] = {
+                "lat": guess.latitude,
+                "lng": guess.longitude,
+                "distance": guess.distance,
+                "score": guess.score,
+                "time": guess.time
+            }
+        ret["rounds"] += [stat]
+    return jsonify(ret),200
