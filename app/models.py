@@ -44,6 +44,7 @@ class UserMapStats(db.Model):
     total_score = db.Column(db.Integer, nullable=False, default=0)
     total_distance = db.Column(db.Double, nullable=False, default=0)
     total_guesses = db.Column(db.Integer, nullable=False, default=0)
+    NMPZ=db.Column(db.Boolean, nullable=False, default=False)
 
     high_average_score = db.Column(db.Float, nullable=False, default=0)
     high_average_distance = db.Column(db.Double, nullable=False, default=0)
@@ -111,6 +112,7 @@ class Session(db.Model):
     map_id = db.Column(db.Integer, db.ForeignKey("maps.id"), nullable=False)
     time_limit = db.Column(db.Integer, nullable=False, default=-1)
     type = db.Column(db.Enum(GameType), nullable=False, default=GameType.CHALLENGE)
+    NMPZ = db.Column(db.Boolean, nullable=False, default=False)
     
     rounds = db.relationship("Round", backref="session", cascade="all,delete")
     players = db.relationship("Player",backref="session",cascade="all,delete")
@@ -130,6 +132,7 @@ class Round(db.Model):
     session_id = db.Column(db.Integer, db.ForeignKey("sessions.id"), nullable=False)
     round_number = db.Column(db.Integer, nullable=False)
     time_limit = db.Column(db.Integer, nullable=False, default=-1)
+    NMPZ = db.Column(db.Boolean, nullable=False, default=False)
 
     guesses = db.relationship("Guess", backref="round", cascade="all,delete")
 

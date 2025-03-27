@@ -230,13 +230,15 @@ def can_edit_map(user):
 def get_map_leaderboard(user):
     data = request.args
     map_id = data.get("id")
+    NMPZ = data.get("NMPZ") == "true"
     page = request.args.get("page", 1, type=int)
     per_page = request.args.get("per_page", 10, type=int)
     if not map_id:
         return jsonify({"error":"provided: id"}),400
     
     map = GameMap.query.filter_by(uuid=map_id).first_or_404("Cannot find map")
-    stats = UserMapStats.query.filter_by(map_id=map.id).filter(UserMapStats.high_session_id != None).order_by(UserMapStats.high_average_score.desc(),UserMapStats.high_round_number.desc(),UserMapStats.high_average_time).paginate(page=page,per_page=per_page)
+    
+    stats = UserMapStats.query.filter_by(map_id=map.id, NMPZ=NMPZ).filter(UserMapStats.high_session_id != None).order_by(UserMapStats.high_average_score.desc(),UserMapStats.high_round_number.desc(),UserMapStats.high_average_time).paginate(page=page,per_page=per_page)
     return jsonify({"data":[{
             "user":stat.user.to_json(),
             "average_score":stat.high_average_score,

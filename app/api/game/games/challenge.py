@@ -37,7 +37,8 @@ class ChallengeGame(BaseGame):
                     "round":player.current_round,
                     "lat":location.latitude,
                     "lng":location.longitude,
-                    "total":prev_round_stats.total_score if prev_round_stats else 0
+                    "total":prev_round_stats.total_score if prev_round_stats else 0,
+                    "NMPZ": round.NMPZ,
                 }
                 if round.time_limit != -1:
                     ret["time"] = pytz.utc.localize(player.start_time) + timedelta(seconds=round.time_limit)
@@ -68,7 +69,8 @@ class ChallengeGame(BaseGame):
             "round":player.current_round,
             "lat":location.latitude,
             "lng":location.longitude,
-            "total":prev_round_stats.total_score if prev_round_stats else 0
+            "total":prev_round_stats.total_score if prev_round_stats else 0,
+            "NMPZ":round.NMPZ
         }
         if(round.time_limit != -1):
             ret["time"] =  pytz.utc.localize(player.start_time) + timedelta(seconds=round.time_limit)
@@ -221,9 +223,9 @@ class ChallengeGame(BaseGame):
                 current_round["top"] += [guess_to_json(stat.user,round)]
             json["rounds"] += [current_round]
         
-        user_map_stat = UserMapStats.query.filter_by(user_id=user.id,map_id=session.map_id).first()
+        user_map_stat = UserMapStats.query.filter_by(user_id=user.id,map_id=session.map_id, NMPZ=session.NMPZ).first()
         if not user_map_stat:
-            user_map_stat = UserMapStats(user_id=user.id,map_id=session.map_id)
+            user_map_stat = UserMapStats(user_id=user.id,map_id=session.map_id, NMPZ=session.NMPZ)
             db.session.add(user_map_stat)
             db.session.commit()
             
