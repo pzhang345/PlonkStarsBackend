@@ -33,12 +33,10 @@ def guess_to_json(user,round):
     
     if not guess:
         return {
-            "user": user.to_json(),
             "score": 0,
         }
 
     return {
-        "user": user.username,
         "distance":guess.distance,
         "score": guess.score,
         "time": guess.time,

@@ -1,8 +1,9 @@
 from datetime import datetime, timedelta
 import pytz
+from sqlalchemy import desc, func
 
 from api.game.games.basegame import BaseGame
-from models import db,Round,GameType,Player,Guess, RoundStats, UserMapStats
+from models import User, db,Round,GameType,Player,Guess, RoundStats, UserMapStats
 from api.game.gameutils import guess_to_json,create_round,create_guess,create_round_stats
 
 class ChallengeGame(BaseGame):
@@ -121,27 +122,57 @@ class ChallengeGame(BaseGame):
             (Guess.query.filter_by(user_id=user.id,round_id=round.id).count() == 0 and (round.time_limit == -1 or pytz.utc.localize(player.start_time) + timedelta(seconds=round.time_limit) > datetime.now(tz=pytz.utc)))):
             raise Exception("Round not played yet")
 
+        if not RoundStats.query.filter_by(session_id=session.id,round=round_num,user_id=user.id).first():
+            stats = create_round_stats(user,session,round_num=round_num)
+            db.session.add(stats)
+            db.session.commit()
+        
         json = {
             "round_number":round_num,
             "correct":{
                 "lat":round.location.latitude,
                 "lng":round.location.longitude
-            }
+            },
+            "this_user": user.to_json(),
+            "users":[
+                
+            ]
         }
+        stats = RoundStats.query.filter_by(session_id=session.id,round=round_num).subquery()
+        ranked_users = db.session.query(
+            stats.c.user_id,
+            stats.c.total_score,
+            func.rank().over(order_by=(desc(stats.c.total_score),stats.c.total_time)).label("rank")
+        )
         
-        json["this_user"] = guess_to_json(user,round)
-        stats = RoundStats.query.filter_by(user_id=user.id,session_id=session.id,round=round_num).first()
-        if not stats:
-            stats = create_round_stats(user,session,round_num=round_num)
-            db.session.add(stats)
-            db.session.commit()
-        json["this_user"]["total_score"] = stats.total_score
+        this_user = db.session.query(ranked_users.subquery()).filter_by(user_id=user.id).first()
         
-        json["top"] = []
-        top_stats = RoundStats.query.filter_by(session_id=session.id,round=round_num).order_by(RoundStats.total_score.desc(),RoundStats.total_time).paginate(page=page,per_page=per_page,error_out=False)
-        for stats in top_stats.items:
-            json["top"] += [guess_to_json(stats.user,round)]
-            json["top"][-1]["total_score"] = stats.total_score
+        
+        if this_user.rank < (page - 1) * per_page + 1:
+            json["users"] += [{
+                "user":user.to_json(),
+                "total_score":this_user.total_score,
+                "rank":this_user.rank,
+                "guess":guess_to_json(user,round),
+            }]
+        
+        leaderboard = ranked_users.paginate(page=page,per_page=per_page,error_out=False)
+        for stats in leaderboard.items:
+            curr_user = User.query.filter_by(id=stats.user_id).first()
+            json["users"] += [{
+                "user":curr_user.to_json(),
+                "total_score":stats.total_score,
+                "rank":stats.rank,
+                "guess":guess_to_json(curr_user,round),
+            }]
+            
+        if this_user.rank > page * per_page:
+            json["users"] += [{
+                "user":user.to_json(),
+                "total_score":this_user.total_score,
+                "rank":this_user.rank,
+                "guess":guess_to_json(user,round),
+            }]
         
         return json,200
     
