@@ -150,3 +150,6 @@ def bound_recalculate(map):
             map.end_longitude = bound.bound.end_longitude
     map_max_distance(map)
     db.session.commit()
+
+def canEdit(map,user):
+    return map.creator_id == user.id or user.is_admin

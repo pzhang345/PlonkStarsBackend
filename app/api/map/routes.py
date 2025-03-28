@@ -2,7 +2,7 @@ from flask import Blueprint,request, jsonify
 from sqlalchemy import case
 from api.auth.auth import login_required
 from models import db, Guess, Round, Session, User, GameMap, MapStats, MapBound, Bound, UserMapStats
-from api.map.map import map_add_bound,bound_recalculate
+from api.map.map import map_add_bound,bound_recalculate,canEdit
 from utils import coord_at, float_equals
 from api.game.gameutils import guess_to_json
 map_bp = Blueprint("map",__name__)
@@ -42,7 +42,7 @@ def add_bound(user):
     weight = max(1,weight) if weight else max(1,(e_lat-s_lat) * (e_lng-s_lng) * 10000)
     
     map = GameMap.query.filter_by(uuid=data.get("id")).first_or_404("Cannot find map")
-    if map.creator_id != user.id and not user.is_admin:
+    if not canEdit(user,map):
         return jsonify({"error":"Don't have access to the map"}),403
     
     if s_lat == None or s_lng == None or e_lat == None and e_lng == None:
@@ -71,7 +71,7 @@ def remove_bound(user):
         s_lat, s_lng, e_lat, e_lng = data.get("s_lat"),data.get("s_lng"),data.get("e_lat"),data.get("e_lng")
     
     map = GameMap.query.filter_by(uuid=data.get("id")).first_or_404("Cannot find map")
-    if map.creator_id != user.id and not user.is_admin:
+    if not canEdit(user,map):
         return jsonify({"error":"Don't have access to the map"}),403
     
     if s_lat == None or s_lng == None or e_lat == None and e_lng == None or not map_id:
@@ -101,6 +101,19 @@ def remove_bound(user):
     
     return jsonify({"message":"bound removed"}),200
 
+@map_bp.route("/description",methods=["POST"])
+@login_required
+def edit_description(user):
+    data = request.get_json()
+    
+    map = GameMap.query.filter_by(uuid=data.get("id")).first_or_404("Cannot find map")
+    if not canEdit(user,map):
+        return jsonify({"error":"Don't have access to the map"}),403
+    
+    map.description = data.get("description")
+    db.session.commit()
+    return jsonify({"message":"description updated"}),200
+    
 @map_bp.route("/search",methods=["GET"])
 @login_required
 def get_all_maps(user):
@@ -145,6 +158,8 @@ def get_map_info(user):
         },
     }
     
+    if map.description:
+        ret["description"] = map.description
     user_stats = UserMapStats.query.filter_by(user_id=user.id,map_id=map.id).first()
     if user_stats and not user_stats.total_guesses == 0:
         ret["user_stats"] = {
@@ -221,7 +236,7 @@ def can_edit_map(user):
         return jsonify({"error":"provided: id"}),400
     
     map = GameMap.query.filter_by(uuid=id).first_or_404("Cannot find map")
-    return jsonify({"can_edit": map.creator_id == user.id or user.is_admin}),200
+    return jsonify({"can_edit": canEdit(user,map)}),200
     
 
 @map_bp.route("/leaderboard",methods=["GET"])

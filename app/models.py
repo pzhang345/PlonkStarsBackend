@@ -171,6 +171,7 @@ class GameMap(db.Model):
     
     name = db.Column(db.String(150), nullable=False)
     uuid = db.Column(db.String(36), default=lambda: str(uuid.uuid4()), unique=True)
+    description = db.Column(db.String(512))
     creator_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
     
     start_latitude = db.Column(db.Double, nullable=False,default=-1)
