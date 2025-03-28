@@ -254,7 +254,7 @@ def get_leaderboard_game(user):
     data = request.args
     map_id = data.get("id")
     userInput = data.get("user")
-    nmpz = data.get("nmpz") == "true " if data.get("nmpz") else None
+    nmpz = data.get("nmpz") == "true" if data.get("nmpz") else None
     
     if not map_id or not user:
         return jsonify({"error":"provided: id and user"}),400
