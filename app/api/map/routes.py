@@ -253,14 +253,15 @@ def get_map_leaderboard(user):
 def get_leaderboard_game(user):
     data = request.args
     map_id = data.get("id")
-    user = data.get("user")
+    userInput = data.get("user")
     nmpz = data.get("nmpz") == "true " if data.get("nmpz") else None
     
     if not map_id or not user:
         return jsonify({"error":"provided: id and user"}),400
     
     map = GameMap.query.filter_by(uuid=map_id).first_or_404("Cannot find map")
-    user = User.query.filter_by(username=user).first_or_404("Cannot find user")
+    if (userInput):
+        user = User.query.filter_by(username=userInput).first_or_404("Cannot find user")
     session = UserMapStats.query.filter_by(map_id=map.id,user_id=user.id)
     if nmpz != None:
         session = session.filter_by(nmpz=nmpz)
