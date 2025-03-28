@@ -244,7 +244,8 @@ def get_map_leaderboard(user):
             "average_distance":stat.high_average_distance,
             "average_time":stat.high_average_time,
             "rounds":stat.high_round_number,
-        } for stat in stats],
+            "rank": (page-1) * per_page + i + 1
+        } for i,stat in enumerate(stats)],
         "pages":stats.pages
     }),200
     
