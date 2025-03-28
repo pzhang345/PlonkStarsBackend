@@ -151,5 +151,5 @@ def bound_recalculate(map):
     map_max_distance(map)
     db.session.commit()
 
-def canEdit(map,user):
+def can_edit(user,map):
     return map.creator_id == user.id or user.is_admin
