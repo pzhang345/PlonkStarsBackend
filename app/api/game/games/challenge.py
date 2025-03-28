@@ -201,27 +201,60 @@ class ChallengeGame(BaseGame):
         
         top_stats = RoundStats.query.filter_by(session_id=session.id,round=session.max_rounds).order_by(RoundStats.total_score.desc(),RoundStats.total_time).paginate(page=page,per_page=per_page,error_out=False).items
         
-        json = {"stats":{},"rounds":[]}
+        stats = RoundStats.query.filter_by(session_id=session.id,round=session.max_rounds).subquery()
+        ranked_users = db.session.query(
+            stats.c.user_id,
+            stats.c.total_distance,
+            stats.c.total_time,
+            stats.c.total_score,
+            func.rank().over(order_by=(desc(stats.c.total_score),stats.c.total_time)).label("rank")
+        )
         
-        json["stats"]["this_user"] = {"user":user.username,"score":user_stats.total_score,"distance":user_stats.total_distance,"time":user_stats.total_time}
-
-        json["stats"]["top"] = []
-        for stats in top_stats:
-            json["stats"]["top"] += [{"user":stats.user.username,"score":stats.total_score,"distance":stats.total_distance,"time":stats.total_time}]
+        this_user = db.session.query(ranked_users.subquery()).filter_by(user_id=user.id).first()
+        leaderboard = ranked_users.paginate(page=page,per_page=per_page,error_out=False)
+        
+        json = {
+            "this_user":user.to_json(),
+            "users": [],
+            "rounds": []
+        }
         
         for round in rounds:
-            current_round = {
-                "correct":{
-                    "lat":round.location.latitude,
-                    "lng":round.location.longitude
-                },
-                "top":[]
+            json["rounds"] += [{
+                "lat":round.location.latitude,
+                "lng":round.location.longitude,
+            }]
+        
+        if this_user.rank < (page - 1) * per_page + 1:
+            json["users"] = {
+                "user":user.to_json(),
+                "score":user_stats.total_score,
+                "distance":user_stats.total_distance,
+                "time":user_stats.total_time,
+                "rank":this_user.rank,
+                "rounds":[guess_to_json(user,round) for round in rounds]
             }
-            
-            current_round["this_user"] = guess_to_json(user,round)
-            for stat in top_stats:
-                current_round["top"] += [guess_to_json(stat.user,round)]
-            json["rounds"] += [current_round]
+        
+        for users in leaderboard.items:
+            curr_user = User.query.filter_by(id=users.user_id).first()
+            json["users"] += [{
+                "user":curr_user.to_json(),
+                "score":users.total_score,
+                "distance":users.total_distance,
+                "time":users.total_time,
+                "rank":users.rank,
+                "rounds":[guess_to_json(curr_user,round) for round in rounds]
+            }]
+        
+        if this_user.rank > page * per_page:
+            json["users"] = {
+                "user":user.to_json(),
+                "score":user_stats.total_score,
+                "distance":user_stats.total_distance,
+                "time":user_stats.total_time,
+                "rank":this_user.rank,
+                "rounds":[guess_to_json(user,round) for round in rounds]
+            }
         
         user_map_stat = UserMapStats.query.filter_by(user_id=user.id,map_id=session.map_id, NMPZ=session.NMPZ).first()
         if not user_map_stat:
