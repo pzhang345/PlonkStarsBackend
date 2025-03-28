@@ -1,10 +1,10 @@
-from decimal import Decimal
 from flask import Blueprint,request, jsonify
 from sqlalchemy import case
 from api.auth.auth import login_required
-from models import Guess, Round, Session, User, db,GameMap,MapStats,MapBound,Bound, UserMapStats
+from models import db, Guess, Round, Session, User, GameMap, MapStats, MapBound, Bound, UserMapStats
 from api.map.map import map_add_bound,bound_recalculate
 from utils import coord_at, float_equals
+from api.game.gameutils import guess_to_json
 map_bp = Blueprint("map",__name__)
 
 @map_bp.route("/create",methods=["POST"])
@@ -71,7 +71,6 @@ def remove_bound(user):
         s_lat, s_lng, e_lat, e_lng = data.get("s_lat"),data.get("s_lng"),data.get("e_lat"),data.get("e_lng")
     
     map = GameMap.query.filter_by(uuid=data.get("id")).first_or_404("Cannot find map")
-    user_stats = UserMapStats.query.filter_by(user_id=user.id,map_id=map.id).first()
     if map.creator_id != user.id and not user.is_admin:
         return jsonify({"error":"Don't have access to the map"}),403
     
@@ -230,7 +229,7 @@ def can_edit_map(user):
 def get_map_leaderboard(user):
     data = request.args
     map_id = data.get("id")
-    NMPZ = data.get("NMPZ") == "true"
+    nmpz = data.get("nmpz") == "true"
     page = request.args.get("page", 1, type=int)
     per_page = request.args.get("per_page", 10, type=int)
     if not map_id:
@@ -238,7 +237,7 @@ def get_map_leaderboard(user):
     
     map = GameMap.query.filter_by(uuid=map_id).first_or_404("Cannot find map")
     
-    stats = UserMapStats.query.filter_by(map_id=map.id, NMPZ=NMPZ).filter(UserMapStats.high_session_id != None).order_by(UserMapStats.high_average_score.desc(),UserMapStats.high_round_number.desc(),UserMapStats.high_average_time).paginate(page=page,per_page=per_page)
+    stats = UserMapStats.query.filter_by(map_id=map.id, nmpz=nmpz).filter(UserMapStats.high_session_id != None).order_by(UserMapStats.high_average_score.desc(),UserMapStats.high_round_number.desc(),UserMapStats.high_average_time).paginate(page=page,per_page=per_page)
     return jsonify({"data":[{
             "user":stat.user.to_json(),
             "average_score":stat.high_average_score,
@@ -255,35 +254,30 @@ def get_leaderboard_game(user):
     data = request.args
     map_id = data.get("id")
     user = data.get("user")
+    nmpz = data.get("nmpz") == "true " if data.get("nmpz") else None
     
     if not map_id or not user:
         return jsonify({"error":"provided: id and user"}),400
     
     map = GameMap.query.filter_by(uuid=map_id).first_or_404("Cannot find map")
     user = User.query.filter_by(username=user).first_or_404("Cannot find user")
-    session = UserMapStats.query.filter_by(map_id=map.id,user_id=user.id).first_or_404("Cannot find user stats")
-    
+    session = UserMapStats.query.filter_by(map_id=map.id,user_id=user.id)
+    if nmpz != None:
+        session = session.filter_by(nmpz=nmpz)
+
+    session = session.order_by(UserMapStats.high_average_score.desc(),UserMapStats.high_round_number.desc(),UserMapStats.high_average_time).first_or_404("Cannot find user stats")
     if session.high_session_id == None:
         return jsonify({"error":"User has not played the game"}),400
     
     rounds = session.high_session.rounds
     
-    ret = {"user":user.to_json(),"rounds":[]}
-    for round in rounds:
-        guess = Guess.query.filter_by(user_id=user.id,round_id=round.id).first()
-        stat = {
-            "correct": {
-                "lat":round.location.latitude,
-                "lng":round.location.longitude
-            }
-        }
-        if guess:
-            stat["guess"] = {
-                "lat": guess.latitude,
-                "lng": guess.longitude,
-                "distance": guess.distance,
-                "score": guess.score,
-                "time": guess.time
-            }
-        ret["rounds"] += [stat]
+    ret = {
+        "user":user.to_json(),
+        "rounds":[{"lat":round.location.latitude,"lng":round.location.longitude} for round in rounds],
+        "guesses":[guess_to_json(user,round) for round in rounds],
+        "score":session.high_average_score * session.high_round_number,
+        "distance":session.high_average_distance * session.high_round_number,
+        "time":session.high_average_time * session.high_round_number,
+    }
+
     return jsonify(ret),200

@@ -8,7 +8,7 @@ class BaseGame(ABC):
         map_data = data.get("map")
         time_limit = data.get("time") if data.get("time") else -1
         num_rounds = data.get("rounds") if data.get("rounds") else 5
-        NMPZ = data.get("NMPZ") if data.get("NMPZ") else False
+        nmpz = data.get("nmpz") if data.get("nmpz") else False
 
         if num_rounds <= 0 and num_rounds != -1:
             raise Exception("Invalid number of rounds")
@@ -20,7 +20,7 @@ class BaseGame(ABC):
         if not map:
             raise Exception("Map not found")
             
-        session = Session(host_id=user.id,map_id=map.id,time_limit=time_limit,max_rounds=num_rounds,type=type, NMPZ=NMPZ)
+        session = Session(host_id=user.id,map_id=map.id,time_limit=time_limit,max_rounds=num_rounds,type=type, nmpz=nmpz)
         return {"session":session},200,session
 
     def join(self,data,user,session):

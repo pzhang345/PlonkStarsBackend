@@ -69,7 +69,7 @@ def create_round(session,time_limit):
         session_id=session.id,
         round_number=session.current_round + 1,
         time_limit=time_limit,
-        NMPZ=session.NMPZ
+        nmpz=session.nmpz
     )
     session.current_round += 1
     db.session.add(round)
@@ -135,9 +135,9 @@ def create_round_stats(user,session,round_num = None,guess=None):
             total_distance=prev_round_stats.total_distance + guess.distance
         )
     
-    user_stat = UserMapStats.query.filter_by(user_id=user.id,map_id=session.map_id, NMPZ=session.NMPZ).first()
+    user_stat = UserMapStats.query.filter_by(user_id=user.id,map_id=session.map_id, nmpz=session.nmpz).first()
     if not user_stat:
-        user_stat = UserMapStats(user_id=user.id,map_id=session.map_id, NMPZ=session.NMPZ)
+        user_stat = UserMapStats(user_id=user.id,map_id=session.map_id, nmpz=session.nmpz)
         db.session.add(user_stat)
         db.session.flush()
     
