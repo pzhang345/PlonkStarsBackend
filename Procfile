@@ -1,0 +1,1 @@
+web: cd app && flask db upgrade && gunicorn app:app
