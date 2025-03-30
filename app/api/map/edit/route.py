@@ -1,7 +1,7 @@
 from flask import Blueprint,request, jsonify
 
 from api.auth.auth import login_required
-from api.map.edit.mapedit import bound_recalculate, can_edit, map_add_bound, get_bound
+from api.map.edit.mapedit import bound_recalculate, can_edit, map_add_bound, get_bound, map_remove_bound
 from models import db, Bound, MapBound, MapStats, GameMap
 from utils import coord_at, float_equals
 
@@ -77,7 +77,7 @@ def add_bounds(user):
                 if res[1] == 200:
                     bounds.append(res[0]["bound"])
             except Exception as e:
-                print(e)
+                pass
     except Exception as e:
         return jsonify({"error":str(e)}),400
     return jsonify({"added": bounds}),200
@@ -86,47 +86,44 @@ def add_bounds(user):
 @login_required
 def remove_bound(user):
     data = request.get_json()
-    map_id = data.get("id")
-    if data.get("start") and data.get("end"):
-        if "lat" in data.get("start"):
-            s_lat,s_lng = data.get("start").get("lat"),data.get("start").get("lng")
-            e_lat,e_lng = data.get("end").get("lat"),data.get("end").get("lng")
-        else:
-            s_lat,s_lng = data.get("start")
-            e_lat,e_lng = data.get("end")
-    else:
-        s_lat, s_lng, e_lat, e_lng = data.get("s_lat"),data.get("s_lng"),data.get("e_lat"),data.get("e_lng")
+    try:
+        (s_lat,s_lng),(e_lat,e_lng) = get_bound(data)
+    except Exception as e:
+        print(e)
+        return jsonify({"error":str(e)}),400
     
     map = GameMap.query.filter_by(uuid=data.get("id")).first_or_404("Cannot find map")
     if not can_edit(user,map):
         return jsonify({"error":"Don't have access to the map"}),403
     
-    if s_lat == None or s_lng == None or e_lat == None and e_lng == None or not map_id:
-        return jsonify({"error":"please provided these arguments: s_lat, s_lng, e_lat and e_lng"}),400
+    try:
+        ret = map_remove_bound(map,s_lat,s_lng,e_lat,e_lng)
+        return jsonify(ret[0]),ret[1]
+    except Exception as e:
+        print(e)
+        return jsonify({"error":str(e)}),400
+
+@map_edit_bp.route("bound/remove/all",methods=["DELETE"])
+@login_required
+def remove_bounds(user):
+    data = request.get_json()
+    map = GameMap.query.filter_by(uuid=data.get("id")).first_or_404("Cannot find map")
+    if not can_edit(user,map):
+        return jsonify({"error":"Don't have access to the map"}),403
     
-    bound = Bound.query.filter(
-        coord_at(Bound.start_latitude,s_lat),
-        coord_at(Bound.start_longitude,s_lng),
-        coord_at(Bound.end_latitude,e_lat),
-        coord_at(Bound.end_longitude,e_lng)
-    ).first()
-    if not bound:
-        return {"error":"Cannot find bound"},404
+    ret = []
+    try:
+        for bound in data.get("bounds"):
+            try:
+                (s_lat,s_lng),(e_lat,e_lng) = get_bound(bound)
+                bound = map_remove_bound(map,s_lat,s_lng,e_lat,e_lng)[0]
+                ret += [bound["remove"]]
+            except Exception as e:
+                pass
+    except Exception as e:
+        return jsonify({"error":str(e)}),400
     
-    mapbound = MapBound.query.filter_by(bound_id=bound.id,map_id=map.id).first()
-    if not mapbound:
-        return {"error":"Cannot find map bound"},404
-    
-    weight = mapbound.weight
-    map.total_weight -= weight
-    
-    db.session.delete(mapbound)
-    db.session.flush()
-    if float_equals(bound.start_latitude,map.start_latitude) or float_equals(bound.start_longitude,map.start_longitude) or float_equals(bound.end_latitude,map.end_latitude) or float_equals(bound.end_longitude,map.end_longitude):
-        bound_recalculate(map)
-    db.session.commit()
-    
-    return jsonify({"message":"bound removed"}),200
+    return jsonify({"remove":ret}),200
 
 @map_edit_bp.route("/description",methods=["POST"])
 @login_required

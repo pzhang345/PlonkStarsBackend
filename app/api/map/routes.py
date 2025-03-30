@@ -121,7 +121,7 @@ def get_map_bounds(user):
         return jsonify({"error":"provided: id"}),400
     
     map = GameMap.query.filter_by(uuid=id).first_or_404("Cannot find map")
-    return jsonify([bound.bound.to_dict() for bound in map.map_bounds]),200
+    return jsonify([bound.bound.to_json() for bound in map.map_bounds]),200
 
 @map_bp.route("/leaderboard",methods=["GET"])
 @login_required

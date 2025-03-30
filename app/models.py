@@ -72,7 +72,7 @@ class Guess(db.Model):
     def to_json(self):
         return {
             "id": self.id,
-            "user": self.user.to_dict(),
+            "user": self.user.to_json(),
             "session_id": self.round.session_id,
             "round_number": self.round.round_number,
             "latitude": self.latitude,
@@ -219,7 +219,7 @@ class Bound(db.Model):
     def __str__(self):
         return f"({self.start_latitude},{self.start_longitude})-({self.end_latitude},{self.end_longitude})"
     
-    def to_dict(self):
+    def to_json(self):
         if self.start_latitude == self.end_latitude and self.start_longitude == self.end_longitude:
             return {
                 "lat":self.start_latitude,

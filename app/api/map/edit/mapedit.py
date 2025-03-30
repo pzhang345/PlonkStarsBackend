@@ -51,7 +51,6 @@ def get_bound(data):
     return (s_lat,s_lng),(e_lat,e_lng)
 
 def map_add_bound(map,s_lat,s_lng,e_lat,e_lng,weight): 
-   
     bound = Bound.query.filter(
         coord_at(Bound.start_latitude,s_lat),
         coord_at(Bound.start_longitude,s_lng),
@@ -126,9 +125,31 @@ def map_add_bound(map,s_lat,s_lng,e_lat,e_lng,weight):
     
     db.session.add(conn)
     db.session.commit()
-    return {"message":"Bound added","bound":bound.to_dict()},200
+    return {"message":"Bound added","bound":bound.to_json()},200
 
-
+def map_remove_bound(map,s_lat,s_lng,e_lat,e_lng):
+    bound = Bound.query.filter(
+        coord_at(Bound.start_latitude,s_lat),
+        coord_at(Bound.start_longitude,s_lng),
+        coord_at(Bound.end_latitude,e_lat),
+        coord_at(Bound.end_longitude,e_lng)
+    ).first()
+    if not bound:
+        raise Exception("Cannot find bound")
+    
+    mapbound = MapBound.query.filter_by(bound_id=bound.id,map_id=map.id).first()
+    if not mapbound:
+        raise Exception("Cannot find map bound")
+    
+    weight = mapbound.weight
+    map.total_weight -= weight
+    
+    db.session.delete(mapbound)
+    db.session.flush()
+    if float_equals(bound.start_latitude,map.start_latitude) or float_equals(bound.start_longitude,map.start_longitude) or float_equals(bound.end_latitude,map.end_latitude) or float_equals(bound.end_longitude,map.end_longitude):
+        bound_recalculate(map)
+    db.session.commit()
+    return {"remove":bound.to_json()},200
 
 def bound_recalculate(map):
     bounds = MapBound.query.filter_by(map_id=map.id)
