@@ -14,8 +14,8 @@ class User(db.Model):
     __tablename__ = "users"
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    username = db.Column(db.String(150), unique=True, nullable=False)
-    password = db.Column(db.String(150), nullable=False)
+    username = db.Column(db.String(50), unique=True, nullable=False)
+    password = db.Column(db.String(70), nullable=False)
     is_admin = db.Column(db.Boolean, nullable=False, default=False)
 
     guess = db.relationship("Guess", backref="user", cascade="all,delete")
@@ -168,8 +168,7 @@ class RoundStats(db.Model):
 class GameMap(db.Model):
     __tablename__="maps"
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    
-    name = db.Column(db.String(150), nullable=False)
+    name = db.Column(db.String(50), nullable=False)
     uuid = db.Column(db.String(36), default=lambda: str(uuid.uuid4()), unique=True)
     description = db.Column(db.String(512))
     creator_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
