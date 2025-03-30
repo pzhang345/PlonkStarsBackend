@@ -44,7 +44,10 @@ def get_random_bounds(map):
 def generate_location(map):    
     for _ in range(10):
         bound = get_random_bounds(map)
-        gen = asyncio.run(check_multiple_street_views(bound))
+        if (bound.start_latitude == bound.end_latitude and bound.start_longitude == bound.end_longitude):
+            gen = asyncio.run(check_multiple_street_views(bound,1))
+        else:
+            gen = asyncio.run(check_multiple_street_views(bound))
         if gen["status"] == "OK":
             break
     
