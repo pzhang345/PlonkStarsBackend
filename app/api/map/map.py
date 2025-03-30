@@ -1,7 +1,7 @@
 import math
 
 def haversine(lat1, lng1, lat2, lng2):
-    # Convert latitude and lnggitude from degrees to radians
+    # Convert latitude and longitude from degrees to radians
     lat1 = math.radians(lat1)
     lng1 = math.radians(lng1)
     lat2 = math.radians(lat2)

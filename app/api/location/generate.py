@@ -1,8 +1,5 @@
-
-from decimal import Decimal
-from flask import jsonify
-from concurrent.futures import ThreadPoolExecutor
-import requests
+import aiohttp
+import asyncio
 import random
 from config import Config
 from models import db,SVLocation, MapBound
@@ -12,28 +9,27 @@ from utils import coord_at
 import math
 
 GOOGLE_MAPS_API_KEY = Config.GOOGLE_MAPS_API_KEY
-session = requests.Session()
-session.get("https://maps.googleapis.com/maps/api/streetview/metadata")
 
 def randomize(bound):
     lat = random.uniform(bound.start_latitude,bound.end_latitude)
     lng = random.uniform(bound.start_longitude,bound.end_longitude)
     return (lat,lng)
     
-def call_api(lat,lng):
-    req = session.get(f"https://maps.googleapis.com/maps/api/streetview/metadata?location={lat},{lng}&key={GOOGLE_MAPS_API_KEY}")
-    return req.json()
+async def call_api(session,bound):
+    lat,lng = randomize(bound)
+    async with session.get(f"https://maps.googleapis.com/maps/api/streetview/metadata?location={lat},{lng}&key={GOOGLE_MAPS_API_KEY}") as response:
+        return await response.json()
 
-def check_multiple_street_views(bound,num_checks=10,looptime=10):
-    for i in range(looptime):
-        with ThreadPoolExecutor() as executor:
-            results = list(executor.map(lambda loc: call_api(loc[0], loc[1]), [randomize(bound) for _ in range(num_checks)]))
-        
+async def check_multiple_street_views(bound,num_checks=100):
+    async with aiohttp.ClientSession() as session:
+        tasks = [call_api(session,bound) for _ in range(num_checks)]
+        results = await asyncio.gather(*tasks)
+    
         for d in results:
             if d["status"] == "OK":
                 return {"lat":d["location"]["lat"],"lng":d["location"]["lng"],"status":"OK"}
 
-    return {"status":"None"}
+        return {"status":"None"}
 
 def get_random_bounds(map):
     num = random.uniform(0,map.total_weight)
@@ -48,7 +44,7 @@ def get_random_bounds(map):
 def generate_location(map):    
     for _ in range(10):
         bound = get_random_bounds(map)
-        gen = check_multiple_street_views(bound)
+        gen = asyncio.run(check_multiple_street_views(bound))
         if gen["status"] == "OK":
             break
     
