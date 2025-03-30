@@ -30,8 +30,28 @@ def map_max_distance(map):
             max_dist = max(max_dist, dist)
     
     map.max_distance = max(max_dist,1)
+
+def get_bound(data):
+    if data.get("start") and data.get("end"):
+        if "lat" in data.get("start"):
+            s_lat,s_lng = data.get("start").get("lat"),data.get("start").get("lng")
+            e_lat,e_lng = data.get("end").get("lat"),data.get("end").get("lng")
+        else:
+            s_lat,s_lng = data.get("start")
+            e_lat,e_lng = data.get("end")
+    else:
+        s_lat, s_lng, e_lat, e_lng = data.get("s_lat"),data.get("s_lng"),data.get("e_lat"),data.get("e_lng")
+        
+    if s_lat == None or s_lng == None or e_lat == None or e_lng == None:
+        raise Exception("please provided these arguments: s_lat, s_lng, e_lat and e_lng")
     
-def map_add_bound(map,s_lat,s_lng,e_lat,e_lng,weight):    
+    if not (-90 <= s_lat <= e_lat <= 90 and -180 <= s_lng <= e_lng <= 180):
+        raise Exception("invalid input")
+    
+    return (s_lat,s_lng),(e_lat,e_lng)
+
+def map_add_bound(map,s_lat,s_lng,e_lat,e_lng,weight): 
+   
     bound = Bound.query.filter(
         coord_at(Bound.start_latitude,s_lat),
         coord_at(Bound.start_longitude,s_lng),
@@ -107,6 +127,8 @@ def map_add_bound(map,s_lat,s_lng,e_lat,e_lng,weight):
     db.session.add(conn)
     db.session.commit()
     return {"message":"Bound added","bound":bound.to_dict()},200
+
+
 
 def bound_recalculate(map):
     bounds = MapBound.query.filter_by(map_id=map.id)

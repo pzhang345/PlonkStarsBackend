@@ -1,7 +1,7 @@
 from flask import Blueprint,request, jsonify
 
 from api.auth.auth import login_required
-from api.map.edit.mapedit import bound_recalculate, can_edit, map_add_bound
+from api.map.edit.mapedit import bound_recalculate, can_edit, map_add_bound, get_bound
 from models import db, Bound, MapBound, MapStats, GameMap
 from utils import coord_at, float_equals
 
@@ -38,15 +38,11 @@ def create_map(user):
 @login_required
 def add_bound(user):
     data = request.get_json()
-    if data.get("start") and data.get("end"):
-        if "lat" in data.get("start"):
-            s_lat,s_lng = data.get("start").get("lat"),data.get("start").get("lng")
-            e_lat,e_lng = data.get("end").get("lat"),data.get("end").get("lng")
-        else:
-            s_lat,s_lng = data.get("start")
-            e_lat,e_lng = data.get("end")
-    else:
-        s_lat, s_lng, e_lat, e_lng = data.get("s_lat"),data.get("s_lng"),data.get("e_lat"),data.get("e_lng")
+    try:
+        (s_lat,s_lng),(e_lat,e_lng) = get_bound(data)
+    except Exception as e:
+        print(e)
+        return jsonify({"error":str(e)}),400
     
     weight = data.get("weight")
     weight = max(1,weight) if weight else max(1,(e_lat-s_lat) * (e_lng-s_lng) * 10000)
@@ -55,15 +51,36 @@ def add_bound(user):
     if not can_edit(user,map):
         return jsonify({"error":"Don't have access to the map"}),403
     
-    if s_lat == None or s_lng == None or e_lat == None and e_lng == None:
-        return jsonify({"error":"please provided these arguments: s_lat, s_lng, e_lat and e_lng"}),400
-    
-    if not (-90 <= s_lat <= e_lat <= 90 and -180 <= s_lng <= e_lng <= 180):
-        return jsonify({"error":"invalid input"}),400
-    
     res = map_add_bound(map,s_lat,s_lng,e_lat,e_lng,weight)
     
     return jsonify(res[0]),res[1]
+
+@map_edit_bp.route("bound/add/all",methods=["POST"])
+@login_required
+def add_bounds(user):
+    data = request.get_json()
+    map = GameMap.query.filter_by(uuid=data.get("id")).first_or_404("Cannot find map")
+    if not can_edit(user,map):
+        return jsonify({"error":"Don't have access to the map"}),403
+    
+    if not data.get("bounds"):
+        return jsonify({"error":"please provided these arguments:bounds"}),400
+    bounds = []
+    try:
+        for bound in data.get("bounds"):
+            try:
+                (s_lat,s_lng),(e_lat,e_lng) = get_bound(bound)
+                weight = data.get("weight")
+                weight = max(1,weight) if weight else max(1,(e_lat-s_lat) * (e_lng-s_lng) * 10000)
+                
+                res = map_add_bound(map,s_lat,s_lng,e_lat,e_lng,weight)
+                if res[1] == 200:
+                    bounds.append(res[0]["bound"])
+            except Exception as e:
+                print(e)
+    except Exception as e:
+        return jsonify({"error":str(e)}),400
+    return jsonify({"added": bounds}),200
 
 @map_edit_bp.route("bound/remove",methods=["DELETE"])
 @login_required
