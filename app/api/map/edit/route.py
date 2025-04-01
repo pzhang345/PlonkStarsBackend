@@ -140,7 +140,7 @@ def edit_description(user):
 
 @map_edit_bp.route("/name",methods=["POST"])
 @login_required
-def edit_description(user):
+def edit_name(user):
     data = request.get_json()
     
     map = GameMap.query.filter_by(uuid=data.get("id")).first_or_404("Cannot find map")
