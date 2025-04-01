@@ -137,3 +137,16 @@ def edit_description(user):
     map.description = data.get("description")
     db.session.commit()
     return jsonify({"message":"description updated"}),200
+
+@map_edit_bp.route("/name",methods=["POST"])
+@login_required
+def edit_description(user):
+    data = request.get_json()
+    
+    map = GameMap.query.filter_by(uuid=data.get("id")).first_or_404("Cannot find map")
+    if not can_edit(user,map):
+        return jsonify({"error":"Don't have access to the map"}),403
+    
+    map.name = data.get("name")
+    db.session.commit()
+    return jsonify({"message":"name updated"}),200
