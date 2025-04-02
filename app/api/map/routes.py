@@ -55,7 +55,7 @@ def get_map_info(user):
     if map.description:
         ret["description"] = map.description
     
-    user_stats = UserMapStats.query.filter_by(user_id=user.id,map_id=map.id).first()
+    user_stats = UserMapStats.query.filter_by(user_id=user.id,map_id=map.id).order_by(UserMapStats.high_average_score.desc()).first()
     if user_stats and not user_stats.total_guesses == 0:
         ret["user_stats"] = {
             "average":{
