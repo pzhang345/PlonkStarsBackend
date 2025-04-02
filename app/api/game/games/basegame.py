@@ -2,10 +2,9 @@ import math
 from abc import ABC,abstractmethod
 
 from models import db,Round,GameMap,Session,Player
-from api.game.gameutils import find_map
 class BaseGame(ABC):
     def create(self,data,type,user):
-        map_data = data.get("map")
+        map_id = data.get("map_id")
         time_limit = data.get("time") if data.get("time") else -1
         num_rounds = data.get("rounds") if data.get("rounds") else 5
         nmpz = data.get("nmpz") if data.get("nmpz") else False
@@ -13,12 +12,18 @@ class BaseGame(ABC):
         if num_rounds <= 0 and num_rounds != -1:
             raise Exception("Invalid number of rounds")
         
+        if not map_id:
+            raise Exception("Map not found")
+        
         if time_limit <= 0 and time_limit != -1:
             raise Exception("Invalid time limit")
         
-        map = find_map(map_data) if map_data else GameMap.query.first()
+        map = GameMap.query.filter_by(uuid=map_id).first()
         if not map:
             raise Exception("Map not found")
+        
+        if map.total_weight <= 0:
+            raise Exception("Map has no locations")
             
         session = Session(host_id=user.id,map_id=map.id,time_limit=time_limit,max_rounds=num_rounds,type=type, nmpz=nmpz)
         return {"session":session},200,session
