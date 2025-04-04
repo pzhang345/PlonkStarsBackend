@@ -32,23 +32,36 @@ def map_max_distance(map):
     map.max_distance = max(max_dist,1)
 
 def get_bound(data):
-    if data.get("start") and data.get("end"):
-        if "lat" in data.get("start"):
-            s_lat,s_lng = data.get("start").get("lat"),data.get("start").get("lng")
-            e_lat,e_lng = data.get("end").get("lat"),data.get("end").get("lng")
-        else:
-            s_lat,s_lng = data.get("start")
-            e_lat,e_lng = data.get("end")
-    else:
+    if "start" in data and "end" in data:
+        s_lat,s_lng = get_point(data.get("start"))
+        e_lat,e_lng = get_point(data.get("end"))
+    elif "s_lat" in data and "s_lng" in data and "e_lat" in data and "e_lng" in data:
         s_lat, s_lng, e_lat, e_lng = data.get("s_lat"),data.get("s_lng"),data.get("e_lat"),data.get("e_lng")
-        
-    if s_lat == None or s_lng == None or e_lat == None or e_lng == None:
-        raise Exception("please provided these arguments: s_lat, s_lng, e_lat and e_lng")
+    else:
+        s_lat,s_lng = get_point(data)
+        e_lat,e_lng = get_point(data)
     
-    if not (-90 <= s_lat <= e_lat <= 90 and -180 <= s_lng <= e_lng <= 180):
+    if s_lat == None or s_lng == None or e_lat == None or e_lng == None:
+        raise Exception("please provided these arguments: start and end")
+    
+    if not (s_lat <= e_lat and s_lng <= e_lng):
         raise Exception("invalid input")
     
     return (s_lat,s_lng),(e_lat,e_lng)
+
+def get_point(data):
+    if "lat" in data and "lng" in data:
+        lat,lng = data.get("lat"),data.get("lng")
+    else:
+        lat,lng = data
+        
+    if lat == None or lng == None:
+        raise Exception("please provided these arguments: lat and lng")
+    
+    if not (-90 <= lat <= 90 and -180 <= lng <= 180):
+        raise Exception("invalid input")
+    
+    return lat,lng
 
 def map_add_bound(map,s_lat,s_lng,e_lat,e_lng,weight): 
     bound = Bound.query.filter(
