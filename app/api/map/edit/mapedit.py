@@ -151,6 +151,25 @@ def map_remove_bound(map,s_lat,s_lng,e_lat,e_lng):
     db.session.commit()
     return {"remove":bound.to_json()},200
 
+def reweight_bound(map,s_lat,s_lng,e_lat,e_lng,weight):
+    bound = Bound.query.filter(
+        coord_at(Bound.start_latitude,s_lat),
+        coord_at(Bound.start_longitude,s_lng),
+        coord_at(Bound.end_latitude,e_lat),
+        coord_at(Bound.end_longitude,e_lng)
+    ).first()
+    if not bound:
+        return {"error":"Cannot find bound"},400
+    
+    mapbound = MapBound.query.filter_by(bound_id=bound.id,map_id=map.id).first()
+    if not mapbound:
+        return {"error":"Cannot find map bound"},400
+    
+    map.total_weight += weight - mapbound.weight
+    mapbound.weight = weight
+    db.session.commit()
+    return {"bound":bound.to_json(),"weight":weight},200
+
 def bound_recalculate(map):
     bounds = MapBound.query.filter_by(map_id=map.id)
     if bounds.count() == 0:

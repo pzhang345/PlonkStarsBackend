@@ -1,7 +1,7 @@
 from flask import Blueprint,request, jsonify
 
 from api.auth.auth import login_required
-from api.map.edit.mapedit import bound_recalculate, can_edit, map_add_bound, get_bound, map_remove_bound
+from api.map.edit.mapedit import bound_recalculate, can_edit, map_add_bound, get_bound, map_remove_bound, bound_recalculate
 from models import db, Bound, MapBound, MapStats, GameMap
 from utils import coord_at, float_equals
 
@@ -125,6 +125,23 @@ def remove_bounds(user):
     
     return jsonify({"remove":ret}),200
 
+@map_edit_bp.route("bound/reweight",methods=["POST"])
+@login_required
+def reweight_bound(user):
+    data = request.get_json()
+    
+    map = GameMap.query.filter_by(uuid=data.get("id")).first_or_404("Cannot find map")
+    if not can_edit(user,map):
+        return jsonify({"error":"Don't have access to the map"}),403
+    
+    (s_lat,s_lng),(e_lat,e_lng) = get_bound(data)
+    weight = data.get("weight")
+    if not weight:
+        return jsonify({"error":"please provided these arguments: weight"}),400
+    
+    ret = bound_recalculate(map,s_lat,s_lng,e_lat,e_lng,weight)
+    return jsonify(ret[0]),ret[1]
+    
 @map_edit_bp.route("/description",methods=["POST"])
 @login_required
 def edit_description(user):
