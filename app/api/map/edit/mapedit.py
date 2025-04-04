@@ -91,7 +91,6 @@ def map_add_bound(map,s_lat,s_lng,e_lat,e_lng,weight):
         
             add_coord(status["lat"],status["lng"])
             
-            print(s_lat,s_lng,e_lat,e_lng)
             if float_equals(s_lat,e_lat) and float_equals(s_lng,e_lng) and (s_lng != status["lng"] or s_lat != status["lat"]):
                 return map_add_bound(map,status["lat"],status["lng"],status["lat"],status["lng"],weight)
         
@@ -138,7 +137,7 @@ def map_add_bound(map,s_lat,s_lng,e_lat,e_lng,weight):
     
     db.session.add(conn)
     db.session.commit()
-    return {"message":"Bound added","bound":bound.to_json()},200
+    return {**bound.to_json(),"id":conn.id},200
 
 def map_remove_bound(map,s_lat,s_lng,e_lat,e_lng):
     bound = Bound.query.filter(
@@ -162,7 +161,7 @@ def map_remove_bound(map,s_lat,s_lng,e_lat,e_lng):
     if float_equals(bound.start_latitude,map.start_latitude) or float_equals(bound.start_longitude,map.start_longitude) or float_equals(bound.end_latitude,map.end_latitude) or float_equals(bound.end_longitude,map.end_longitude):
         bound_recalculate(map)
     db.session.commit()
-    return {"remove":bound.to_json()},200
+    return {"id":mapbound.id},200
 
 def reweight_bound(map,s_lat,s_lng,e_lat,e_lng,weight):
     bound = Bound.query.filter(
@@ -181,7 +180,7 @@ def reweight_bound(map,s_lat,s_lng,e_lat,e_lng,weight):
     map.total_weight += weight - mapbound.weight
     mapbound.weight = weight
     db.session.commit()
-    return {"bound":bound.to_json(),"weight":weight},200
+    return {**bound.to_json(),"weight":weight,"id":mapbound.id},200
 
 def bound_recalculate(map):
     bounds = MapBound.query.filter_by(map_id=map.id)

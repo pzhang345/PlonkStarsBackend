@@ -75,12 +75,12 @@ def add_bounds(user):
                 
                 res = map_add_bound(map,s_lat,s_lng,e_lat,e_lng,weight)
                 if res[1] == 200:
-                    bounds.append(res[0]["bound"])
+                    bounds.append(res[0])
             except Exception as e:
                 pass
     except Exception as e:
         return jsonify({"error":str(e)}),400
-    return jsonify({"added": bounds}),200
+    return jsonify(bounds),200
 
 @map_edit_bp.route("bound/remove",methods=["DELETE"])
 @login_required
@@ -117,13 +117,13 @@ def remove_bounds(user):
             try:
                 (s_lat,s_lng),(e_lat,e_lng) = get_bound(bound)
                 bound = map_remove_bound(map,s_lat,s_lng,e_lat,e_lng)[0]
-                ret += [bound["remove"]]
+                ret += [bound["id"]]
             except Exception as e:
                 pass
     except Exception as e:
         return jsonify({"error":str(e)}),400
     
-    return jsonify({"remove":ret}),200
+    return jsonify(ret),200
 
 @map_edit_bp.route("bound/reweight",methods=["POST"])
 @login_required
