@@ -180,7 +180,7 @@ def reweight_bound(map,s_lat,s_lng,e_lat,e_lng,weight):
     map.total_weight += weight - mapbound.weight
     mapbound.weight = weight
     db.session.commit()
-    return {**bound.to_json(),"weight":weight,"id":mapbound.id},200
+    return {"id":mapbound.id,"weight":weight},200
 
 def bound_recalculate(map):
     bounds = MapBound.query.filter_by(map_id=map.id)
