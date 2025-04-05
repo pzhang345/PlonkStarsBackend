@@ -137,7 +137,7 @@ def map_add_bound(map,s_lat,s_lng,e_lat,e_lng,weight):
     
     db.session.add(conn)
     db.session.commit()
-    return {**bound.to_json(),"id":conn.id},200
+    return {**bound.to_json(),"weight":conn.weight,"id":conn.id},200
 
 def map_remove_bound(map,s_lat,s_lng,e_lat,e_lng):
     bound = Bound.query.filter(
