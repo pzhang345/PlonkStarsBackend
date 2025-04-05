@@ -39,6 +39,16 @@ class ChallengeGame(BaseGame):
                     "lng":location.longitude,
                     "total":prev_round_stats.total_score if prev_round_stats else 0,
                     "nmpz": round.nmpz,
+                    "map_bounds":{
+                        "start":{
+                            "lat":session.map.start_latitude,
+                            "lng":session.map.start_longitude,
+                        },
+                        "end":{
+                            "lat":session.map.end_latitude,
+                            "lng":session.map.end_longitude,
+                        },
+                    },
                 }
                 if round.time_limit != -1:
                     ret["time"] = pytz.utc.localize(player.start_time) + timedelta(seconds=round.time_limit)
@@ -70,7 +80,17 @@ class ChallengeGame(BaseGame):
             "lat":location.latitude,
             "lng":location.longitude,
             "total":prev_round_stats.total_score if prev_round_stats else 0,
-            "nmpz":round.nmpz
+            "nmpz":round.nmpz,
+            "map_bounds":{
+                "start":{
+                    "lat":session.map.start_latitude,
+                    "lng":session.map.start_longitude,
+                },
+                "end":{
+                    "lat":session.map.end_latitude,
+                    "lng":session.map.end_longitude,
+                },
+            },
         }
         if(round.time_limit != -1):
             ret["time"] =  pytz.utc.localize(player.start_time) + timedelta(seconds=round.time_limit)
