@@ -31,7 +31,7 @@ def create_map(user):
     db.session.add(map_stats)
     
     db.session.commit()
-    return jsonify({"map_id":map.uuid}),200
+    return jsonify({"id":map.uuid}),200
 
 
 @map_edit_bp.route("bound/add",methods=["POST"])
