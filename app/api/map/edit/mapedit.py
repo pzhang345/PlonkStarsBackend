@@ -158,6 +158,12 @@ def map_remove_bound(map,s_lat,s_lng,e_lat,e_lng):
     
     db.session.delete(mapbound)
     db.session.flush()
+    
+    bound_usage = MapBound.query.filter_by(bound_id=bound.id).count()
+    if bound_usage == 0:
+        db.session.delete(bound)
+        db.session.flush()
+    
     if float_equals(bound.start_latitude,map.start_latitude) or float_equals(bound.start_longitude,map.start_longitude) or float_equals(bound.end_latitude,map.end_latitude) or float_equals(bound.end_longitude,map.end_longitude):
         bound_recalculate(map)
     db.session.commit()
