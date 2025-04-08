@@ -18,12 +18,12 @@ class User(db.Model):
     password = db.Column(db.String(70), nullable=False)
     is_admin = db.Column(db.Boolean, nullable=False, default=False)
 
-    guess = db.relationship("Guess", backref="user", cascade="all,delete")
-    sessions = db.relationship("Session",backref="host",cascade="all,delete")
-    maps = db.relationship("GameMap",backref="creator",cascade="all,delete")
-    player = db.relationship("Player",backref="user",cascade="all,delete")
-    round_stats = db.relationship("RoundStats",backref="user",cascade="all,delete")
-    user_map_stats = db.relationship("UserMapStats",backref="user",cascade="all,delete")
+    guess = db.relationship("Guess", backref="user", cascade="all,delete", passive_deletes=True)
+    sessions = db.relationship("Session",backref="host",cascade="all,delete", passive_deletes=True)
+    maps = db.relationship("GameMap",backref="creator",cascade="all,delete", passive_deletes=True)
+    player = db.relationship("Player",backref="user",cascade="all,delete", passive_deletes=True)
+    round_stats = db.relationship("RoundStats",backref="user",cascade="all,delete", passive_deletes=True)
+    user_map_stats = db.relationship("UserMapStats",backref="user",cascade="all,delete", passive_deletes=True)
 
 
     def __str__(self):
@@ -38,8 +38,8 @@ class UserMapStats(db.Model):
     __tablename__ = "usermapstats"
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
 
-    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
-    map_id = db.Column(db.Integer, db.ForeignKey("maps.id"), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    map_id = db.Column(db.Integer, db.ForeignKey("maps.id", ondelete="CASCADE"), nullable=False)
     total_time = db.Column(db.Integer, nullable=False, default=0)
     total_score = db.Column(db.Integer, nullable=False, default=0)
     total_distance = db.Column(db.Double, nullable=False, default=0)
@@ -50,14 +50,14 @@ class UserMapStats(db.Model):
     high_average_distance = db.Column(db.Double, nullable=False, default=0)
     high_average_time = db.Column(db.Float, nullable=False, default=0)
     high_round_number = db.Column(db.Integer, nullable=False, default=0)
-    high_session_id = db.Column(db.Integer, db.ForeignKey("sessions.id"))
+    high_session_id = db.Column(db.Integer, db.ForeignKey("sessions.id", ondelete="CASCADE"))
 
 class Guess(db.Model):
     __tablename__ = "guesses"
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
-    round_id = db.Column(db.Integer, db.ForeignKey("rounds.id"), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    round_id = db.Column(db.Integer, db.ForeignKey("rounds.id", ondelete="CASCADE"), nullable=False)
 
     latitude = db.Column(db.Double, nullable=False)
     longitude = db.Column(db.Double, nullable=False)
@@ -92,7 +92,7 @@ class SVLocation(db.Model):
     latitude = db.Column(db.Double, nullable=False)
     longitude = db.Column(db.Double, nullable=False)
 
-    rounds = db.relationship("Round", backref="location", cascade="all,delete")
+    rounds = db.relationship("Round", backref="location", cascade="all,delete", passive_deletes=True)
 
     def __str__(self):
         return f"({self.latitude},{self.longitude})"
@@ -108,16 +108,16 @@ class Session(db.Model):
 
     max_rounds = db.Column(db.Integer, nullable=False, default=-1)
     current_round = db.Column(db.Integer, nullable=False, default=0)
-    host_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
-    map_id = db.Column(db.Integer, db.ForeignKey("maps.id"), nullable=False)
+    host_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    map_id = db.Column(db.Integer, db.ForeignKey("maps.id", ondelete="CASCADE"), nullable=False)
     time_limit = db.Column(db.Integer, nullable=False, default=-1)
     type = db.Column(db.Enum(GameType), nullable=False, default=GameType.CHALLENGE)
     nmpz = db.Column(db.Boolean, nullable=False, default=False)
     
-    rounds = db.relationship("Round", backref="session", cascade="all,delete")
-    players = db.relationship("Player",backref="session",cascade="all,delete")
-    round_tracker = db.relationship("RoundStats",backref="session",cascade="all,delete")
-    high_scores = db.relationship("UserMapStats",backref="high_session",cascade="all,delete")
+    rounds = db.relationship("Round", backref="session", cascade="all,delete", passive_deletes=True)
+    players = db.relationship("Player",backref="session",cascade="all,delete", passive_deletes=True)
+    round_tracker = db.relationship("RoundStats",backref="session",cascade="all,delete", passive_deletes=True)
+    high_scores = db.relationship("UserMapStats",backref="high_session",cascade="all,delete", passive_deletes=True)
     
     def __str__(self):
         return self.uuid
@@ -128,13 +128,13 @@ class Round(db.Model):
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
 
-    location_id = db.Column(db.Integer, db.ForeignKey("svlocations.id"), nullable=False)
-    session_id = db.Column(db.Integer, db.ForeignKey("sessions.id"), nullable=False)
+    location_id = db.Column(db.Integer, db.ForeignKey("svlocations.id", ondelete="CASCADE"), nullable=False)
+    session_id = db.Column(db.Integer, db.ForeignKey("sessions.id", ondelete="CASCADE"), nullable=False)
     round_number = db.Column(db.Integer, nullable=False)
     time_limit = db.Column(db.Integer, nullable=False, default=-1)
     nmpz = db.Column(db.Boolean, nullable=False, default=False)
 
-    guesses = db.relationship("Guess", backref="round", cascade="all,delete")
+    guesses = db.relationship("Guess", backref="round", cascade="all,delete", passive_deletes=True)
 
     def __str__(self):
         return f"{self.round_number}. {self.session.uuid[:4]} {self.location}"
@@ -145,8 +145,8 @@ class Player(db.Model):
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
 
-    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
-    session_id = db.Column(db.Integer,db.ForeignKey("sessions.id"), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    session_id = db.Column(db.Integer,db.ForeignKey("sessions.id", ondelete="CASCADE"), nullable=False)
     current_round = db.Column(db.Integer, nullable=False, default=0)
     start_time = db.Column(db.DateTime, nullable=False,default=datetime.now(tz=pytz.utc))
 
@@ -155,8 +155,8 @@ class RoundStats(db.Model):
     
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     
-    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
-    session_id = db.Column(db.Integer,db.ForeignKey("sessions.id"), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    session_id = db.Column(db.Integer,db.ForeignKey("sessions.id", ondelete="CASCADE"), nullable=False)
     round = db.Column(db.Integer, nullable=False)
     total_time = db.Column(db.Integer, nullable=False, default=0)
     total_score = db.Column(db.Integer, nullable=False, default=0)
@@ -171,7 +171,7 @@ class GameMap(db.Model):
     name = db.Column(db.String(50), nullable=False)
     uuid = db.Column(db.String(36), default=lambda: str(uuid.uuid4()), unique=True)
     description = db.Column(db.String(512))
-    creator_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    creator_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     
     start_latitude = db.Column(db.Double, nullable=False,default=-1)
     start_longitude = db.Column(db.Double, nullable=False,default=-1)
@@ -181,10 +181,10 @@ class GameMap(db.Model):
     total_weight = db.Column(db.Integer, nullable=False, default=0)
     max_distance = db.Column(db.Double, nullable=False,default=-1)
     
-    map_bounds = db.relationship("MapBound", backref="map", cascade="all,delete")
-    sessions = db.relationship("Session", backref="map", cascade="all,delete")
-    stats = db.relationship('MapStats', backref='map', uselist=False)
-    user_map_stats = db.relationship("UserMapStats",backref="map",cascade="all,delete")
+    map_bounds = db.relationship("MapBound", backref="map", cascade="all,delete", passive_deletes=True)
+    sessions = db.relationship("Session", backref="map", cascade="all,delete", passive_deletes=True)
+    stats = db.relationship("MapStats", backref="map", uselist=False, passive_deletes=True)
+    user_map_stats = db.relationship("UserMapStats",backref="map",cascade="all,delete", passive_deletes=True)
     
     def __str__(self):
         return self.name
@@ -194,7 +194,7 @@ class MapStats(db.Model):
     
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     
-    map_id = db.Column(db.Integer, db.ForeignKey("maps.id"), nullable=False)
+    map_id = db.Column(db.Integer, db.ForeignKey("maps.id", ondelete="CASCADE"), nullable=False)
     total_time = db.Column(db.Integer, nullable=False, default=0)
     total_score = db.Column(db.Integer, nullable=False, default=0)
     total_distance = db.Column(db.Double, nullable=False, default=0)
@@ -213,7 +213,7 @@ class Bound(db.Model):
     end_latitude = db.Column(db.Double, nullable=False)
     end_longitude = db.Column(db.Double, nullable=False)
     
-    map_bounds = db.relationship("MapBound", backref="bound", cascade="all,delete")
+    map_bounds = db.relationship("MapBound", backref="bound", cascade="all,delete", passive_deletes=True)
     
     def __str__(self):
         return f"({self.start_latitude},{self.start_longitude})-({self.end_latitude},{self.end_longitude})"
@@ -235,6 +235,6 @@ class MapBound(db.Model):
     
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     
-    bound_id = db.Column(db.Integer, db.ForeignKey("bounds.id"), nullable=False)
-    map_id = db.Column(db.Integer, db.ForeignKey("maps.id"), nullable=False)
+    bound_id = db.Column(db.Integer, db.ForeignKey("bounds.id", ondelete="CASCADE"), nullable=False)
+    map_id = db.Column(db.Integer, db.ForeignKey("maps.id", ondelete="CASCADE"), nullable=False)
     weight = db.Column(db.Integer, nullable=False)

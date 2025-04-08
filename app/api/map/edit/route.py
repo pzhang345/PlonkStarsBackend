@@ -167,3 +167,16 @@ def edit_name(user):
     map.name = data.get("name")
     db.session.commit()
     return jsonify({"message":"name updated"}),200
+
+@map_edit_bp.route("/delete",methods=["DELETE"])
+@login_required
+def delete_map(user):
+    data = request.get_json()
+    
+    map = GameMap.query.filter_by(uuid=data.get("id")).first_or_404("Cannot find map")
+    if not can_edit(user,map):
+        return jsonify({"error":"Don't have access to the map"}),403
+    
+    db.session.delete(map)
+    db.session.commit()
+    return jsonify({"message":"map deleted"}),200
