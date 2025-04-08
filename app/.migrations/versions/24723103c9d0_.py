@@ -24,10 +24,8 @@ def upgrade():
     # Function to handle dropping and creating constraints conditionally for MySQL and Postgres
     def manage_constraints(batch_op, table_name, constraints_to_drop, constraints_to_create):
         for constraint in constraints_to_drop:
-            try:
+            if constraint:
                 batch_op.drop_constraint(constraint, type_='foreignkey')
-            except Exception as e:
-                pass
         for ref_table, ref_columns in constraints_to_create:
             batch_op.create_foreign_key(None, ref_table, ref_columns, ['id'], ondelete='CASCADE')
 
