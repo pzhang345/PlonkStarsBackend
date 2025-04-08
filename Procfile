@@ -1,1 +1,1 @@
-web: cd app && hypercorn app:app --bind 0.0.0.0:$PORT
+web: cd app && flask db upgrade && hypercorn app:app --bind 0.0.0.0:$PORT
