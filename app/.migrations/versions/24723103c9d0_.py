@@ -25,7 +25,7 @@ def upgrade():
     def manage_constraints(batch_op, table_name, constraints_to_drop, constraints_to_create):
         for constraint in constraints_to_drop:
             batch_op.drop_constraint(constraint, type_='foreignkey')
-        for constraint, ref_table, ref_columns in constraints_to_create:
+        for ref_table, ref_columns in constraints_to_create:
             batch_op.create_foreign_key(None, ref_table, ref_columns, ['id'], ondelete='CASCADE')
 
     with op.batch_alter_table('guesses', schema=None) as batch_op:
