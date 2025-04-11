@@ -192,8 +192,11 @@ class GameMap(db.Model):
     def to_json(self):
         return {
             "name":self.name,
-            "id":self.uuid,
+            "id":self.uuid, 
             "creator":self.creator.to_json(),
+            "average_score":self.stats.total_score/self.stats.total_guesses if self.stats.total_guesses != 0 else 0,
+            "average_generation_time": self.stats.total_generation_time/self.stats.total_loads if self.stats.total_loads != 0 else 0,
+            "total_guesses": self.stats.total_guesses,
         }
 
 class MapStats(db.Model):

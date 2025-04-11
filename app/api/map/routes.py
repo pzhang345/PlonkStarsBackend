@@ -18,14 +18,7 @@ def get_all_maps(user):
     maps = query.join(MapStats).order_by(MapStats.total_guesses.desc()).paginate(page=page,per_page=per_page)
     return jsonify(
     {
-        "maps":[{
-                "name":map.name,
-                "id":map.uuid, 
-                "creator":map.creator.to_json(),
-                "average_score":map.stats.total_score/map.stats.total_guesses if map.stats.total_guesses != 0 else 0,
-                "average_generation_time": map.stats.total_generation_time/map.stats.total_loads if map.stats.total_loads != 0 else 0,
-                "total_guesses": map.stats.total_guesses,
-            } for map in maps],
+        "maps":[map.to_json() for map in maps],
         "pages": maps.pages
     }),200
 
