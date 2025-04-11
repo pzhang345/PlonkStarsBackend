@@ -31,7 +31,7 @@ def map_max_distance(map):
     
     map.max_distance = max(max_dist,1)
 
-def get_bound(data):
+def get_new_bound(data):
     if "start" in data and "end" in data:
         s_lat,s_lng = get_point(data.get("start"))
         e_lat,e_lng = get_point(data.get("end"))
@@ -48,6 +48,32 @@ def get_bound(data):
         raise Exception("invalid input")
     
     return (s_lat,s_lng),(e_lat,e_lng)
+
+def get_bound(data,map):
+    if "b_id" in data:
+        mapbound = MapBound.query.filter_by(id=data.get("b_id")).first()
+        if not mapbound:
+            raise Exception("Cannot find map bound")
+        return data.get("b_id")
+    
+    (s_lat,s_lng),(e_lat,e_lng) = get_new_bound(data)
+    
+    bound = Bound.query.filter(
+        coord_at(Bound.start_latitude,s_lat),
+        coord_at(Bound.start_longitude,s_lng),
+        coord_at(Bound.end_latitude,e_lat),
+        coord_at(Bound.end_longitude,e_lng)
+    ).first()
+    
+    if not bound:
+        raise Exception("Cannot find bound")
+    
+    mapbound = MapBound.query.filter_by(bound_id=bound.id,map_id=map.id).first()
+    if not mapbound:
+        raise Exception("Cannot find map bound")
+    
+    return mapbound
+    
 
 def get_point(data):
     if "lat" in data and "lng" in data:
@@ -139,17 +165,11 @@ def map_add_bound(map,s_lat,s_lng,e_lat,e_lng,weight):
     db.session.commit()
     return {**bound.to_json(),"weight":conn.weight,"id":conn.id},200
 
-def map_remove_bound(map,s_lat,s_lng,e_lat,e_lng):
-    bound = Bound.query.filter(
-        coord_at(Bound.start_latitude,s_lat),
-        coord_at(Bound.start_longitude,s_lng),
-        coord_at(Bound.end_latitude,e_lat),
-        coord_at(Bound.end_longitude,e_lng)
-    ).first()
-    if not bound:
-        raise Exception("Cannot find bound")
-    
-    mapbound = MapBound.query.filter_by(bound_id=bound.id,map_id=map.id).first()
+def map_remove_bound(map,mapbound):
+    if mapbound.map_id != map.id:
+        raise Exception("Cannot remove bound from this map")
+        
+    bound = mapbound.bound
     if not mapbound:
         raise Exception("Cannot find map bound")
     

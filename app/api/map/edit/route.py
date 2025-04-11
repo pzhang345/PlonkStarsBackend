@@ -1,7 +1,7 @@
 from flask import Blueprint,request, jsonify
 
 from api.auth.auth import login_required
-from api.map.edit.mapedit import bound_recalculate, can_edit, map_add_bound, get_bound, map_remove_bound, bound_recalculate
+from api.map.edit.mapedit import bound_recalculate, can_edit, map_add_bound, get_new_bound, map_remove_bound, bound_recalculate,get_bound
 from models import db, Bound, MapBound, MapStats, GameMap
 from utils import coord_at, float_equals
 
@@ -39,7 +39,7 @@ def create_map(user):
 def add_bound(user):
     data = request.get_json()
     try:
-        (s_lat,s_lng),(e_lat,e_lng) = get_bound(data)
+        (s_lat,s_lng),(e_lat,e_lng) = get_new_bound(data)
     except Exception as e:
         print(e)
         return jsonify({"error":str(e)}),400
@@ -69,7 +69,7 @@ def add_bounds(user):
     try:
         for bound in data.get("bounds"):
             try:
-                (s_lat,s_lng),(e_lat,e_lng) = get_bound(bound)
+                (s_lat,s_lng),(e_lat,e_lng) = get_new_bound(bound)
                 weight = data.get("weight")
                 weight = max(1,weight) if weight else max(1,(e_lat-s_lat) * (e_lng-s_lng) * 10000)
                 
@@ -86,18 +86,20 @@ def add_bounds(user):
 @login_required
 def remove_bound(user):
     data = request.get_json()
-    try:
-        (s_lat,s_lng),(e_lat,e_lng) = get_bound(data)
-    except Exception as e:
-        print(e)
-        return jsonify({"error":str(e)}),400
     
     map = GameMap.query.filter_by(uuid=data.get("id")).first_or_404("Cannot find map")
     if not can_edit(user,map):
         return jsonify({"error":"Don't have access to the map"}),403
     
     try:
-        ret = map_remove_bound(map,s_lat,s_lng,e_lat,e_lng)
+        mapbound = get_bound(data,map)
+    except Exception as e:
+        print(e)
+        return jsonify({"error":str(e)}),400
+    
+    
+    try:
+        ret = map_remove_bound(map,mapbound)
         return jsonify(ret[0]),ret[1]
     except Exception as e:
         print(e)
@@ -115,8 +117,8 @@ def remove_bounds(user):
     try:
         for bound in data.get("bounds"):
             try:
-                (s_lat,s_lng),(e_lat,e_lng) = get_bound(bound)
-                bound = map_remove_bound(map,s_lat,s_lng,e_lat,e_lng)[0]
+                mapbound = get_bound(bound,map)
+                bound = map_remove_bound(map,mapbound)[0]
                 ret += [bound["id"]]
             except Exception as e:
                 pass
