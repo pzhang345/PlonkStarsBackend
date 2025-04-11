@@ -54,7 +54,7 @@ def get_bound(data,map):
         mapbound = MapBound.query.filter_by(id=data.get("b_id")).first()
         if not mapbound:
             raise Exception("Cannot find map bound")
-        return data.get("b_id")
+        return mapbound
     
     (s_lat,s_lng),(e_lat,e_lng) = get_new_bound(data)
     
