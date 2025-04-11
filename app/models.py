@@ -188,6 +188,13 @@ class GameMap(db.Model):
     
     def __str__(self):
         return self.name
+    
+    def to_json(self):
+        return {
+            "name":self.name,
+            "id":self.uuid,
+            "creator":self.creator.to_json(),
+        }
 
 class MapStats(db.Model):
     __tablename__="mapstats"
