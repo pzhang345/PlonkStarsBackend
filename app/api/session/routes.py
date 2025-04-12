@@ -1,7 +1,8 @@
 from flask import Blueprint,request, jsonify
 
 from api.auth.auth import login_required
-from models import Session, GameType
+from api.game.gameutils import timed_out
+from models import Guess, Player, Round, Session, GameType
 
 session_bp = Blueprint("session_bp", __name__)
 
@@ -13,6 +14,11 @@ def get_session_info(user):
     if session.type != GameType.CHALLENGE:
         return jsonify({"error":"not a challenge session"}),400
     
+    player = Player.query.filter_by(session_id=session.id,user_id=user.id).first()
+    
+    last_round = Round.query.filter_by(session_id=session.id,round_number=session.max_rounds).first()
+    finished = (Guess.query.filter_by(user_id=user.id,round_id=last_round.id).count() > 0 or timed_out(player, last_round)) if player else False
+    
     return jsonify({
         "map":session.map.to_json(),
         "user":session.host.to_json(),
@@ -20,5 +26,7 @@ def get_session_info(user):
             "NMPZ":session.nmpz,
             "time":session.time_limit,
             "rounds":session.max_rounds,
-        }
+        },
+        "playing": False if not player else True,
+        "finished": finished,
     }),200

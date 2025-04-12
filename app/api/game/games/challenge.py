@@ -4,7 +4,7 @@ from sqlalchemy import desc, func
 
 from api.game.games.basegame import BaseGame
 from models import User, db,Round,GameType,Player,Guess, RoundStats, UserMapStats
-from api.game.gameutils import guess_to_json,create_round,create_guess,create_round_stats
+from api.game.gameutils import guess_to_json,create_round,create_guess,create_round_stats,timed_out
 
 class ChallengeGame(BaseGame):
     def create(self,data,user):
@@ -30,7 +30,7 @@ class ChallengeGame(BaseGame):
         if player.current_round != 0:
             round = super().get_round(player,session)
 
-            if Guess.query.filter_by(user_id=user.id,round_id=round.id).count() == 0 and (round.time_limit == -1 or pytz.utc.localize(player.start_time) + timedelta(seconds=round.time_limit) > datetime.now(tz=pytz.utc)):
+            if Guess.query.filter_by(user_id=user.id,round_id=round.id).count() == 0 and not timed_out(player,round.time_limit):
                 prev_round_stats = RoundStats.query.filter_by(user_id=user.id,session_id=session.id,round=player.current_round-1).first()
                 location = round.location
                 ret = {
@@ -141,7 +141,7 @@ class ChallengeGame(BaseGame):
         
         
         if player.current_round < round_num or (player.current_round == round_num and
-            (Guess.query.filter_by(user_id=user.id,round_id=round.id).count() == 0 and (round.time_limit == -1 or pytz.utc.localize(player.start_time) + timedelta(seconds=round.time_limit) > datetime.now(tz=pytz.utc)))):
+            (Guess.query.filter_by(user_id=user.id,round_id=round.id).count() == 0 and not timed_out(player,round.time_limit))):
             raise Exception("Round not played yet")
 
         if not RoundStats.query.filter_by(session_id=session.id,round=round_num,user_id=user.id).first():
@@ -208,7 +208,7 @@ class ChallengeGame(BaseGame):
         player = super().get_player(user,session)
         round = Round.query.filter_by(session_id=session.id,round_number=session.max_rounds).first()
         if player.current_round < session.max_rounds or (player.current_round == session.max_rounds and
-            (Guess.query.filter_by(user_id=user.id,round_id=round.id).count() == 0 and (round.time_limit == -1 or pytz.utc.localize(player.start_time) + timedelta(seconds=round.time_limit) > datetime.now(tz=pytz.utc)))):
+            (Guess.query.filter_by(user_id=user.id,round_id=round.id).count() == 0 and not timed_out(player,round.time_limit))):
             raise Exception("The game is not finished first")
         
         

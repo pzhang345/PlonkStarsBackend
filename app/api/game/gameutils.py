@@ -1,5 +1,5 @@
 import math
-from datetime import datetime
+from datetime import datetime, timedelta
 import pytz
 
 from models import db,GameMap,Guess,Round,RoundStats,UserMapStats
@@ -132,3 +132,6 @@ def create_round_stats(user,session,round_num = None,guess=None):
     user_stat.total_guesses += 1
     db.session.commit()
     return round_stats
+
+def timed_out(player,time_limit):
+    return time_limit != -1 and pytz.utc.localize(player.start_time) + timedelta(seconds=time_limit) < datetime.now(tz=pytz.utc)
