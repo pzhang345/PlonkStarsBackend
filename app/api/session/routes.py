@@ -17,7 +17,7 @@ def get_session_info(user):
     player = Player.query.filter_by(session_id=session.id,user_id=user.id).first()
     
     last_round = Round.query.filter_by(session_id=session.id,round_number=session.max_rounds).first()
-    finished = (Guess.query.filter_by(user_id=user.id,round_id=last_round.id).count() > 0 or timed_out(player, last_round)) if player else False
+    finished = player.current_round == session.max_rounds and (Guess.query.filter_by(user_id=user.id,round_id=last_round.id).count() > 0 or timed_out(player, last_round.time_limit)) if player else False
     
     return jsonify({
         "map":session.map.to_json(),
