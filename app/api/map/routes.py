@@ -15,7 +15,13 @@ def get_all_maps(user):
     page = request.args.get("page", 1, type=int)
     per_page = request.args.get("per_page", 10, type=int)
     query = GameMap.query.filter(GameMap.name.ilike(f"%{name}%"))
-    maps = query.join(MapStats).order_by(MapStats.total_guesses.desc()).paginate(page=page,per_page=per_page)
+    maps = query.join(MapStats).order_by(
+        case(
+            (GameMap.creator_id == 42, 0),  # Give priority (lower value) to user_id == 1
+            else_=1
+        ),
+        MapStats.total_guesses.desc()
+    ).paginate(page=page,per_page=per_page)
     return jsonify(
     {
         "maps":[map.to_json() for map in maps],
