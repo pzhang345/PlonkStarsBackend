@@ -178,7 +178,10 @@ def delete_map(user):
     map = GameMap.query.filter_by(uuid=data.get("id")).first_or_404("Cannot find map")
     if not can_edit(user,map):
         return jsonify({"error":"Don't have access to the map"}),403
-    
+    mapbounds = map.map_bounds
+    for mapbound in mapbounds:
+        if MapBound.query.filter_by(bound_id=mapbound.bound_id).count() <= 1:
+            db.session.delete(mapbound.bound)
     db.session.delete(map)
     db.session.commit()
     return jsonify({"message":"map deleted"}),200
