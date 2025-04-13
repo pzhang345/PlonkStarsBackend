@@ -1,5 +1,5 @@
 from flask import Blueprint,request, jsonify
-from sqlalchemy import case
+from sqlalchemy import case, or_
 from api.auth.auth import login_required
 from models import Guess, Round, Session, User, GameMap, MapStats, UserMapStats
 from api.game.gameutils import guess_to_json
@@ -14,11 +14,17 @@ def get_all_maps(user):
     name = request.args.get("name","")
     page = request.args.get("page", 1, type=int)
     per_page = request.args.get("per_page", 10, type=int)
-    query = GameMap.query.filter(GameMap.name.ilike(f"%{name}%"))
+    query = GameMap.query.join(GameMap.creator).filter(
+        or_(
+            GameMap.name.ilike(f"%{name}%"),
+            User.username.ilike(f"%{name}%")
+        )
+    )
     maps = query.join(MapStats).order_by(
         case(
-            (GameMap.creator_id == 42, 0),  # Give priority (lower value) to user_id == 1
-            else_=1
+            (GameMap.creator_id == user.id, 0),
+            (GameMap.creator_id == 42, 1),  
+            else_=2
         ),
         MapStats.total_guesses.desc()
     ).paginate(page=page,per_page=per_page)
