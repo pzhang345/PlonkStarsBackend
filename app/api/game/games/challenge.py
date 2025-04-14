@@ -213,14 +213,13 @@ class ChallengeGame(BaseGame):
         
         
         rounds = Round.query.filter_by(session_id=session.id).order_by(Round.round_number).all()
+                
         user_stats = RoundStats.query.filter_by(user_id=user.id,session_id=session.id,round=session.max_rounds).first()
         if not user_stats:
             user_stats = create_round_stats(user,session,round_num=session.max_rounds)
             db.session.add(user_stats)
             db.session.commit()
-        
-        top_stats = RoundStats.query.filter_by(session_id=session.id,round=session.max_rounds).order_by(RoundStats.total_score.desc(),RoundStats.total_time).paginate(page=page,per_page=per_page,error_out=False).items
-        
+                
         stats = RoundStats.query.filter_by(session_id=session.id,round=session.max_rounds).subquery()
         ranked_users = db.session.query(
             stats.c.user_id,

@@ -175,7 +175,7 @@ def get_leaderboard_game(user):
     if session.high_session_id == None:
         return jsonify({"error":"User has not played the game"}),400
     
-    rounds = session.high_session.rounds
+    rounds = Round.query.filter_by(session_id=session.high_session.id).order_by(Round.round_number).all()
     
     ret = {
         "user":user.to_json(),
