@@ -8,7 +8,7 @@ from api.map.routes import map_bp
 from api.session.routes import session_bp
 
 from admin import admin
-from models import db
+from models.db import db
 from gsocket import socketio
 from config import Config
 

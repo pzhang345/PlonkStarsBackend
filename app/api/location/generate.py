@@ -1,12 +1,15 @@
 import aiohttp
 import asyncio
 import random
-from config import Config
-from models import db,SVLocation, MapBound
+import math
 from sqlalchemy.sql.expression import func
 from sqlalchemy import and_
+
+from config import Config
+from models.db import db
+from models.location import SVLocation
+from models.map import MapBound
 from utils import coord_at
-import math
 
 GOOGLE_MAPS_API_KEY = Config.GOOGLE_MAPS_API_KEY
 

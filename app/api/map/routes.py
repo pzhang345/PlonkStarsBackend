@@ -1,7 +1,11 @@
 from flask import Blueprint,request, jsonify
 from sqlalchemy import case, or_
+
 from api.auth.auth import login_required
-from models import Guess, Round, Session, User, GameMap, MapStats, UserMapStats
+from models.session import Guess, Round, Session
+from models.user import User
+from models.map import GameMap
+from models.stats import MapStats, UserMapStats
 from api.game.gameutils import guess_to_json
 from api.map.edit.route import map_edit_bp
 

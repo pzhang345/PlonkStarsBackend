@@ -5,7 +5,7 @@ import pytz
 from flask import request, jsonify
 
 from config import Config
-from models import User
+from models.user import User
 
 JWT_SECRET_KEY = Config.SECRET_KEY
 

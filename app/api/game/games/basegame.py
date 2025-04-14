@@ -1,7 +1,7 @@
-import math
 from abc import ABC,abstractmethod
 
-from models import db,Round,GameMap,Session,Player
+from models.session import Round,Session,Player
+from models.map import GameMap
 class BaseGame(ABC):
     def create(self,data,type,user):
         map_id = data.get("map_id")

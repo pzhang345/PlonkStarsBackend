@@ -1,7 +1,7 @@
 from gsocket import socketio
 from flask_socketio import emit,join_room
 
-from models import Session
+from models.session import Session
 from api.auth.auth import login_required
 from api.game.gametype import game_type
 

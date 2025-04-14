@@ -2,8 +2,9 @@ from flask import Blueprint,request, jsonify
 
 from api.auth.auth import login_required
 from api.map.edit.mapedit import bound_recalculate, can_edit, map_add_bound, get_new_bound, map_remove_bound, bound_recalculate,get_bound
-from models import db, Bound, MapBound, MapStats, GameMap
-from utils import coord_at, float_equals
+from models.db import db
+from models.map import MapBound, GameMap
+from models.stats import MapStats
 
 map_edit_bp = Blueprint("map_edit",__name__)
 

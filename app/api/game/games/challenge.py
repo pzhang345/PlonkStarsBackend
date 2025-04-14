@@ -3,8 +3,11 @@ import pytz
 from sqlalchemy import desc, func
 
 from api.game.games.basegame import BaseGame
-from models import User, db,Round,GameType,Player,Guess, RoundStats, UserMapStats
 from api.game.gameutils import guess_to_json,create_round,create_guess,create_round_stats,timed_out
+from models.db import db
+from models.user import User
+from models.session import Round,GameType,Player, Guess
+from models.stats import RoundStats,UserMapStats
 
 class ChallengeGame(BaseGame):
     def create(self,data,user):

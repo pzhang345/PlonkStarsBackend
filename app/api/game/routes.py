@@ -2,7 +2,7 @@ from flask import Blueprint,jsonify,request
 
 from api.auth.auth import login_required
 from api.game.gametype import game_type
-from models import Session,Player,GameType
+from models.session import Session,Player,GameType
 
 game_bp = Blueprint("game",__name__)
 

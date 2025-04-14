@@ -2,7 +2,7 @@ from flask import Blueprint,request, jsonify
 
 from api.auth.auth import login_required
 from api.game.gameutils import timed_out
-from models import Guess, Player, Round, Session, GameType
+from models.session import Guess, Player, Round, Session, GameType
 
 session_bp = Blueprint("session_bp", __name__)
 

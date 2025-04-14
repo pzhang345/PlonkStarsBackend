@@ -1,5 +1,6 @@
 from api.game.games.basegame import BaseGame
-from models import db,Player,GameType
+from models.db import db
+from models.session import Player,GameType
 
 class LiveGame(BaseGame):
     def create(self,data,user):

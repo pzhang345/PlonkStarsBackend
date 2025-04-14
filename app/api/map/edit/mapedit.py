@@ -1,7 +1,9 @@
 import asyncio
 from api.location.generate import add_coord, check_multiple_street_views
 from api.map.map import haversine
-from models import MapBound, db, Bound, SVLocation
+from models import  db
+from models.map import MapBound, Bound
+from models.location import SVLocation
 from utils import coord_at, float_equals
 
 

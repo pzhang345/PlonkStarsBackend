@@ -1,11 +1,12 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, session
+from flask import request, redirect, url_for, flash, session
 from sqlalchemy import inspect
 from flask_admin.contrib.sqla import ModelView
 from flask_admin import Admin, AdminIndexView, expose
 from api.auth.auth import login_required
 from api.auth.routes import bcrypt
 
-from models import db,User
+from models.db import db
+from models.user import User
 
 class ChildView(ModelView):
     column_display_pk = True

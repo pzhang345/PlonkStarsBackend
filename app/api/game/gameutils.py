@@ -2,7 +2,10 @@ import math
 from datetime import datetime, timedelta
 import pytz
 
-from models import db,GameMap,Guess,Round,RoundStats,UserMapStats
+from models.db import db
+from models.map import GameMap
+from models.session import Guess,Round
+from models.stats import RoundStats,UserMapStats
 from api.location.generate import generate_location,get_random_bounds,db_location
 from api.map.map import haversine
 
