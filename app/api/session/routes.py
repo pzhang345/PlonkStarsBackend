@@ -7,7 +7,7 @@ from models.session import Guess, Player, Round, Session, GameType
 session_bp = Blueprint("session_bp", __name__)
 
 @session_bp.route("/info", methods=["GET"])
-@login_required
+@login_required()
 def get_session_info(user):
     data = request.args
     session = Session.query.filter_by(uuid=data.get("id")).first_or_404("Session not found")

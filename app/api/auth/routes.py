@@ -54,7 +54,7 @@ def get_profile():
 
 # Delete account route
 @account_bp.route("/delete", methods=["DELETE"])
-@login_required
+@login_required()
 def delete_account(user):
     # Delete the user from the database
     db.session.delete(user)

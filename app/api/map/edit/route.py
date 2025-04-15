@@ -9,7 +9,7 @@ from models.stats import MapStats
 map_edit_bp = Blueprint("map_edit",__name__)
 
 @map_edit_bp.route("",methods=["GET"])
-@login_required
+@login_required()
 def can_edit_map(user):
     id = request.args.get("id")
     if not id:
@@ -19,7 +19,7 @@ def can_edit_map(user):
     return jsonify({"can_edit": can_edit(user,map)}),200
 
 @map_edit_bp.route("/create",methods=["POST"])
-@login_required
+@login_required()
 def create_map(user):
     name=request.get_json().get("name")
     if not name:
@@ -36,7 +36,7 @@ def create_map(user):
 
 
 @map_edit_bp.route("bound/add",methods=["POST"])
-@login_required
+@login_required()
 def add_bound(user):
     data = request.get_json()
     try:
@@ -57,7 +57,7 @@ def add_bound(user):
     return jsonify(res[0]),res[1]
 
 @map_edit_bp.route("bound/add/all",methods=["POST"])
-@login_required
+@login_required()
 def add_bounds(user):
     data = request.get_json()
     map = GameMap.query.filter_by(uuid=data.get("id")).first_or_404("Cannot find map")
@@ -84,7 +84,7 @@ def add_bounds(user):
     return jsonify(bounds),200
 
 @map_edit_bp.route("bound/remove",methods=["DELETE"])
-@login_required
+@login_required()
 def remove_bound(user):
     data = request.get_json()
     
@@ -107,7 +107,7 @@ def remove_bound(user):
         return jsonify({"error":str(e)}),400
 
 @map_edit_bp.route("bound/remove/all",methods=["DELETE"])
-@login_required
+@login_required()
 def remove_bounds(user):
     data = request.get_json()
     map = GameMap.query.filter_by(uuid=data.get("id")).first_or_404("Cannot find map")
@@ -129,7 +129,7 @@ def remove_bounds(user):
     return jsonify(ret),200
 
 @map_edit_bp.route("bound/reweight",methods=["POST"])
-@login_required
+@login_required()
 def reweight_bound(user):
     data = request.get_json()
     
@@ -146,7 +146,7 @@ def reweight_bound(user):
     return jsonify(ret[0]),ret[1]
     
 @map_edit_bp.route("/description",methods=["POST"])
-@login_required
+@login_required()
 def edit_description(user):
     data = request.get_json()
     
@@ -159,7 +159,7 @@ def edit_description(user):
     return jsonify({"message":"description updated"}),200
 
 @map_edit_bp.route("/name",methods=["POST"])
-@login_required
+@login_required()
 def edit_name(user):
     data = request.get_json()
     
@@ -172,7 +172,7 @@ def edit_name(user):
     return jsonify({"message":"name updated"}),200
 
 @map_edit_bp.route("/delete",methods=["DELETE"])
-@login_required
+@login_required()
 def delete_map(user):
     data = request.get_json()
     

@@ -9,7 +9,7 @@ from api.session.routes import session_bp
 
 from admin import admin
 from models.db import db
-from gsocket import socketio
+from fsocket import socketio
 from config import Config
 
 app = Flask(__name__)

@@ -13,7 +13,7 @@ map_bp = Blueprint("map",__name__)
 map_bp.register_blueprint(map_edit_bp,url_prefix="/edit")
     
 @map_bp.route("/search",methods=["GET"])
-@login_required
+@login_required()
 def get_all_maps(user):
     name = request.args.get("name","")
     page = request.args.get("page", 1, type=int)
@@ -39,7 +39,7 @@ def get_all_maps(user):
     }),200
 
 @map_bp.route("/stats",methods=["GET"])
-@login_required
+@login_required()
 def get_map_info(user):
     id = request.args.get("id")
     if not id:
@@ -123,7 +123,7 @@ def get_map_info(user):
     return jsonify(ret),200
 
 @map_bp.route("/bounds",methods=["GET"])
-@login_required
+@login_required()
 def get_map_bounds(user):
     id = request.args.get("id")
     if not id:
@@ -133,7 +133,7 @@ def get_map_bounds(user):
     return jsonify([{**bound.bound.to_json(),"weight":bound.weight,"id":bound.id} for bound in map.map_bounds]),200
 
 @map_bp.route("/leaderboard",methods=["GET"])
-@login_required
+@login_required()
 def get_map_leaderboard(user):
     data = request.args
     map_id = data.get("id")
@@ -158,7 +158,7 @@ def get_map_leaderboard(user):
     }),200
     
 @map_bp.route("/leaderboard/game",methods=["GET"])
-@login_required
+@login_required()
 def get_leaderboard_game(user):
     data = request.args
     map_id = data.get("id")
