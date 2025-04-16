@@ -2,7 +2,7 @@ import asyncio
 from api.location.generate import add_coord, check_multiple_street_views
 from api.map.map import haversine
 from models.db import db
-from models.map import MapBound, Bound
+from models.map import MapBound, Bound, MapEditor
 from models.location import SVLocation
 from utils import coord_at, float_equals
 
@@ -234,4 +234,4 @@ def bound_recalculate(map):
     db.session.commit()
 
 def can_edit(user,map):
-    return map.creator_id == user.id or user.is_admin
+    return map.creator_id == user.id or user.is_admin or MapEditor.query.filter_by(user_id=user.id,map_id=map.id).count() > 0

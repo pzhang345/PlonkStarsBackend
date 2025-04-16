@@ -22,6 +22,7 @@ class GameMap(db.Model):
     sessions = db.relationship("Session", backref="map", cascade="all,delete", passive_deletes=True)
     stats = db.relationship("MapStats", backref="map", uselist=False, passive_deletes=True)
     user_map_stats = db.relationship("UserMapStats",backref="map",cascade="all,delete", passive_deletes=True)
+    editors = db.relationship("MapEditor", backref="map", cascade="all,delete", passive_deletes=True)
     
     def __str__(self):
         return self.name
@@ -71,3 +72,11 @@ class MapBound(db.Model):
     bound_id = db.Column(db.Integer, db.ForeignKey("bounds.id", ondelete="CASCADE"), nullable=False)
     map_id = db.Column(db.Integer, db.ForeignKey("maps.id", ondelete="CASCADE"), nullable=False)
     weight = db.Column(db.Integer, nullable=False)
+    
+class MapEditor(db.Model):
+    __tablename__="mapeditors"
+    
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    map_id = db.Column(db.Integer, db.ForeignKey("maps.id", ondelete="CASCADE"), nullable=False)

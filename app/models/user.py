@@ -14,6 +14,7 @@ class User(db.Model):
     player = db.relationship("Player",backref="user",cascade="all,delete", passive_deletes=True)
     round_stats = db.relationship("RoundStats",backref="user",cascade="all,delete", passive_deletes=True)
     user_map_stats = db.relationship("UserMapStats",backref="user",cascade="all,delete", passive_deletes=True)
+    can_edit = db.relationship("MapEditor",backref="user",cascade="all,delete", passive_deletes=True)
 
 
     def __str__(self):
