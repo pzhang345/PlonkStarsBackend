@@ -212,3 +212,24 @@ def add_editor(user):
     db.session.add(editor)
     db.session.commit()
     return jsonify({"message":"editor added"}),200
+
+@map_edit_bp.route("/editor/remove",methods=["DELETE"])
+@login_required
+def remove_editor(user):
+    data = request.get_json()
+    
+    map = GameMap.query.filter_by(uuid=data.get("id")).first_or_404("Cannot find map")
+    if user.id != map.creator_id and not user.is_admin:
+        return jsonify({"error":"Don't have access to the map"}),403
+    
+    remove_editor = User.query.filter_by(username=data.get("username")).first()
+    if not remove_editor:
+        return jsonify({"error":"provided valid username"}),400
+    
+    editor = MapEditor.query.filter_by(map_id=map.id,user_id=remove_editor.id).first()
+    if not editor:
+        return jsonify({"error":"provided valid map editor"}),400
+    
+    db.session.delete(editor)
+    db.session.commit()
+    return jsonify({"message":"editor added"}),200
