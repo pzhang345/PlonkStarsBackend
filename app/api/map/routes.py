@@ -47,7 +47,7 @@ def get_map_info(user):
     
     map = GameMap.query.filter_by(uuid=id).first_or_404("Cannot find map")
     stats = map.stats
-    generation = map.generation_time
+    generation = map.generation
     ret = {
         "name":map.name,
         "id":map.uuid, 
