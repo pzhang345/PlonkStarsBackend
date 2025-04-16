@@ -3,7 +3,8 @@ from flask import Blueprint,request, jsonify
 from api.auth.auth import login_required
 from api.map.edit.mapedit import bound_recalculate, can_edit, map_add_bound, get_new_bound, map_remove_bound, bound_recalculate,get_bound
 from models.db import db
-from models.map import MapBound, GameMap
+from models.user import User
+from models.map import MapBound, GameMap, MapEditor
 from models.stats import MapStats
 from fsocket import socketio
 
@@ -193,3 +194,21 @@ def delete_map(user):
     db.session.delete(map)
     db.session.commit()
     return jsonify({"message":"map deleted"}),200
+
+@map_edit_bp.route("/editor/add",methods=["POST"])
+@login_required
+def add_editor(user):
+    data = request.get_json()
+    
+    map = GameMap.query.filter_by(uuid=data.get("id")).first_or_404("Cannot find map")
+    if not can_edit(user,map):
+        return jsonify({"error":"Don't have access to the map"}),403
+    
+    new_editor = User.query.filter_by(username=data.get("username")).first()
+    if not new_editor:
+        return jsonify({"error":"provided valid username"}),400
+    
+    editor = MapEditor(map_id=map.id,user_id=new_editor.id)
+    db.session.add(editor)
+    db.session.commit()
+    return jsonify({"message":"editor added"}),200

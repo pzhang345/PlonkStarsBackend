@@ -1,7 +1,6 @@
 from flask import Flask
 from flask_migrate import Migrate
 from flask_cors import CORS
-from flask_socketio import emit
 
 from api.auth.routes import account_bp
 from api.game.routes import game_bp
