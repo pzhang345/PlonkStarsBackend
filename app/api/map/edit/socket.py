@@ -1,15 +1,16 @@
-from api.auth.auth import login_required
 from fsocket import socketio
-from flask_socketio import emit, join_room, leave_room, close_room
+from flask_socketio import emit, join_room
 
-@socketio.on("connect", namespace="/map/edit")
-@login_required(socket=True)
-def connect(user):
-    emit("message", {"message": "connected"})
-    
 
-@socketio.on("join", namespace="/map/edit")
-def join_map(data):
-    room = data['id']
+@socketio.on("connect",namespace="/socket/map/edit")
+def handle_connect():
+    return True
+
+@socketio.on("join",namespace="/socket/map/edit")
+def handle_join_room(data):
+    room = data.get('id')
     join_room(room)
     
+@socketio.on("disconnect",namespace="/socket/map/edit")
+def handle_disconnect():
+    print("Client disconnected")

@@ -1,6 +1,7 @@
 from flask import Flask
 from flask_migrate import Migrate
 from flask_cors import CORS
+from flask_socketio import emit
 
 from api.auth.routes import account_bp
 from api.game.routes import game_bp
@@ -12,8 +13,10 @@ from models.db import db
 from fsocket import socketio
 from config import Config
 
+import api.map.edit.socket # DO NOT DELETE 
+
 app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": ["http://localhost:3000", "https://plonkstars.vercel.app"]}})
+CORS(app, cors_allow_origins="*")
 
 app.config.from_object(Config)
 
@@ -21,7 +24,7 @@ db.init_app(app)
 with app.app_context():
     db.create_all()
 
-socketio.init_app(app,manage_session=False)
+socketio.init_app(app)
 admin.init_app(app)
 
 
@@ -33,4 +36,4 @@ app.register_blueprint(map_bp, url_prefix="/api/map")
 app.register_blueprint(session_bp, url_prefix="/api/session")
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    socketio.run(app, debug=True, host='0.0.0.0', port=5000)

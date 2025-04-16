@@ -1,4 +1,5 @@
 from functools import wraps
+from flask_socketio import disconnect
 import jwt
 from datetime import datetime, timedelta
 import pytz
@@ -24,32 +25,27 @@ def decode(token):
     return decoded_token
 
 # Decorator to check for JWT token
-def login_required(socket=False):
-    def function(f):
-        @wraps(f)
-        def decorated_function(*args, **kwargs):
-            token = request.headers.get("Authorization")
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        token = request.args.get('token') or request.headers.get("Authorization")
+        if not token:
+            return jsonify({"error": "login required"}), 403
+        try:
+            decoded_token = decode(token)
+            # Extract the user ID (sub) from the decoded token
+            user_id = decoded_token.get("sub")
 
-            if not token:
-                return False if socket else (jsonify({"error": "login required"}), 403)
-
-            try:
-                decoded_token = decode(token)
-                # Extract the user ID (sub) from the decoded token
-                user_id = decoded_token.get("sub")
-
-                if not user_id:
-                    return False if socket else (jsonify({"error": "login required"}), 403)
-                
-            except Exception as e:
-                return False if socket else (jsonify({"error": "login required"}), 403)
-
-            # Check if the user exists in the database
-            user = User.query.filter_by(id=int(user_id)).first()
-            
-            if not user:
+            if not user_id:
                 return jsonify({"error": "login required"}), 403
+            
+        except Exception as e:
+            return jsonify({"error": "login required"}), 403
 
-            return f(user, *args, **kwargs)
-        return decorated_function
-    return function
+        # Check if the user exists in the database
+        user = User.query.filter_by(id=int(user_id)).first()
+        if not user:
+            return jsonify({"error": "login required"}), 403
+        
+        return f(user, *args, **kwargs)
+    return decorated_function

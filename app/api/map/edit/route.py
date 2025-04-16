@@ -10,7 +10,7 @@ from fsocket import socketio
 map_edit_bp = Blueprint("map_edit",__name__)
 
 @map_edit_bp.route("",methods=["GET"])
-@login_required()
+@login_required
 def can_edit_map(user):
     id = request.args.get("id")
     if not id:
@@ -20,7 +20,7 @@ def can_edit_map(user):
     return jsonify({"can_edit": can_edit(user,map)}),200
 
 @map_edit_bp.route("/create",methods=["POST"])
-@login_required()
+@login_required
 def create_map(user):
     name=request.get_json().get("name")
     if not name:
@@ -37,7 +37,7 @@ def create_map(user):
 
 
 @map_edit_bp.route("bound/add",methods=["POST"])
-@login_required()
+@login_required
 def add_bound(user):
     data = request.get_json()
     try:
@@ -55,11 +55,11 @@ def add_bound(user):
     
     res = map_add_bound(map,s_lat,s_lng,e_lat,e_lng,weight)
     
-    socketio.emit("add",{"bounds":[res[0]]},namespace="/map/edit",room=map.uuid)
+    socketio.emit("add",{"bounds":[res[0]]},namespace="/socket/map/edit",room=map.uuid)
     return jsonify(res[0]),res[1]
 
 @map_edit_bp.route("bound/add/all",methods=["POST"])
-@login_required()
+@login_required
 def add_bounds(user):
     data = request.get_json()
     map = GameMap.query.filter_by(uuid=data.get("id")).first_or_404("Cannot find map")
@@ -84,11 +84,11 @@ def add_bounds(user):
     except Exception as e:
         return jsonify({"error":str(e)}),400
     
-    socketio.emit("add",{"bounds":bounds},namespace="/map/edit",room=map.uuid)
+    socketio.emit("add",{"bounds":bounds},namespace="/socket/map/edit",room=map.uuid)
     return jsonify(bounds),200
 
 @map_edit_bp.route("bound/remove",methods=["DELETE"])
-@login_required()
+@login_required
 def remove_bound(user):
     data = request.get_json()
     
@@ -105,14 +105,14 @@ def remove_bound(user):
     
     try:
         ret = map_remove_bound(map,mapbound)
-        socketio.emit("remove",{"bounds":[ret[0]]},namespace="/map/edit",room=map.uuid)
+        socketio.emit("remove",{"bounds":[ret[0]]},namespace="/socket/map/edit",room=map.uuid)
         return jsonify(ret[0]),ret[1]
     except Exception as e:
         print(e)
         return jsonify({"error":str(e)}),400
 
 @map_edit_bp.route("bound/remove/all",methods=["DELETE"])
-@login_required()
+@login_required
 def remove_bounds(user):
     data = request.get_json()
     map = GameMap.query.filter_by(uuid=data.get("id")).first_or_404("Cannot find map")
@@ -131,11 +131,11 @@ def remove_bounds(user):
     except Exception as e:
         return jsonify({"error":str(e)}),400
     
-    socketio.emit("remove",{"bounds":ret},namespace="/map/edit",room=map.uuid)
+    socketio.emit("remove",{"bounds":ret},namespace="/socket/map/edit",room=map.uuid)
     return jsonify(ret),200
 
 @map_edit_bp.route("bound/reweight",methods=["POST"])
-@login_required()
+@login_required
 def reweight_bound(user):
     data = request.get_json()
     
@@ -149,11 +149,11 @@ def reweight_bound(user):
         return jsonify({"error":"please provided these arguments: weight"}),400
     
     ret = bound_recalculate(map,s_lat,s_lng,e_lat,e_lng,weight)
-    socketio.emit("reweight",{"bounds":[ret]},namespace="/map/edit",room=map.uuid)
+    socketio.emit("reweight",{"bounds":[ret]},namespace="/socket/map/edit",room=map.uuid)
     return jsonify(ret[0]),ret[1]
     
 @map_edit_bp.route("/description",methods=["POST"])
-@login_required()
+@login_required
 def edit_description(user):
     data = request.get_json()
     
@@ -166,7 +166,7 @@ def edit_description(user):
     return jsonify({"message":"description updated"}),200
 
 @map_edit_bp.route("/name",methods=["POST"])
-@login_required()
+@login_required
 def edit_name(user):
     data = request.get_json()
     
@@ -179,7 +179,7 @@ def edit_name(user):
     return jsonify({"message":"name updated"}),200
 
 @map_edit_bp.route("/delete",methods=["DELETE"])
-@login_required()
+@login_required
 def delete_map(user):
     data = request.get_json()
     

@@ -9,7 +9,7 @@ game_bp = Blueprint("game",__name__)
 str_to_type = {"challenge":GameType.CHALLENGE}
 
 @game_bp.route("/create",methods=["POST"])
-@login_required()
+@login_required
 def create_game(user):
     if request.is_json:
         data = request.get_json()
@@ -27,7 +27,7 @@ def create_game(user):
     return jsonify(ret[0]),ret[1]
 
 @game_bp.route("/play",methods=["POST"])
-@login_required()
+@login_required
 def play(user):
     data = request.get_json()
     session_id = data.get("id")
@@ -48,7 +48,7 @@ def play(user):
     
 
 @game_bp.route("/round",methods=["GET"])
-@login_required()
+@login_required
 def get_round(user):
     data = request.args
     session_id = data.get("id")
@@ -66,7 +66,7 @@ def get_round(user):
 
 
 @game_bp.route("/guess",methods=["POST"])
-@login_required()
+@login_required
 def submit_guess(user):
     data = request.get_json()
     session_id = data.get("id")
@@ -83,7 +83,7 @@ def submit_guess(user):
     return jsonify(ret[0]),ret[1]
     
 @game_bp.route("/results",methods=["GET"])
-@login_required()
+@login_required
 def get_result(user):
     data = request.args
     session_id = data.get("id")
@@ -100,7 +100,7 @@ def get_result(user):
     return jsonify(ret[0]),ret[1]
 
 @game_bp.route("/summary",methods=["GET"])
-@login_required()
+@login_required
 def get_summary(user):
     data = request.args
     session_id = data.get("session")
