@@ -4,7 +4,7 @@ from api.auth.auth import login_required
 from api.map.edit.mapedit import bound_recalculate, can_edit, map_add_bound, get_new_bound, map_remove_bound, bound_recalculate,get_bound
 from models.db import db
 from models.user import User
-from models.map import MapBound, GameMap, MapEditor
+from models.map import MapBound, GameMap, MapEditor, GenerationTime
 from models.stats import MapStats
 from fsocket import socketio
 
@@ -30,7 +30,11 @@ def create_map(user):
     map = GameMap(creator_id=user.id,name=name)
     db.session.add(map)
     db.session.flush()
+    
+    map_generation = GenerationTime(map_id=map.id)
     map_stats = MapStats(map_id=map.id)
+    
+    db.session.add(map_generation)
     db.session.add(map_stats)
     
     db.session.commit()

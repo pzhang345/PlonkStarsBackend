@@ -3,13 +3,10 @@ from datetime import datetime, timedelta
 import pytz
 
 from models.db import db
-from models.map import GameMap
 from models.session import Guess,Round
 from models.stats import RoundStats,UserMapStats
 from api.location.generate import generate_location,get_random_bounds,db_location
 from api.map.map import haversine
-
-    
 
 def caculate_score(distance, max_distance, max_score):
     return max_score * math.e ** (-10*distance/max_distance)
@@ -35,7 +32,7 @@ def guess_to_json(user,round):
 def create_round(session,time_limit):
     new_round_number = session.current_round + 1
     map = session.map
-    stats = map.stats
+    generation = map.generation
     before = datetime.now(tz=pytz.utc)
     
     location = generate_location(map)
@@ -45,8 +42,8 @@ def create_round(session,time_limit):
         bound = get_random_bounds(map)
         location = db_location(bound)
         
-    stats.total_generation_time += (datetime.now(tz=pytz.utc) - before).total_seconds()
-    stats.total_loads += 1
+    generation.total_generation_time += (datetime.now(tz=pytz.utc) - before).total_seconds()
+    generation.total_loads += 1
     db.session.commit()
     
     if session.current_round >= new_round_number:

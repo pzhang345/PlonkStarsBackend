@@ -47,12 +47,13 @@ def get_map_info(user):
     
     map = GameMap.query.filter_by(uuid=id).first_or_404("Cannot find map")
     stats = map.stats
+    generation = map.generation_time
     ret = {
         "name":map.name,
         "id":map.uuid, 
         "creator":map.creator.to_json(),
         "map_stats":{
-            "average_generation_time": stats.total_generation_time/stats.total_loads if stats.total_loads != 0 else 0,
+            "average_generation_time": generation.total_generation_time/generation.total_loads if generation.total_loads != 0 else 0,
             "average_score": stats.total_score/stats.total_guesses if stats.total_guesses != 0 else 0,
             "average_distance": stats.total_distance/stats.total_guesses if stats.total_guesses != 0 else 0,
             "average_time": stats.total_time/stats.total_guesses if stats.total_guesses != 0 else 0,

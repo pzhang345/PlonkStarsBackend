@@ -20,9 +20,10 @@ class GameMap(db.Model):
     
     map_bounds = db.relationship("MapBound", backref="map", cascade="all,delete", passive_deletes=True)
     sessions = db.relationship("Session", backref="map", cascade="all,delete", passive_deletes=True)
-    stats = db.relationship("MapStats", backref="map", uselist=False, passive_deletes=True)
+    stats = db.relationship("MapStats", backref="map", cascade="all,delete", uselist=False, passive_deletes=True)
     user_map_stats = db.relationship("UserMapStats",backref="map",cascade="all,delete", passive_deletes=True)
     editors = db.relationship("MapEditor", backref="map", cascade="all,delete", passive_deletes=True)
+    generation = db.relationship("GenerationTime", backref="map", cascade="all,delete", uselist=False, passive_deletes=True)
     
     def __str__(self):
         return self.name
@@ -33,7 +34,7 @@ class GameMap(db.Model):
             "id":self.uuid, 
             "creator":self.creator.to_json(),
             "average_score":self.stats.total_score/self.stats.total_guesses if self.stats.total_guesses != 0 else 0,
-            "average_generation_time": self.stats.total_generation_time/self.stats.total_loads if self.stats.total_loads != 0 else 0,
+            "average_generation_time": self.generation.total_generation_time/self.generation.total_loads if self.stats.total_loads != 0 else 0,
             "total_guesses": self.stats.total_guesses,
         }
     

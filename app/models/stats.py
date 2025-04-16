@@ -28,9 +28,6 @@ class MapStats(db.Model):
     total_score = db.Column(db.Integer, nullable=False, default=0)
     total_distance = db.Column(db.Double, nullable=False, default=0)
     total_guesses = db.Column(db.Integer, nullable=False, default=0)
-    
-    total_generation_time = db.Column(db.Integer, nullable=False, default=0)
-    total_loads = db.Column(db.Integer, nullable=False, default=0)
 
 class RoundStats(db.Model):
     __tablename__ = "roundstats"
