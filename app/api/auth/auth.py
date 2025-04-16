@@ -24,28 +24,29 @@ def decode(token):
     decoded_token = jwt.decode(token, JWT_SECRET_KEY, algorithms=["HS256"], verify=True)
     return decoded_token
 
+def get_user_from_token(token):
+    if not token:
+        return None
+    try:
+        decoded_token = decode(token)
+        # Extract the user ID (sub) from the decoded token
+        user_id = decoded_token.get("sub")
+
+        if not user_id:
+            return None
+        
+    except Exception as e:
+        return None
+    
+    return User.query.filter_by(id=int(user_id)).first()
+
 # Decorator to check for JWT token
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         token = request.args.get('token') or request.headers.get("Authorization")
-        if not token:
-            return jsonify({"error": "login required"}), 403
-        try:
-            decoded_token = decode(token)
-            # Extract the user ID (sub) from the decoded token
-            user_id = decoded_token.get("sub")
-
-            if not user_id:
-                return jsonify({"error": "login required"}), 403
-            
-        except Exception as e:
-            return jsonify({"error": "login required"}), 403
-
-        # Check if the user exists in the database
-        user = User.query.filter_by(id=int(user_id)).first()
+        user = get_user_from_token(token)
         if not user:
-            return jsonify({"error": "login required"}), 403
-        
+            jsonify({"error": "login required"}), 403
         return f(user, *args, **kwargs)
     return decorated_function
