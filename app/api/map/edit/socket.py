@@ -4,6 +4,7 @@ from flask_socketio import emit, join_room
 
 @socketio.on("connect",namespace="/socket/map/edit")
 def handle_connect():
+    emit("message",{"message":"connected"})
     return True
 
 @socketio.on("join",namespace="/socket/map/edit")
