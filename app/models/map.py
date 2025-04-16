@@ -34,7 +34,7 @@ class GameMap(db.Model):
             "id":self.uuid, 
             "creator":self.creator.to_json(),
             "average_score":self.stats.total_score/self.stats.total_guesses if self.stats.total_guesses != 0 else 0,
-            "average_generation_time": self.generation.total_generation_time/self.generation.total_loads if self.stats.total_loads != 0 else 0,
+            "average_generation_time": self.generation.total_generation_time/self.generation.total_loads if self.generation.total_loads != 0 else 0,
             "total_guesses": self.stats.total_guesses,
         }
     
