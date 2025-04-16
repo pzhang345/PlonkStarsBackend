@@ -80,3 +80,12 @@ class MapEditor(db.Model):
     
     user_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     map_id = db.Column(db.Integer, db.ForeignKey("maps.id", ondelete="CASCADE"), nullable=False)
+    
+class GenerationTime(db.Model):
+    __tablename__="generationtimes"
+    
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    
+    map_id = db.Column(db.Integer, db.ForeignKey("maps.id", ondelete="CASCADE"), nullable=False)
+    total_generation_time = db.Column(db.Integer, nullable=False, default=0)
+    total_loads = db.Column(db.Integer, nullable=False, default=0)
