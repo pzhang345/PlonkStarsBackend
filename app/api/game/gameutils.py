@@ -14,7 +14,6 @@ def caculate_score(distance, max_distance, max_score):
 
 def guess_to_json(user,round):
     guess = Guess.query.filter_by(user_id=user.id,round_id=round.id).first()
-    #stats = RoundStats.query.filter_by(user_id=user.id,session_id=round.session.id,round=round.round_number).first()
     
     if not guess:
         return {
@@ -84,6 +83,19 @@ def create_guess(lat,lng,user,round,time):
     stats.total_guesses += 1
     db.session.commit()
     
+    session = round.session
+    user_stat = UserMapStats.query.filter_by(user_id=user.id,map_id=session.map_id, nmpz=session.nmpz).first()
+    if not user_stat:
+        user_stat = UserMapStats(user_id=user.id,map_id=session.map_id, nmpz=session.nmpz)
+        db.session.add(user_stat)
+        db.session.flush()
+    
+    user_stat.total_time += guess.time
+    user_stat.total_distance += guess.distance
+    user_stat.total_score += guess.score
+    user_stat.total_guesses += 1
+    db.session.commit()
+    
     return guess
 
 def create_round_stats(user,session,round_num = None,guess=None):
@@ -120,17 +132,6 @@ def create_round_stats(user,session,round_num = None,guess=None):
             total_distance=prev_round_stats.total_distance + guess.distance
         )
     
-    user_stat = UserMapStats.query.filter_by(user_id=user.id,map_id=session.map_id, nmpz=session.nmpz).first()
-    if not user_stat:
-        user_stat = UserMapStats(user_id=user.id,map_id=session.map_id, nmpz=session.nmpz)
-        db.session.add(user_stat)
-        db.session.flush()
-    
-    user_stat.total_time += guess.time
-    user_stat.total_distance += guess.distance
-    user_stat.total_score += guess.score
-    user_stat.total_guesses += 1
-    db.session.commit()
     return round_stats
 
 def timed_out(player,time_limit):

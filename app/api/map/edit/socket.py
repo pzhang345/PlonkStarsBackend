@@ -1,4 +1,3 @@
-from flask import request
 from fsocket import socketio
 from flask_socketio import disconnect, emit, join_room
 
