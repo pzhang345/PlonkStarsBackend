@@ -4,7 +4,7 @@ import pytz
 
 from models.db import db
 from models.session import Guess,Round
-from models.stats import RoundStats,UserMapStats
+from models.stats import MapStats, RoundStats,UserMapStats
 from api.location.generate import generate_location,get_random_bounds,db_location
 from api.map.map import haversine
 
@@ -76,7 +76,15 @@ def create_guess(lat,lng,user,round,time):
         time=time
     )
     
-    stats = round.session.map.stats
+    stats = MapStats.query.filter_by(map_id=round.session.map.id,nmpz=round.nmpz).first()
+    if not stats:
+        stats = MapStats(
+            map_id=round.session.map.id,
+            nmpz=round.nmpz
+        )
+        db.session.add(stats)
+        db.session.flush()
+    
     stats.total_distance = stats.total_distance + distance
     stats.total_score += guess.score
     stats.total_time += time

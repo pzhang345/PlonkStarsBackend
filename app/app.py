@@ -6,6 +6,7 @@ from api.auth.routes import account_bp
 from api.game.routes import game_bp
 from api.map.routes import map_bp
 from api.session.routes import session_bp
+from api.admin.routes import admin_bp
 
 from admin import admin
 from models.db import db
@@ -33,6 +34,7 @@ app.register_blueprint(account_bp, url_prefix="/api/account")
 app.register_blueprint(game_bp, url_prefix="/api/game")
 app.register_blueprint(map_bp, url_prefix="/api/map")
 app.register_blueprint(session_bp, url_prefix="/api/session")
+app.register_blueprint(admin_bp, url_prefix="/api/admin")
 
 if __name__ == "__main__":
     socketio.run(app, debug=True, host='0.0.0.0', port=5000)

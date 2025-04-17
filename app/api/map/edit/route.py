@@ -30,14 +30,7 @@ def create_map(user):
     map = GameMap(creator_id=user.id,name=name)
     db.session.add(map)
     db.session.flush()
-    
-    map_generation = GenerationTime(map_id=map.id)
-    map_stats = MapStats(map_id=map.id)
-    
-    db.session.add(map_generation)
-    db.session.add(map_stats)
-    
-    db.session.commit()
+
     return jsonify({"id":map.uuid}),200
 
 

@@ -24,6 +24,7 @@ class MapStats(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     
     map_id = db.Column(db.Integer, db.ForeignKey("maps.id", ondelete="CASCADE"), nullable=False)
+    nmpz = db.Column(db.Boolean, nullable=False, default=False)
     total_time = db.Column(db.Integer, nullable=False, default=0)
     total_score = db.Column(db.Integer, nullable=False, default=0)
     total_distance = db.Column(db.Double, nullable=False, default=0)
