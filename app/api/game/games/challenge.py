@@ -265,7 +265,7 @@ class ChallengeGame(BaseGame):
                 "distance":users.total_distance,
                 "time":users.total_time,
                 "rank":users.rank,
-                "rounds":[guess_to_json(curr_user,round) for round in rounds]
+                "guesses":[guess_to_json(curr_user,round) for round in rounds]
             }]
         
         if this_user.rank > page * per_page:
@@ -275,7 +275,7 @@ class ChallengeGame(BaseGame):
                 "distance":user_stats.total_distance,
                 "time":user_stats.total_time,
                 "rank":this_user.rank,
-                "rounds":[guess_to_json(user,round) for round in rounds]
+                "guesses":[guess_to_json(user,round) for round in rounds]
             }
         
         user_map_stat = UserMapStats.query.filter_by(user_id=user.id,map_id=session.map_id, nmpz=session.nmpz).first()
