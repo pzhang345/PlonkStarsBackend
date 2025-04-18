@@ -22,21 +22,6 @@ def get_all_maps(user):
     per_page = request.args.get("per_page", 10, type=int)
     nmpz = request.args.get("nmpz") == "true" if request.args.get("nmpz") else None
     
-    query = GameMap.query.join(GameMap.creator).filter(
-        or_(
-            GameMap.name.ilike(f"%{name}%"),
-            User.username.ilike(f"%{name}%")
-        )
-    )
-    maps = query.join(MapStats).order_by(
-        case(
-            (GameMap.creator_id == user.id, 0),
-            (GameMap.creator_id == 42, 1),  
-            else_=2
-        ),
-        MapStats.total_guesses.desc()
-    ).paginate(page=page,per_page=per_page)
-    
     maps = (
         db.session.query(
             GameMap,
@@ -50,8 +35,13 @@ def get_all_maps(user):
                 GameMap.name.ilike(f"%{name}%"),
                 User.username.ilike(f"%{name}%")
             )
-        ) 
-        .group_by(GameMap.id)
+        )
+    )
+    if nmpz != None:
+        maps = maps.filter(MapStats.nmpz == nmpz)
+        
+    maps = (
+        maps.group_by(GameMap.id)
         .order_by(
             case(
                 (GameMap.creator_id == user.id, 0),
@@ -61,6 +51,7 @@ def get_all_maps(user):
             desc("total_guesses")
         ).paginate(page=page,per_page=per_page)
     )
+    
     
     
     ret = []
