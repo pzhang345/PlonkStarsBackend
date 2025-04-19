@@ -1,5 +1,5 @@
 from flask import Blueprint,request, jsonify
-from sqlalchemy import Float, case, cast, desc, func, or_
+from sqlalchemy import Float, case, cast, desc, func, literal_column, or_
 
 from api.auth.auth import login_required
 from models.session import Guess, Round, Session
@@ -26,7 +26,7 @@ def get_all_maps(user):
         db.session.query(
             GameMap,
             func.sum(MapStats.total_score).label("total_score"),
-            func.coalesce(func.count(Guess.id), 0).label("total_guesses")
+            func.sum(MapStats.total_guesses).label("total_guesses")
         )
         .outerjoin(MapStats, GameMap.id == MapStats.map_id)
         .join(GameMap.creator)
@@ -48,7 +48,7 @@ def get_all_maps(user):
                 (GameMap.creator_id == 42, 1),  
                 else_=2
             ),
-            desc(func.coalesce("total_guesses", 0))
+            desc("total_guesses")
         ).paginate(page=page,per_page=per_page)
     )
     
@@ -60,7 +60,7 @@ def get_all_maps(user):
             "name":map.name,
             "id":map.uuid,
             "creator":map.creator.to_json(),
-            "average_score":score/guess if guess != None or guess == 0 else 0,
+            "average_score":score/guess if guess != None and score != None and guess != 0 else 0,
             "average_generation_time": map.generation.total_generation_time/map.generation.total_loads if map.generation != None and map.generation.total_loads != 0 else 0,
             "total_guesses": guess if guess != None else 0,
         })
