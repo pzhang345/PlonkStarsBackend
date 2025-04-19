@@ -26,7 +26,7 @@ def get_all_maps(user):
         db.session.query(
             GameMap,
             func.sum(MapStats.total_score).label("total_score"),
-            func.sum(MapStats.total_guesses).label("total_guesses"),
+            func.coalesce(func.count(Guess.id), 0).label("total_guesses")
         )
         .outerjoin(MapStats, GameMap.id == MapStats.map_id)
         .join(GameMap.creator)
@@ -48,7 +48,7 @@ def get_all_maps(user):
                 (GameMap.creator_id == 42, 1),  
                 else_=2
             ),
-            desc("total_guesses")
+            desc(func.coalesce("total_guesses", 0))
         ).paginate(page=page,per_page=per_page)
     )
     
