@@ -40,6 +40,12 @@ def create_round(session,time_limit):
             break
         bound = get_random_bounds(map)
         location = db_location(bound)
+    
+    if generation == None:
+        generation = MapStats(
+            map_id=map.id,
+        )
+        db.session.add(generation)
         
     generation.total_generation_time += (datetime.now(tz=pytz.utc) - before).total_seconds()
     generation.total_loads += 1
