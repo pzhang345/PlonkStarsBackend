@@ -4,6 +4,7 @@ import pytz
 
 from models.db import db
 from models.session import Guess,Round
+from models.map import GenerationTime
 from models.stats import MapStats, RoundStats,UserMapStats
 from api.location.generate import generate_location,get_random_bounds,db_location
 from api.map.map import haversine
@@ -42,10 +43,11 @@ def create_round(session,time_limit):
         location = db_location(bound)
     
     if generation == None:
-        generation = MapStats(
+        generation = GenerationTime(
             map_id=map.id,
         )
         db.session.add(generation)
+        db.session.flush()
         
     generation.total_generation_time += (datetime.now(tz=pytz.utc) - before).total_seconds()
     generation.total_loads += 1
