@@ -32,9 +32,9 @@ class UserCosmetics(db.Model):
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     user_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    hue = db.Column(db.Integer, nullable=False, default=randint(0, 360))
-    saturation = db.Column(db.Integer, nullable=False, default=randint(90, 150))
-    brightness = db.Column(db.Integer, nullable=False, default=randint(90, 150))
+    hue = db.Column(db.Integer, nullable=False, default=lambda: randint(0, 360))
+    saturation = db.Column(db.Integer, nullable=False, default=lambda: randint(90, 150))
+    brightness = db.Column(db.Integer, nullable=False, default=lambda: randint(90, 150))
 
     def __str__(self):
         return f"UserCosmetics({self.user_id}, {self.cosmetics})"

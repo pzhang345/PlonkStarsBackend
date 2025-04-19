@@ -4,8 +4,7 @@ from api.account.auth import login_required
 from api.map.edit.mapedit import bound_recalculate, can_edit, map_add_bound, get_new_bound, map_remove_bound, bound_recalculate,get_bound
 from models.db import db
 from models.user import User
-from models.map import MapBound, GameMap, MapEditor, GenerationTime
-from models.stats import MapStats
+from models.map import MapBound, GameMap, MapEditor
 from fsocket import socketio
 
 map_edit_bp = Blueprint("map_edit",__name__)
