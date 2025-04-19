@@ -1,7 +1,7 @@
 from fsocket import socketio
 from flask_socketio import disconnect, emit, join_room
 
-from api.auth.auth import get_user_from_token
+from api.account.auth import get_user_from_token
 from api.map.edit.mapedit import can_edit
 from models.map import GameMap
 

@@ -1,7 +1,7 @@
 from flask import Blueprint,request, jsonify
 from sqlalchemy import Float, case, cast, desc, func, or_
 
-from api.auth.auth import login_required
+from api.account.auth import login_required
 from models.session import Guess, Round, Session
 from models.db import db
 from models.user import User

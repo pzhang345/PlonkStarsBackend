@@ -1,7 +1,7 @@
 from flask import Blueprint,request, jsonify
 from sqlalchemy import func
 
-from api.auth.auth import login_required
+from api.account.auth import login_required
 from api.game.gameutils import timed_out
 from models.db import db
 from models.map import GameMap

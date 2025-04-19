@@ -2,7 +2,7 @@
 # from flask_socketio import emit,join_room
 
 # from models.session import Session
-# from api.auth.auth import login_required
+# from api.account.auth import login_required
 # from api.game.gametype import game_type
 
 # @socketio.on("connect",namespace="/session")

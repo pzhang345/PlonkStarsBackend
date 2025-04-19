@@ -2,8 +2,8 @@ from flask import request, redirect, url_for, flash, session
 from sqlalchemy import inspect
 from flask_admin.contrib.sqla import ModelView
 from flask_admin import Admin, AdminIndexView, expose
-from api.auth.auth import login_required
-from api.auth.routes import bcrypt
+from api.account.auth import login_required
+from api.account.routes import bcrypt
 
 from models.db import db
 from models.user import User

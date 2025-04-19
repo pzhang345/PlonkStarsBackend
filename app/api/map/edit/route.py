@@ -1,6 +1,6 @@
 from flask import Blueprint,request, jsonify
 
-from api.auth.auth import login_required
+from api.account.auth import login_required
 from api.map.edit.mapedit import bound_recalculate, can_edit, map_add_bound, get_new_bound, map_remove_bound, bound_recalculate,get_bound
 from models.db import db
 from models.user import User

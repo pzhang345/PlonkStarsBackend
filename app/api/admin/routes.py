@@ -1,14 +1,26 @@
 from flask import Blueprint,request, jsonify
 from sqlalchemy import Float, cast, func
 
-from api.auth.auth import login_required
+from api.account.auth import login_required
 from models.db import db
 from models.map import GameMap
 from models.session import Guess, Round, Session
 from models.stats import MapStats, UserMapStats
-from models.user import User
+from models.user import User, UserCosmetics
 
 admin_bp = Blueprint("admin_bp",__name__)
+
+@admin_bp.route("/usercosmetics/initialize",methods=["POST"])
+@login_required
+def initialize_user_cosmetics(user):
+    if not user.is_admin:
+        return jsonify({"error":"You are not an admin"}),403
+    users = User.query.all()
+    for user in users:
+        cosmetics = UserCosmetics(user_id = user.id)
+        db.session.add(cosmetics)
+    db.session.commit()
+    return jsonify({"message":"User cosmetics initialized"}),200
 
 @admin_bp.route("/scores/recalculate",methods=["POST"])
 @login_required

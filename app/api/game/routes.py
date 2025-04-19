@@ -1,6 +1,6 @@
 from flask import Blueprint,jsonify,request
 
-from api.auth.auth import login_required
+from api.account.auth import login_required
 from api.game.gametype import game_type
 from models.session import Session,Player,GameType
 
