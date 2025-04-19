@@ -47,10 +47,10 @@ def play(user):
     return jsonify(ret[0]),ret[1]
     
 
-@game_bp.route("/round",methods=["GET"])
+@game_bp.route("/round",methods=["POST"])
 @login_required
 def get_round(user):
-    data = request.args
+    data = request.get_json()
     session_id = data.get("id")
     if not session_id:
         return jsonify({"error":"provided session id"}),400
