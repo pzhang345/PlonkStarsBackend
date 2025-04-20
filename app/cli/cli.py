@@ -1,3 +1,4 @@
+import pytz
 from api.game.gameutils import create_round
 from models.session import DailyChallenge, GameType, Session
 from datetime import datetime, timedelta
@@ -7,7 +8,7 @@ def register_commands(app):
     @app.cli.command("create-daily")
     def create_daily():
         """Create a new daily challenge"""
-        tomorrow = (datetime.now() + timedelta(days=1,hours=12)).date()
+        tomorrow = datetime.now(tz=pytz.utc).date() + timedelta(days=1)
         if DailyChallenge.query.filter_by(date=tomorrow).first():
             print("Daily challenge already exists for tomorrow.")
             return
