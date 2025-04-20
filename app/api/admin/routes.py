@@ -17,8 +17,9 @@ def initialize_user_cosmetics(user):
         return jsonify({"error":"You are not an admin"}),403
     users = User.query.all()
     for user in users:
-        cosmetics = UserCosmetics(user_id = user.id)
-        db.session.add(cosmetics)
+        if not user.cosmetics:
+            cosmetics = UserCosmetics(user_id = user.id)
+            db.session.add(cosmetics)
     db.session.commit()
     return jsonify({"message":"User cosmetics initialized"}),200
 
