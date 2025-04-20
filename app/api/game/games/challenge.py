@@ -167,6 +167,8 @@ class ChallengeGame(BaseGame):
         ranked_users = db.session.query(
             stats.c.user_id,
             stats.c.total_score,
+            stats.c.total_distance,
+            stats.c.total_time,
             func.rank().over(order_by=(desc(stats.c.total_score),stats.c.total_time)).label("rank")
         )
         
@@ -176,7 +178,9 @@ class ChallengeGame(BaseGame):
         if this_user.rank < (page - 1) * per_page + 1:
             json["users"] += [{
                 "user":user.to_json(),
-                "total_score":this_user.total_score,
+                "score":this_user.total_score,
+                "distance":this_user.total_distance,
+                "time":this_user.total_time,
                 "rank":this_user.rank,
                 "guess":guess_to_json(user,round),
             }]
@@ -186,7 +190,9 @@ class ChallengeGame(BaseGame):
             curr_user = User.query.filter_by(id=stats.user_id).first()
             json["users"] += [{
                 "user":curr_user.to_json(),
-                "total_score":stats.total_score,
+                "score":stats.total_score,
+                "distance":stats.total_distance,
+                "time":stats.total_time,
                 "rank":stats.rank,
                 "guess":guess_to_json(curr_user,round),
             }]
@@ -194,7 +200,9 @@ class ChallengeGame(BaseGame):
         if this_user.rank > page * per_page:
             json["users"] += [{
                 "user":user.to_json(),
-                "total_score":this_user.total_score,
+                "score":this_user.total_score,
+                "distance":this_user.total_distance,
+                "time":this_user.total_time,
                 "rank":this_user.rank,
                 "guess":guess_to_json(user,round),
             }]
