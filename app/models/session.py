@@ -27,6 +27,7 @@ class Session(db.Model):
     players = db.relationship("Player",backref="session",cascade="all,delete", passive_deletes=True)
     round_tracker = db.relationship("RoundStats",backref="session",cascade="all,delete", passive_deletes=True)
     high_scores = db.relationship("UserMapStats",backref="high_session",cascade="all,delete", passive_deletes=True)
+    daily_challenge = db.relationship("DailyChallenge",backref="session",cascade="all,delete", passive_deletes=True)
     
     def __str__(self):
         return self.uuid
@@ -75,3 +76,13 @@ class Guess(db.Model):
 
     def __str__(self):
         return f"({self.latitude},{self.longitude})"
+
+class DailyChallenge(db.Model):
+    __tablename__ = "daily_challenge"
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    session_id = db.Column(db.Integer, db.ForeignKey("sessions.id", ondelete="CASCADE"), nullable=False)
+    date = db.Column(db.Date, nullable=False, default=datetime.now(tz=pytz.utc).date())
+
+    def __str__(self):
+        return f"{self.date} {self.map.name}"
