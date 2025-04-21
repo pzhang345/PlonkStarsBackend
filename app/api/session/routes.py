@@ -6,6 +6,7 @@ from api.account.auth import login_required
 from api.session.session import get_session_info
 from models.db import db
 from models.configs import Configs
+from models.map import GameMap
 from models.session import DailyChallenge, GameType, Session
 
 session_bp = Blueprint("session_bp", __name__)
@@ -54,3 +55,20 @@ def get_daily(user):
     
     info["id"] = daily.session.uuid
     return jsonify(info), 200
+
+@session_bp.route("/default", methods=["GET"])
+def get_default():
+    ROUND_NUMBER = int(Configs.get("GAME_DEFAULT_ROUNDS"))
+    TIME_LIMIT =  int(Configs.get("GAME_DEFAULT_TIME_LIMIT"))
+    NMPZ = Configs.get("GAME_DEFAULT_NMPZ").lower() == "true"
+    MAP_ID = int(Configs.get("GAME_DEFAULT_MAP_ID"))
+    
+    map = GameMap.query.filter_by(id=MAP_ID).first_or_404("Map not found")
+    return jsonify({
+        "mapName":map.name, 
+        "mapId":map.uuid, 
+        "seconds":TIME_LIMIT, 
+        "rounds":ROUND_NUMBER, 
+        "NMPZ":NMPZ,
+    }),200
+    
