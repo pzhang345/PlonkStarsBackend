@@ -102,7 +102,7 @@ def remove_bound(user):
     
     try:
         ret = map_remove_bound(map,mapbound)
-        socketio.emit("remove",{"bounds":[ret[0]]},namespace="/socket/map/edit",room=map.uuid)
+        socketio.emit("remove",{"bounds":[ret[0]["id"]]},namespace="/socket/map/edit",room=map.uuid)
         return jsonify(ret[0]),ret[1]
     except Exception as e:
         print(e)
