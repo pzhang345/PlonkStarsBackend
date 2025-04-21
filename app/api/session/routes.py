@@ -5,6 +5,7 @@ import pytz
 from api.account.auth import login_required
 from api.session.session import get_session_info
 from models.db import db
+from models.configs import Configs
 from models.session import DailyChallenge, GameType, Session
 
 session_bp = Blueprint("session_bp", __name__)
@@ -25,11 +26,11 @@ def get_daily(user):
     daily = DailyChallenge.query.filter_by(date=today).first()
     
     if not daily:
-        ROUND_NUMBER = 5
-        TIME_LIMIT = 180
-        NMPZ = False
-        MAP_ID = 1
-        HOST_ID = 42
+        ROUND_NUMBER = int(Configs.query.filter_by(key="DAILY_DEFAULT_ROUNDS").first().value)
+        TIME_LIMIT = int(Configs.query.filter_by(key="DAILY_DEFAULT_TIME_LIMIT").first().value)
+        NMPZ = Configs.query.filter_by(key="DAILY_DEFAULT_NMPZ").first().value.lower() == "true"
+        MAP_ID = int(Configs.query.filter_by(key="DAILY_DEFAULT_MAP_ID").first().value)
+        HOST_ID = int(Configs.query.filter_by(key="DAILY_DEFAULT_HOST_ID").first().value)
         
         session = Session(
             host_id=HOST_ID,

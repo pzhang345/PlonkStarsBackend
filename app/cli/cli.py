@@ -3,6 +3,7 @@ from api.game.gameutils import create_round
 from models.session import DailyChallenge, GameType, Session
 from datetime import datetime, timedelta
 from models.db import db
+from models.configs import Configs
         
 def register_commands(app):
     @app.cli.command("create-daily")
@@ -12,12 +13,12 @@ def register_commands(app):
         if DailyChallenge.query.filter_by(date=tomorrow).first():
             print("Daily challenge already exists for tomorrow.")
             return
-        
-        ROUND_NUMBER = 5
-        TIME_LIMIT = 180
-        NMPZ = False
-        MAP_ID = 1
-        HOST_ID = 42
+
+        ROUND_NUMBER = int(Configs.query.filter_by(key="DAILY_DEFAULT_ROUNDS").first().value)
+        TIME_LIMIT = int(Configs.query.filter_by(key="DAILY_DEFAULT_TIME_LIMIT").first().value)
+        NMPZ = Configs.query.filter_by(key="DAILY_DEFAULT_NMPZ").first().value.lower() == "true"
+        MAP_ID = int(Configs.query.filter_by(key="DAILY_DEFAULT_MAP_ID").first().value)
+        HOST_ID = int(Configs.query.filter_by(key="DAILY_DEFAULT_HOST_ID").first().value)
         
         session = Session(
             host_id=HOST_ID,

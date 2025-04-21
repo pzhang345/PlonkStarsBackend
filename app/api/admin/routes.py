@@ -2,6 +2,7 @@ from flask import Blueprint,request, jsonify
 from sqlalchemy import Float, cast, func
 
 from api.account.auth import login_required
+from models.configs import Configs
 from models.db import db
 from models.map import GameMap
 from models.session import Guess, Round, Session
@@ -107,3 +108,27 @@ def recalculate_scores(user):
 
     db.session.commit()
     return jsonify({"message":"Scores recalculated"}),200
+
+@admin_bp.route("/configs/set",methods=["POST"])
+@login_required
+def set_config(user):
+    if not user.is_admin:
+        return jsonify({"error":"You are not an admin"}),403
+    data = request.get_json()
+    
+    key = str(data.get("key"))
+    value = str(data.get("value"))
+    
+    if not key or not value:
+        return jsonify({"error":"Missing key or value"}),400
+    
+    config = Configs.query.filter_by(key=key).first()
+    
+    if not config:
+        config = Configs(key=key,value=value)
+        db.session.add(config)
+    else:
+        config.value = value
+    db.session.commit()
+    
+    return jsonify({"message":"Config updated"}),200
