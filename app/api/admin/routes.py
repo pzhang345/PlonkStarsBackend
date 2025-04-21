@@ -62,6 +62,7 @@ def recalculate_scores(user):
     
     all_scores = all_scores.group_by(User.id, GameMap.id, Session.nmpz)
     
+    keys = set()
     for user,map,nmpz,score,distance,time,guess in all_scores:
         user_map_stats = UserMapStats.query.filter_by(user_id=user.id, map_id=map.id, nmpz=nmpz).first()
         if user_map_stats is None:
@@ -97,6 +98,12 @@ def recalculate_scores(user):
         map_stats.total_guesses += guess
         map_stats.total_time += time
         map_stats.total_distance += distance
+        keys.add((user.id,map.id,nmpz))
         
+    for user_stat in UserMapStats.query.all():
+        key = (user_stat.user_id, user_stat.map_id, user_stat.nmpz)
+        if key not in keys:
+            db.session.delete(user_stat)
+
     db.session.commit()
     return jsonify({"message":"Scores recalculated"}),200
