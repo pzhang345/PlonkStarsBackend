@@ -14,3 +14,9 @@ class Configs(db.Model):
             "key":self.key,
             "value":self.value
         }
+        
+    def get(key):
+        config = Configs.query.filter_by(key=str(key)).first()
+        if not config:
+            return None
+        return config.value

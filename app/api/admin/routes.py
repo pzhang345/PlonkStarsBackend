@@ -132,3 +132,23 @@ def set_config(user):
     db.session.commit()
     
     return jsonify({"message":"Config updated"}),200
+
+@admin_bp.route("/configs/get",methods=["GET"])
+@login_required
+def get_config(user):
+    if not user.is_admin:
+        return jsonify({"error":"You are not an admin"}),403
+    
+    data = request.args
+    
+    key = str(data.get("key"))
+    
+    if not key:
+        return jsonify({"error":"Missing key"}),400
+    
+    value = Configs.get(key)
+    
+    if not value:
+        return jsonify({"error":"Config not found"}),404
+    
+    return jsonify({"value":value}),200

@@ -26,11 +26,11 @@ def get_daily(user):
     daily = DailyChallenge.query.filter_by(date=today).first()
     
     if not daily:
-        ROUND_NUMBER = int(Configs.query.filter_by(key="DAILY_DEFAULT_ROUNDS").first().value)
-        TIME_LIMIT = int(Configs.query.filter_by(key="DAILY_DEFAULT_TIME_LIMIT").first().value)
-        NMPZ = Configs.query.filter_by(key="DAILY_DEFAULT_NMPZ").first().value.lower() == "true"
-        MAP_ID = int(Configs.query.filter_by(key="DAILY_DEFAULT_MAP_ID").first().value)
-        HOST_ID = int(Configs.query.filter_by(key="DAILY_DEFAULT_HOST_ID").first().value)
+        ROUND_NUMBER = int(Configs.get("DAILY_DEFAULT_ROUNDS"))
+        TIME_LIMIT =  int(Configs.get("DAILY_DEFAULT_TIME_LIMIT"))
+        NMPZ = Configs.get("DAILY_DEFAULT_NMPZ").lower() == "true"
+        MAP_ID = int(Configs.get("DAILY_DEFAULT_MAP_ID"))
+        HOST_ID = int(Configs.get("DAILY_DEFAULT_HOST_ID"))
         
         session = Session(
             host_id=HOST_ID,
