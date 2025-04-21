@@ -20,7 +20,8 @@ def get_session(user):
 @session_bp.route("/daily", methods=["GET"])
 @login_required
 def get_daily(user):
-    today = datetime.now(tz=pytz.utc).date()
+    now = datetime.now(tz=pytz.utc)
+    today = now.date()
     daily = DailyChallenge.query.filter_by(date=today).first()
     
     if not daily:
@@ -47,10 +48,8 @@ def get_daily(user):
     
     info = get_session_info(daily.session, user)[0]
     
-    now = datetime.now(tz=pytz.utc)
-    start_of_tomorrow = datetime.combine(now.date() + timedelta(days=1), datetime.min.time(),tzinfo=now.tzinfo)
-    time_until_tomorrow = (start_of_tomorrow - now).total_seconds()
-    info["next"] = time_until_tomorrow
+    tomorrow = datetime.combine(now.date() + timedelta(days=1), datetime.min.time(),tzinfo=now.tzinfo)
+    info["next"] = tomorrow
     
     info["id"] = daily.session.uuid
     return jsonify(info), 200
