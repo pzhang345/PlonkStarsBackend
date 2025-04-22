@@ -234,4 +234,11 @@ def bound_recalculate(map):
     db.session.commit()
 
 def can_edit(user,map):
-    return map.creator_id == user.id or user.is_admin or MapEditor.query.filter_by(user_id=user.id,map_id=map.id).count() > 0
+    if map.creator_id == user.id or user.is_admin:
+        return 4
+    
+    editor = MapEditor.query.filter_by(user_id=user.id,map_id=map.id).first()
+    if editor == None:
+        return 0
+    return editor.permission_level
+    

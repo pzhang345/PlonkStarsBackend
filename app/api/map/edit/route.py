@@ -17,7 +17,7 @@ def can_edit_map(user):
         return jsonify({"error":"provided: id"}),400
     
     map = GameMap.query.filter_by(uuid=id).first_or_404("Cannot find map")
-    return jsonify({"can_edit": can_edit(user,map)}),200
+    return jsonify({"permission": can_edit(user,map)}),200
 
 @map_edit_bp.route("/create",methods=["POST"])
 @login_required
@@ -32,6 +32,9 @@ def create_map(user):
 
     return jsonify({"id":map.uuid}),200
 
+#################################################
+# Permission 1                                  #
+#################################################
 
 @map_edit_bp.route("bound/add",methods=["POST"])
 @login_required
@@ -47,7 +50,7 @@ def add_bound(user):
     weight = max(1,weight) if weight else max(1,(e_lat-s_lat) * (e_lng-s_lng) * 10000)
     
     map = GameMap.query.filter_by(uuid=data.get("id")).first_or_404("Cannot find map")
-    if not can_edit(user,map):
+    if can_edit(user,map) < 1:
         return jsonify({"error":"Don't have access to the map"}),403
     
     res = map_add_bound(map,s_lat,s_lng,e_lat,e_lng,weight)
@@ -60,7 +63,7 @@ def add_bound(user):
 def add_bounds(user):
     data = request.get_json()
     map = GameMap.query.filter_by(uuid=data.get("id")).first_or_404("Cannot find map")
-    if not can_edit(user,map):
+    if can_edit(user,map) < 1:
         return jsonify({"error":"Don't have access to the map"}),403
     
     if not data.get("bounds"):
@@ -90,7 +93,7 @@ def remove_bound(user):
     data = request.get_json()
     
     map = GameMap.query.filter_by(uuid=data.get("id")).first_or_404("Cannot find map")
-    if not can_edit(user,map):
+    if can_edit(user,map) < 1:
         return jsonify({"error":"Don't have access to the map"}),403
     
     try:
@@ -113,7 +116,7 @@ def remove_bound(user):
 def remove_bounds(user):
     data = request.get_json()
     map = GameMap.query.filter_by(uuid=data.get("id")).first_or_404("Cannot find map")
-    if not can_edit(user,map):
+    if can_edit(user,map) < 1:
         return jsonify({"error":"Don't have access to the map"}),403
     
     ret = []
@@ -137,7 +140,7 @@ def reweight_bound(user):
     data = request.get_json()
     
     map = GameMap.query.filter_by(uuid=data.get("id")).first_or_404("Cannot find map")
-    if not can_edit(user,map):
+    if can_edit(user,map) < 1:
         return jsonify({"error":"Don't have access to the map"}),403
     
     (s_lat,s_lng),(e_lat,e_lng) = get_bound(data)
@@ -148,14 +151,18 @@ def reweight_bound(user):
     ret = bound_recalculate(map,s_lat,s_lng,e_lat,e_lng,weight)
     socketio.emit("reweight",{"bounds":[ret]},namespace="/socket/map/edit",room=map.uuid)
     return jsonify(ret[0]),ret[1]
-    
+     
+#################################################
+# Permission 2                                  #
+#################################################
+
 @map_edit_bp.route("/description",methods=["POST"])
 @login_required
 def edit_description(user):
     data = request.get_json()
     
     map = GameMap.query.filter_by(uuid=data.get("id")).first_or_404("Cannot find map")
-    if not can_edit(user,map):
+    if can_edit(user,map) < 2:
         return jsonify({"error":"Don't have access to the map"}),403
     
     map.description = data.get("description")
@@ -168,12 +175,16 @@ def edit_name(user):
     data = request.get_json()
     
     map = GameMap.query.filter_by(uuid=data.get("id")).first_or_404("Cannot find map")
-    if not can_edit(user,map):
+    if can_edit(user,map) < 2:
         return jsonify({"error":"Don't have access to the map"}),403
     
     map.name = data.get("name")
     db.session.commit()
     return jsonify({"message":"name updated"}),200
+
+#################################################
+# Permission 3                                  #
+#################################################
 
 @map_edit_bp.route("/delete",methods=["DELETE"])
 @login_required
@@ -181,7 +192,7 @@ def delete_map(user):
     data = request.get_json()
     
     map = GameMap.query.filter_by(uuid=data.get("id")).first_or_404("Cannot find map")
-    if not can_edit(user,map):
+    if can_edit(user,map) < 3:
         return jsonify({"error":"Don't have access to the map"}),403
     mapbounds = map.map_bounds
     for mapbound in mapbounds:
@@ -190,6 +201,11 @@ def delete_map(user):
     db.session.delete(map)
     db.session.commit()
     return jsonify({"message":"map deleted"}),200
+
+
+##################################################
+# Can add or remove people with lower permissions#
+##################################################
 
 @map_edit_bp.route("/editor/add",methods=["POST"])
 @login_required
@@ -201,11 +217,20 @@ def add_editor(user):
         return jsonify({"error":"Don't have access to the map"}),403
     
     new_editor = User.query.filter_by(username=data.get("username")).first()
-    if not new_editor:
+    if not new_editor or new_editor.id == user.id:
         return jsonify({"error":"provided valid username"}),400
     
-    editor = MapEditor(map_id=map.id,user_id=new_editor.id)
-    db.session.add(editor)
+    permission = data.get("permission")
+    if can_edit(user,map) <= permission:
+        return jsonify({"error":"Not high enough permission"}),400
+    
+    
+    editor = MapEditor.query.filter_by(map_id=map.id,user_id=new_editor.id).first()
+    if not editor:
+        editor = MapEditor(map_id=map.id,user_id=new_editor.id)
+        db.session.add(editor)
+    
+    editor.permission_level = permission
     db.session.commit()
     return jsonify({"message":"editor added"}),200
 
@@ -215,8 +240,6 @@ def remove_editor(user):
     data = request.get_json()
     
     map = GameMap.query.filter_by(uuid=data.get("id")).first_or_404("Cannot find map")
-    if user.id != map.creator_id and not user.is_admin:
-        return jsonify({"error":"Don't have access to the map"}),403
     
     remove_editor = User.query.filter_by(username=data.get("username")).first()
     if not remove_editor:
@@ -226,6 +249,9 @@ def remove_editor(user):
     if not editor:
         return jsonify({"error":"provided valid map editor"}),400
     
+    if can_edit(user,map) <= editor.permission_level:
+        return jsonify({"error":"Not high enough permission"}),400
+    
     db.session.delete(editor)
     db.session.commit()
-    return jsonify({"message":"editor added"}),200
+    return jsonify({"message":"editor deleted"}),200

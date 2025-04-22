@@ -71,6 +71,7 @@ class MapEditor(db.Model):
     
     user_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     map_id = db.Column(db.Integer, db.ForeignKey("maps.id", ondelete="CASCADE"), nullable=False)
+    permission_level = db.Column(db.Integer, nullable=False, default=0)
     
 class GenerationTime(db.Model):
     __tablename__="generationtimes"
