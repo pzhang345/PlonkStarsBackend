@@ -2,20 +2,16 @@ from flask import Flask
 from flask_migrate import Migrate
 from flask_cors import CORS
 
-from api.account.routes import account_bp
-from api.game.routes import game_bp
-from api.map.routes import map_bp
-from api.session.routes import session_bp
-from api.admin.routes import admin_bp
+from fsocket import socketio
+from api.routes import api_bp
+from api.socket import register_sockets
+
 
 from cli.cli import register_commands
 
 from admin import admin
 from models.db import db
-from fsocket import socketio
 from config import Config
-
-import api.map.edit.socket # DO NOT DELETE 
 
 app = Flask(__name__)
 CORS(app, cors_allow_origins="*")
@@ -25,19 +21,13 @@ app.config.from_object(Config)
 db.init_app(app)
 with app.app_context():
     db.create_all()
-
-socketio.init_app(app)
-admin.init_app(app)
-
-
 migrate = Migrate(app, db,directory=app.config["MIGRATION_DIR"])
 
-app.register_blueprint(account_bp, url_prefix="/api/account")
-app.register_blueprint(game_bp, url_prefix="/api/game")
-app.register_blueprint(map_bp, url_prefix="/api/map")
-app.register_blueprint(session_bp, url_prefix="/api/session")
-app.register_blueprint(admin_bp, url_prefix="/api/admin")
 
+admin.init_app(app)
+socketio.init_app(app)
+app.register_blueprint(api_bp, url_prefix="/api")
+register_sockets(socketio)
 register_commands(app)
 
 if __name__ == "__main__":

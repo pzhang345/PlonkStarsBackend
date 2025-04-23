@@ -6,7 +6,7 @@ from models.session import Session,Player,GameType
 
 game_bp = Blueprint("game",__name__)
 
-str_to_type = {"challenge":GameType.CHALLENGE}
+str_to_type = {"challenge":GameType.CHALLENGE,"live": GameType.LIVE}
 
 @game_bp.route("/create",methods=["POST"])
 @login_required

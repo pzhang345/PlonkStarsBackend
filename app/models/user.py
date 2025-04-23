@@ -17,6 +17,8 @@ class User(db.Model):
     user_map_stats = db.relationship("UserMapStats",backref="user",cascade="all,delete", passive_deletes=True)
     can_edit = db.relationship("MapEditor",backref="user",cascade="all,delete", passive_deletes=True)
     cosmetics = db.relationship("UserCosmetics", backref="user", cascade="all,delete", uselist=False, passive_deletes=True)
+    parties = db.relationship("Party", backref="host", cascade="all,delete", passive_deletes=True)
+    party_member = db.relationship("PartyMember", backref="user", cascade="all,delete", passive_deletes=True)
 
     def __str__(self):
         return self.username
