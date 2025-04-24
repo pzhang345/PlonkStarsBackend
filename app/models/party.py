@@ -20,8 +20,8 @@ class PartyMember(db.Model):
     
     id = db.Column(db.Integer, primary_key=True)
     sid = db.Column(db.String(36), nullable=False)
-    party_id = db.Column(db.Integer, db.ForeignKey("party.id", ondelete="CASCASE"), nullable=False)
-    user_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="CASCASE"), nullable=False)
+    party_id = db.Column(db.Integer, db.ForeignKey("party.id", ondelete="CASCADE"), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
 
     def __str__(self):
         return f"<PartyMember {self.user} in {self.party.host}>"
