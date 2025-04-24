@@ -40,23 +40,23 @@ class LiveGame(BaseGame):
                 player.current_round = host_player.current_round
                 player.start_time = host_player.start_time
             db.session.commit()
-            socketio.emit("round_start",namespace="/socket/party",room=data.get("code"))
+            socketio.emit("next",namespace="/socket/party",room=data.get("code"))
             return ret
         else:
             player = super().get_player(user, session)
             round = super().get_round(player, session)
             if timed_out(user,round.time_limit):
-                return {"error":"timre limit exceeded"},400
+                return {"error":"time limit exceeded"},400
             return ChallengeGame().get_round(data, user, session)
         
     def guess(self, data, user, session):
         ChallengeGame().guess(data, user, session)
         if Guess.query.join(Round).filter(Round.session_id==session.id).count() <= Player.query.filter_by(session_id=session.id,user_id=user.id).count():
-            socketio.emit("round_over",namespace="/socket/party",room=data.get("code"))
+            socketio.emit("next",namespace="/socket/party",room=data.get("code"))
         return {"message":"guess submitted"},200
     
     def get_state(self, data, user, session):
-        pass
+        return ChallengeGame.get_state(self,data,session.host,session)
     
     def results(self, data, user, session):
         player = super().get_player(user, session)

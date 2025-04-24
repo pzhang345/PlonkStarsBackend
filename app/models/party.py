@@ -19,7 +19,6 @@ class PartyMember(db.Model):
     __tablename__ = "party_members"
     
     id = db.Column(db.Integer, primary_key=True)
-    sid = db.Column(db.String(36), nullable=False)
     party_id = db.Column(db.Integer, db.ForeignKey("party.id", ondelete="CASCADE"), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
 

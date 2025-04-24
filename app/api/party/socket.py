@@ -30,6 +30,7 @@ def register_party_socket(socketio,namespace):
             member = PartyMember(user_id=user.id,party_id=party.id,sid=request.sid)
             db.session.add(member)
             db.session.commit()
+            emit("new_user",{"user":user.to_json()},namespace=namespace,room=room)
         join_room(room)
         
         emit("joined",{"message":"joined party"})
