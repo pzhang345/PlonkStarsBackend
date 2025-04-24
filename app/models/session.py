@@ -28,7 +28,7 @@ class Session(db.Model):
     round_tracker = db.relationship("RoundStats",backref="session",cascade="all,delete", passive_deletes=True)
     high_scores = db.relationship("UserMapStats",backref="high_session",cascade="all,delete", passive_deletes=True)
     daily_challenge = db.relationship("DailyChallenge",backref="session",cascade="all,delete", passive_deletes=True)
-    parties = db.relationship("Party", backref="session", cascade="all,delete", passive_deletes=True)
+    parties = db.relationship("Party", backref="session", passive_deletes=True)
     
     def __str__(self):
         return self.uuid
