@@ -17,7 +17,7 @@ def create_game(user):
     type = str_to_type.get((data.get("type") if data.get("type") else "challenge").lower())
     if not type:
         return jsonify({"error":"provided a correct type"}),400
-    return return_400_on_error(game_type[type].create,data,user)
+    return return_400_on_error(game_type[type].create,data,user)[0:2]
 
 
 @game_bp.route("/play",methods=["POST"])
@@ -31,7 +31,7 @@ def play(user):
     
     if Player.query.filter_by(session_id=session.id,user_id=user.id).count() > 0:
         return jsonify({"error":"already played this session"}),403
-    return return_400_on_error(game_type[session.type].join,data,user,session)
+    return return_400_on_error(game_type[session.type].join,data,user,session)[0:2]
     
 
 @game_bp.route("/round",methods=["POST"])
@@ -43,7 +43,7 @@ def get_round(user):
         return jsonify({"error":"provided session id"}),400
     
     session = Session.query.filter_by(uuid=session_id).first_or_404("Session not found")
-    return return_400_on_error(game_type[session.type].get_round,data,user,session)
+    return return_400_on_error(game_type[session.type].get_round,data,user,session)[0:2]
     
 
 
@@ -56,7 +56,7 @@ def submit_guess(user):
         return jsonify({"error":"provided session id"}),400
     
     session = Session.query.filter_by(uuid=session_id).first_or_404("Session not found")
-    return return_400_on_error(game_type[session.type].guess,data,user,session)
+    return return_400_on_error(game_type[session.type].guess,data,user,session)[0:2]
     
     
 @game_bp.route("/results",methods=["GET"])
@@ -68,7 +68,7 @@ def get_result(user):
         return jsonify({"error":"provided session id"}),400
     
     session = Session.query.filter_by(uuid=session_id).first_or_404("Session not found")
-    return return_400_on_error(game_type[session.type].results,data,user,session)
+    return return_400_on_error(game_type[session.type].results,data,user,session)[0:2]
 
 @game_bp.route("/summary",methods=["GET"])
 @login_required
@@ -79,4 +79,4 @@ def get_summary(user):
     if not session_id:
         return jsonify({"error":"provided bad session id"}), 400
     session = Session.query.filter_by(uuid=session_id).first_or_404("Session not found")
-    return return_400_on_error(game_type[session.type].summary,data,user,session)
+    return return_400_on_error(game_type[session.type].summary,data,user,session)[0:2]
