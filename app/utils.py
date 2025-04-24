@@ -1,5 +1,7 @@
 from random import randint
 
+from flask import jsonify
+
 tolerance = 1e-7
 def coord_at(model,num):
     return model.between(num - tolerance, num + tolerance)
@@ -14,3 +16,11 @@ def generate_code(Party):
         for _ in range(4):
             code += chr(randint(65, 90))
     return code
+
+def return_400_on_error(method,*args,**kwargs):
+    try:
+        ret = method(*args,**kwargs)
+    except Exception as e:
+        print(e)
+        return jsonify({"error":str(e)}),400
+    return jsonify(ret[0]),*ret[1:]

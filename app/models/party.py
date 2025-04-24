@@ -7,7 +7,7 @@ class Party(db.Model):
     
     id = db.Column(db.Integer, primary_key=True)
     code = db.Column(db.String(4), unique=True, nullable=False, default=lambda: generate_code(Party))
-    session_id = db.Column(db.Integer, db.ForeignKey("sessions.id", ondelete="CASCADE"), nullable=True)
+    session_id = db.Column(db.Integer, db.ForeignKey("sessions.id", ondelete="CASCADE"))
     host_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     
     members = db.relationship("PartyMember", backref="party", cascade="all,delete", passive_deletes=True)

@@ -112,6 +112,9 @@ def create_guess(lat,lng,user,round,time):
     user_stat.total_guesses += 1
     db.session.commit()
     
+    db.session.add(guess)
+    db.session.commit()
+    
     return guess
 
 def create_round_stats(user,session,round_num = None,guess=None):
@@ -148,6 +151,8 @@ def create_round_stats(user,session,round_num = None,guess=None):
             total_distance=prev_round_stats.total_distance + guess.distance
         )
     
+    db.session.add(round_stats)
+    db.session.commit()
     return round_stats
 
 def timed_out(player,time_limit):

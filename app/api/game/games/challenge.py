@@ -11,14 +11,10 @@ from models.stats import RoundStats,UserMapStats
 
 class ChallengeGame(BaseGame):
     def create(self,data,user):
-        ret = super().create(data,GameType.CHALLENGE,user)
-        if ret[1] != 200:
-            return ret
-        
-        session = ret[2]
+        session = super().create(data,GameType.CHALLENGE,user)
         db.session.add(session)
         db.session.commit()
-        return {"id":session.uuid},200
+        return {"id":session.uuid},200,session
 
     def join(self,data,user,session):
         player = Player(session_id=session.id,user_id=user.id)
@@ -60,9 +56,8 @@ class ChallengeGame(BaseGame):
             
         
         if not prev_round_stats and player.current_round != 0:
-            stats = create_round_stats(user,session,round_num=player.current_round)
-            db.session.add(stats)
-            db.session.commit()
+            create_round_stats(user,session,round_num=player.current_round)
+            
             
             
         if session.max_rounds == player.current_round:
@@ -116,11 +111,7 @@ class ChallengeGame(BaseGame):
             raise Exception("timed out")
 
         guess = create_guess(lat,lng,user,round,time)
-        db.session.add(guess)
-        db.session.flush()
-        round_stat = create_round_stats(user,session,guess=guess)
-        db.session.add(round_stat)
-        db.session.commit()
+        create_round_stats(user,session,guess=guess)
        
         return {"message":"guess added"},200
     
@@ -148,9 +139,7 @@ class ChallengeGame(BaseGame):
             raise Exception("Round not played yet")
 
         if not RoundStats.query.filter_by(session_id=session.id,round=round_num,user_id=user.id).first():
-            stats = create_round_stats(user,session,round_num=round_num)
-            db.session.add(stats)
-            db.session.commit()
+            create_round_stats(user,session,round_num=round_num)
         
         json = {
             "round_number":round_num,
@@ -227,9 +216,7 @@ class ChallengeGame(BaseGame):
                 
         user_stats = RoundStats.query.filter_by(user_id=user.id,session_id=session.id,round=session.max_rounds).first()
         if not user_stats:
-            user_stats = create_round_stats(user,session,round_num=session.max_rounds)
-            db.session.add(user_stats)
-            db.session.commit()
+            create_round_stats(user,session,round_num=session.max_rounds)
                 
         stats = RoundStats.query.filter_by(session_id=session.id,round=session.max_rounds).subquery()
         ranked_users = db.session.query(

@@ -26,13 +26,10 @@ class BaseGame(ABC):
             raise Exception("Map has no locations")
             
         session = Session(host_id=user.id,map_id=map.id,time_limit=time_limit,max_rounds=num_rounds,type=type, nmpz=nmpz)
-        return {"session":session},200,session
+        return session
 
     def join(self,data,user,session):
-        raise Exception("RESTAPI join is not supported")
-    
-    def socket_join(self,data,user,session):
-        return False
+        pass
     
     @abstractmethod
     def get_round(self,data,user,session):
