@@ -22,19 +22,14 @@ def register_party_socket(socketio,namespace):
         user = get_user_from_token(data.get("token"))
         party = Party.query.filter_by(code=room).first_or_404("Cannot find map")
         
-        if PartyMember.query.filter_by(party,user_id=user.id).count() > 0:
-            emit("error",{"error":"Already joined this party"})
-            return
-        
-        member = PartyMember(user_id=user.id,party_id=party.id,sid=request.sid)
-        db.session.add(member)
-        db.session.commit()
+        member = PartyMember.query.filter_by(party_id=party.id,user_id=user.id).first()
+        if member:
+            member.sid = request.sid
+            db.session.commit()
+        else:
+            member = PartyMember(user_id=user.id,party_id=party.id,sid=request.sid)
+            db.session.add(member)
+            db.session.commit()
         join_room(room)
         
         emit("joined",{"message":"joined party"})
-
-    @socketio.on('disconnect',namespace=namespace)
-    def on_disconnect():
-        member = PartyMember.query.filter_by(sid=request.sid).first()
-        db.session.delete(member)
-        db.session.commit()

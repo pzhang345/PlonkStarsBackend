@@ -115,6 +115,20 @@ class ChallengeGame(BaseGame):
        
         return {"message":"guess added"},200
     
+    def get_state(self,data,user,session):
+        player = player = Player.query.filter_by(user_id=user.id,session_id=session.id).first()
+        if not player:
+            return {"state":"not_playing"},200
+        round = super().get_round(player,session)
+        if not timed_out(player,round.time_limit) and Guess.query.filter_by(user_id=user.id,round_id=round.id).count() == 0:
+            return {"state":"playing","round":player.current_round},200
+        else:
+            next_round = player.current_round + 1
+            if next_round > session.max_rounds:
+                return {"state":"finished"},200
+            return {"state":"waiting","round":player.current_round},200
+            
+    
     def results(self,data,user,session):
         round_num = data.get("round")
         

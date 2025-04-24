@@ -55,6 +55,9 @@ class LiveGame(BaseGame):
             socketio.emit("round_over",namespace="/socket/party",room=data.get("code"))
         return {"message":"guess submitted"},200
     
+    def get_state(self, data, user, session):
+        pass
+    
     def results(self, data, user, session):
         player = super().get_player(user, session)
         round = super().get_round(player, session)

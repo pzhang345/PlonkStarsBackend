@@ -45,8 +45,6 @@ def get_round(user):
     session = Session.query.filter_by(uuid=session_id).first_or_404("Session not found")
     return return_400_on_error(game_type[session.type].get_round,data,user,session)[0:2]
     
-
-
 @game_bp.route("/guess",methods=["POST"])
 @login_required
 def submit_guess(user):
@@ -57,7 +55,17 @@ def submit_guess(user):
     
     session = Session.query.filter_by(uuid=session_id).first_or_404("Session not found")
     return return_400_on_error(game_type[session.type].guess,data,user,session)[0:2]
+
+@game_bp.route("/state",methods=["GET"])
+@login_required
+def get_state(user):
+    data = request.args
+    session_id = data.get("id")
+    if not session_id:
+        return jsonify({"error":"provided session id"}),400
     
+    session = Session.query.filter_by(uuid=session_id).first_or_404("Session not found")
+    return return_400_on_error(game_type[session.type].get_state,data,user,session)[0:2]
     
 @game_bp.route("/results",methods=["GET"])
 @login_required

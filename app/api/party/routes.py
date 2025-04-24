@@ -63,3 +63,19 @@ def start_game(user):
         return jsonify({"error": "No session yet"}), 404
     
     return return_400_on_error(game_type[type].join, data, user, session)
+
+@party_bp.route("/game/state", methods=["GET"])
+@login_required
+def get_game_state(user):
+    data = request.args
+    code = data.get("code")
+    
+    party = Party.query.filter_by(code=code).first_or_404("Cannot find party")
+    session = party.session
+    
+    if not session:
+        return jsonify({"state": "lobby"}), 200
+    
+    else:
+        return 
+    
