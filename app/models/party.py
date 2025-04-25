@@ -13,7 +13,7 @@ class Party(db.Model):
     members = db.relationship("PartyMember", backref="party", cascade="all,delete", passive_deletes=True)
 
     def __str__(self):
-        return f"<Party {self.host}>"
+        return f"{self.host}'s party ({self.code})"
 
 class PartyMember(db.Model):
     __tablename__ = "party_members"
@@ -23,4 +23,4 @@ class PartyMember(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
 
     def __str__(self):
-        return f"<PartyMember {self.user} in {self.party.host}>"
+        return f"{self.party} member ({self.user})"

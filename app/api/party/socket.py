@@ -18,19 +18,15 @@ def register_party_socket(socketio,namespace):
 
     @socketio.on("join",namespace=namespace)
     def handle_join_room(data):
-        room = data.get('code')
+        room = data.get('id')
         user = get_user_from_token(data.get("token"))
         party = Party.query.filter_by(code=room).first_or_404("Cannot find map")
         
         member = PartyMember.query.filter_by(party_id=party.id,user_id=user.id).first()
-        if member:
-            member.sid = request.sid
-            db.session.commit()
-        else:
-            member = PartyMember(user_id=user.id,party_id=party.id,sid=request.sid)
-            db.session.add(member)
-            db.session.commit()
-            emit("new_user",{"user":user.to_json()},namespace=namespace,room=room)
+        if not member:
+            emit("error",{"error":"join through the RESTAPI first"})
+            return
+        join_room(f"{user.id}_{room}")
         join_room(room)
         
-        emit("joined",{"message":"joined party"})
+        emit("message",{"message":"joined party"})
