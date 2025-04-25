@@ -93,8 +93,11 @@ class LiveGame(BaseGame):
                 user_map_stat.high_average_time = round_stats.total_time/session.max_rounds
                 user_map_stat.high_session_id = session.id
                 db.session.commit()
-            
-        session.game_type = GameType.CHALLENGE
+        
+        party = session.party
+        
+        party.session_id = None
+        session.type = GameType.CHALLENGE
         db.session.commit()
         return ret
     
