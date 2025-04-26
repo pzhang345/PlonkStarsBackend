@@ -73,7 +73,7 @@ def join_party(user):
     db.session.add(member)
     db.session.commit()
     
-    socketio.emit("add_user", {"user": user.to_json()}, namespace="/socket/party", room=code)
+    socketio.emit("add_user", user.to_json(), namespace="/socket/party", room=code)
     
     return jsonify({"message": "joined party"}), 200
 
@@ -167,7 +167,7 @@ def leave_party(user):
     db.session.commit()
     
     socketio.emit("leave",namespace="/socket/party", room=f"{member.user_id}_{code}")
-    socketio.emit("remove_user", {"user": user.username}, namespace="/socket/party", room=code)
+    socketio.emit("remove_user", {"username": user.username}, namespace="/socket/party", room=code)
     
     return jsonify({"message": "left party"}), 200
 
