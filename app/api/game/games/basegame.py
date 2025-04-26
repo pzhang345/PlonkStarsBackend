@@ -4,7 +4,7 @@ from models.session import Round,Session,Player
 from models.map import GameMap
 class BaseGame(ABC):
     def create(self,data,type,user):
-        map_id = data.get("map_id")
+        map_id = data.get("map_id") if data.get("map_id") else data.get("map").get("id")
         time_limit = data.get("time") if data.get("time") else -1
         num_rounds = data.get("rounds") if data.get("rounds") else 5
         nmpz = data.get("nmpz") if data.get("nmpz") else False

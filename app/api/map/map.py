@@ -1,6 +1,7 @@
 import math
-from sqlalchemy import Float, cast, func
+from sqlalchemy import Float, cast, desc, func, literal_column
 
+from models.map import GameMap
 from models.stats import MapStats, UserMapStats
 
 def haversine(lat1, lng1, lat2, lng2):

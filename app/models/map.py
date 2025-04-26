@@ -24,6 +24,7 @@ class GameMap(db.Model):
     user_map_stats = db.relationship("UserMapStats",backref="map",cascade="all,delete", passive_deletes=True)
     editors = db.relationship("MapEditor", backref="map", cascade="all,delete", passive_deletes=True)
     generation = db.relationship("GenerationTime", backref="map", cascade="all,delete", uselist=False, passive_deletes=True)
+    party_rules = db.relationship("PartyRules", backref="map", cascade="all,delete", passive_deletes=True)
     
     def __str__(self):
         return self.name

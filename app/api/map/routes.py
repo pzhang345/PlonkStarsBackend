@@ -33,6 +33,7 @@ def get_all_maps(user):
         .filter(
             or_(
                 GameMap.name.ilike(f"%{name}%"),
+                GameMap.uuid == name,
                 User.username.ilike(f"%{name}%")
             )
         )

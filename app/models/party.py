@@ -1,5 +1,6 @@
 from models.db import db
 
+from models.session import GameType
 from utils import generate_code
 
 class Party(db.Model):
@@ -11,6 +12,7 @@ class Party(db.Model):
     host_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     
     members = db.relationship("PartyMember", backref="party", cascade="all,delete", passive_deletes=True)
+    rules = db.relationship("PartyRules", backref="party", cascade="all,delete", passive_deletes=True, uselist=False)
 
     def __str__(self):
         return f"{self.host}'s party ({self.code})"
@@ -24,3 +26,14 @@ class PartyMember(db.Model):
 
     def __str__(self):
         return f"{self.party} member ({self.user})"
+
+class PartyRules(db.Model):
+    __tablename__ = "party_rules"
+    
+    id = db.Column(db.Integer, primary_key=True)
+    party_id = db.Column(db.Integer, db.ForeignKey("party.id", ondelete="CASCADE"), nullable=False)
+    map_id = db.Column(db.Integer, db.ForeignKey("maps.id", ondelete="CASCADE"), nullable=False)
+    max_rounds = db.Column(db.Integer, nullable=False, default=-1)
+    time_limit = db.Column(db.Integer, nullable=False, default=-1)
+    type = db.Column(db.Enum(GameType), nullable=False, default=GameType.LIVE)
+    nmpz = db.Column(db.Boolean, nullable=False, default=False)

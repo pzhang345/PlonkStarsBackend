@@ -2,9 +2,12 @@ from flask import Blueprint, request, jsonify
 
 from api.account.auth import login_required
 from api.game.gametype import str_to_type_socket,game_type
+from api.party.party import get_party_rule
 from models.db import db
-from models.party import Party, PartyMember
+from models.map import GameMap
+from models.party import Party, PartyMember, PartyRules
 from models.user import User
+from models.configs import Configs
 from utils import return_400_on_error
 
 from fsocket import socketio
@@ -17,7 +20,20 @@ def create_party(user):
     party = Party(host_id=user.id)
     db.session.add(party)
     db.session.flush()
+    ROUND_NUMBER = int(Configs.get("GAME_DEFAULT_ROUNDS"))
+    TIME_LIMIT =  int(Configs.get("GAME_DEFAULT_TIME_LIMIT"))
+    NMPZ = Configs.get("GAME_DEFAULT_NMPZ").lower() == "true"
+    MAP_ID = int(Configs.get("GAME_DEFAULT_MAP_ID"))
+    rules = PartyRules(
+        party_id=party.id,
+        map_id=MAP_ID,
+        time_limit=TIME_LIMIT,
+        max_rounds=ROUND_NUMBER,
+        nmpz=NMPZ
+    )
+    db.session.add(rules)
     member = PartyMember(user_id=user.id, party_id=party.id)
+    
     db.session.add(member)
     db.session.commit()
     
@@ -37,11 +53,8 @@ def start_party(user):
     if party.host_id != user.id:
         return jsonify({"error": "You are not the host of this party"}), 403
     
-    type = str_to_type_socket.get((data.get("type") if data.get("type") else "live").lower())
-    if not type:
-        return jsonify({"error": "provided a correct type"}), 400
-    
-    ret = return_400_on_error(game_type[type].create, data, user)
+    type = party.rules.type
+    ret = return_400_on_error(game_type[type].create, get_party_rule(party), user)
     if ret[1] != 200:
         return ret
     
@@ -188,4 +201,40 @@ def delete_party(user):
     socketio.emit("leave", {"reason": "party disbanded"}, namespace="/socket/party", room=code)
     
     return jsonify({"message": "deleted party"}), 200
+
+@party_bp.route("/rules", methods=["GET"])
+@login_required
+def get_rules(user):
+    data = request.args
+    code = data.get("code")
     
+    party = Party.query.filter_by(code=code).first_or_404("Cannot find party")
+    
+    if not party:
+        return jsonify({"error": "No session yet"}), 404
+    
+    return jsonify(get_party_rule(party)), 200
+    
+@party_bp.route("/rules", methods=["POST"])
+@login_required
+def set_rules(user):
+    data = request.get_json()
+    code = data.get("code")
+    
+    party = Party.query.filter_by(code=code).first_or_404("Cannot find party")
+    
+    if party.host_id != user.id:
+        return jsonify({"error": "You are not the host of this party"}), 403
+    
+    rules = PartyRules.query.filter_by(party_id=party.id).first_or_404("Cannot find rules")
+    map = GameMap.query.filter_by(uuid=data.get("map_id")).first()
+    
+    rules.map_id = map.id if map else rules.map_id
+    rules.time_limit = data.get("time_limit") if data.get("time_limit") else rules.time_limit
+    rules.max_rounds = data.get("max_rounds") if data.get("max_rounds") else rules.max_rounds
+    rules.nmpz = data.get("nmpz") if data.get("nmpz") else rules.nmpz
+    db.session.commit()
+    
+    socketio.emit("update_rules", get_party_rule(party), namespace="/socket/party", room=party.code)
+    
+    return jsonify({"message": "rules updated"}), 200
