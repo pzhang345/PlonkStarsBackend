@@ -156,7 +156,7 @@ def remove_user(user):
     if party.host_id != user.id:
         return jsonify({"error": "You are not the host of this party"}), 403
     
-    if remove_user.user_id == party.host_id:
+    if remove_user.id == party.host_id:
         return jsonify({"error": "You cannot remove the host"}), 403
     
     member = PartyMember.query.filter_by(party_id=party.id, user_id=remove_user.id).first_or_404("Cannot find member")
