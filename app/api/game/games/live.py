@@ -56,12 +56,28 @@ class LiveGame(BaseGame):
         return {"message":"guess submitted"},200
     
     def get_state(self, data, user, session):
-        return ChallengeGame.get_state(self,data,session.host,session)
+        player = player = Player.query.filter_by(user_id=user.id,session_id=session.id).first()
+        if not player:
+            return {"state":"not_playing"},200
+        
+        round = super().get_round(player, session)
+        player_count = Player.query.filter_by(session_id=session.id).count()
+        if Guess.query.join(Round).filter(Round.session_id==session.id).count() <= player_count and not timed_out(player,round.time_limit):
+            guess = Guess.query.filter_by(user_id=user.id,round_id=round.id).first()
+            if guess:
+                return {"state":"waiting","round":player.current_round,"lat":guess.latitude,"lng":guess.longitude},200
+            else:
+                return {"state":"playing","round":player.current_round},400
+        else:
+            next_round = player.current_round + 1
+            if next_round > session.max_rounds:
+                return {"state":"finished"},200
+            return {"state":"results","round":player.current_round},200
     
     def results(self, data, user, session):
         player = super().get_player(user, session)
         round = super().get_round(player, session)
-        player_count = Player.query.filter_by(session_id=session.id,user_id=user.id).count()
+        player_count = Player.query.filter_by(session_id=session.id).count()
         if Guess.query.join(Round).filter(Round.session_id==session.id).count() <= player_count and not timed_out(player,round.time_limit):
             return {"error":"not everyone guessed"},400
         
