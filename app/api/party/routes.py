@@ -59,11 +59,15 @@ def start_party(user):
         return ret
     
     session = ret[2]
+    party.session_id = session.id
+    db.session.commit()
     
     for member in party.members:
         return_400_on_error(game_type[type].join, data, member.user, session)
     
-    socketio.emit("start", {"id": session.uuid}, namespace="/socket/party", room=party.code)
+    return_400_on_error(game_type[type].next, data, user, session)
+    
+    socketio.emit("start", {"id": session.uuid,"type":session.type.name}, namespace="/socket/party", room=party.code)
 
     return jsonify({"message": "session started"}), 200
 
@@ -125,7 +129,7 @@ def get_game_state(user):
         return jsonify({"state": "lobby"}), 200
     
     else:
-        return {"state":"playing","id": session.uuid}, 200
+        return {"state":"playing","id": session.uuid,"type":session.type.name}, 200
     
 @party_bp.route("/users", methods=["GET"])
 @login_required

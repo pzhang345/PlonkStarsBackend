@@ -33,11 +33,21 @@ def play(user):
         return jsonify({"error":"already played this session"}),403
     return return_400_on_error(game_type[session.type].join,data,user,session)[0:2]
     
+@game_bp.route("/next",methods=["POST"])
+@login_required
+def next_round(user):
+    data = request.get_json()
+    session_id = data.get("id")
+    if not session_id:
+        return jsonify({"error":"provided session id"}),400
+    
+    session = Session.query.filter_by(uuid=session_id).first_or_404("Session not found")
+    return return_400_on_error(game_type[session.type].next,data,user,session)[0:2]
 
-@game_bp.route("/round",methods=["POST"])
+@game_bp.route("/round",methods=["GET"])
 @login_required
 def get_round(user):
-    data = request.get_json()
+    data = request.args
     session_id = data.get("id")
     if not session_id:
         return jsonify({"error":"provided session id"}),400

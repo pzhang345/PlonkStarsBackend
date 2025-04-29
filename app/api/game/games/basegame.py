@@ -31,6 +31,11 @@ class BaseGame(ABC):
     def join(self,data,user,session):
         pass
     
+    
+    @abstractmethod
+    def next(self,data,user,session):
+        pass
+    
     @abstractmethod
     def get_round(self,data,user,session):
         pass

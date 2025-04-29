@@ -22,63 +22,42 @@ class ChallengeGame(BaseGame):
         db.session.commit()
         return {"message":"session joined"},200
     
-    def get_round(self,data,user,session):
+    def next(self,data,user,session):
         player = super().get_player(user,session)
-        prev_round_stats = RoundStats.query.filter_by(user_id=user.id,session_id=session.id,round=player.current_round).first()
-        
+        if player.current_round == session.max_rounds:
+            raise Exception("No more rounds are available")
         if player.current_round != 0:
             round = super().get_round(player,session)
-
-            if Guess.query.filter_by(user_id=user.id,round_id=round.id).count() == 0 and not timed_out(player,round.time_limit):
-                prev_round_stats = RoundStats.query.filter_by(user_id=user.id,session_id=session.id,round=player.current_round-1).first()
-                location = round.location
-                ret = {
-                    "round":player.current_round,
-                    "lat":location.latitude,
-                    "lng":location.longitude,
-                    "total":prev_round_stats.total_score if prev_round_stats else 0,
-                    "nmpz": round.nmpz,
-                    "map_bounds":{
-                        "start":{
-                            "lat":session.map.start_latitude,
-                            "lng":session.map.start_longitude,
-                        },
-                        "end":{
-                            "lat":session.map.end_latitude,
-                            "lng":session.map.end_longitude,
-                        },
-                    },
-                }
-                if round.time_limit != -1:
-                    ret["time"] = pytz.utc.localize(player.start_time) + timedelta(seconds=round.time_limit)
-                    ret["time_limit"] = round.time_limit
-                return ret,200
             
-        
-        if not prev_round_stats and player.current_round != 0:
-            create_round_stats(user,session,round_num=player.current_round)
-            
-            
-            
-        if session.max_rounds == player.current_round:
-                raise Exception("No more rounds are available")
+            if not timed_out(player,session.time_limit) and Guess.query.filter_by(user_id=user.id,round_id=round.id).count() == 0:
+                raise Exception("Player has not finished the current round")
         
         if player.current_round + 1 > session.current_round:
             create_round(session,session.time_limit)
         
         player.current_round += 1
-        
-        round = super().get_round(player,session)
-        location = round.location
-        
         player.start_time = datetime.now(tz=pytz.utc)
         db.session.commit()
-        ret =  {
+        
+        return {"message":"round exists"},200
+    
+    
+    def get_round(self,data,user,session):
+        player = super().get_player(user,session)
+        round = super().get_round(player,session)
+        prev_round_stats = RoundStats.query.filter_by(user_id=user.id,session_id=session.id,round=player.current_round).first()
+        
+        if player.current_round == 0 or (Guess.query.filter_by(user_id=user.id,round_id=round.id).count() == 0 and timed_out(player,round.time_limit)):
+            raise Exception("Call the 'next' endpoint first")
+      
+        prev_round_stats = RoundStats.query.filter_by(user_id=user.id,session_id=session.id,round=player.current_round-1).first()
+        location = round.location
+        ret = {
             "round":player.current_round,
             "lat":location.latitude,
             "lng":location.longitude,
             "total":prev_round_stats.total_score if prev_round_stats else 0,
-            "nmpz":round.nmpz,
+            "nmpz": round.nmpz,
             "map_bounds":{
                 "start":{
                     "lat":session.map.start_latitude,
@@ -90,10 +69,9 @@ class ChallengeGame(BaseGame):
                 },
             },
         }
-        if(round.time_limit != -1):
-            ret["time"] =  pytz.utc.localize(player.start_time) + timedelta(seconds=round.time_limit)
+        if round.time_limit != -1:
+            ret["time"] = pytz.utc.localize(player.start_time) + timedelta(seconds=round.time_limit)
             ret["time_limit"] = round.time_limit
-
         return ret,200
     
     def guess(self,data,user,session):
@@ -117,7 +95,7 @@ class ChallengeGame(BaseGame):
     
     def get_state(self,data,user,session):
         player = player = Player.query.filter_by(user_id=user.id,session_id=session.id).first()
-        if not player:
+        if not player or player.current_round == 0:
             return {"state":"not_playing"},200
         round = super().get_round(player,session)
         if not timed_out(player,round.time_limit) and Guess.query.filter_by(user_id=user.id,round_id=round.id).count() == 0:
@@ -126,7 +104,7 @@ class ChallengeGame(BaseGame):
             next_round = player.current_round + 1
             if next_round > session.max_rounds:
                 return {"state":"finished"},200
-            return {"state":"waiting","round":player.current_round},200
+            return {"state":"results","round":player.current_round},200
             
     
     def results(self,data,user,session):
