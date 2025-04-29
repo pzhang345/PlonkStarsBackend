@@ -20,6 +20,8 @@ def generate_code(Party):
 def return_400_on_error(method,*args,**kwargs):
     try:
         ret = method(*args,**kwargs)
+        if not ret:
+            return jsonify(success=True),200
     except Exception as e:
         print(e)
         return jsonify({"error":str(e)}),400

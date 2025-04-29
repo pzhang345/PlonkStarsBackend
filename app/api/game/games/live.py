@@ -74,7 +74,7 @@ class LiveGame(BaseGame):
         else:
             next_round = player.current_round + 1
             if next_round > session.max_rounds:
-                return {"state":"finished"},200
+                return {"state":"finished","round":player.current_round},200
             return {"state":"results","round":player.current_round},200
     
     def results(self, data, user, session):
@@ -118,13 +118,15 @@ class LiveGame(BaseGame):
         db.session.commit()
         return ret
     
-    def ping(session):
+    def ping(self,data,user,session):
         player = super().get_player(session.host, session)
         round = super().get_round(player, session)
         
         player_count = Player.query.filter_by(session_id=session.id).count()
+        guess_count = Guess.query.filter_by(round_id=round.id).count()
 
-        if Guess.query.join(Round).filter(Round.session_id==session.id).count() < player_count and timed_out(player,round.time_limit):
+        if guess_count < player_count and timed_out(player,round.time_limit):
             for player in Player.query.filter_by(session_id=session.id):
                 if RoundStats.query.filter_by(user_id=player.user_id,session_id=session.id,round=player.current_round).count() == 0:
                     create_round_stats(player.user,session,player.current_round)
+            socketio.emit("next",namespace="/socket/party",room=data.get("code"))        

@@ -56,6 +56,9 @@ class BaseGame(ABC):
     def get_state(self,data,user,session):
         pass
     
+    def ping(self,data,user,session):
+        pass
+    
     def get_player(self,user,session):
         player = Player.query.filter_by(user_id=user.id,session_id=session.id).first()
         if not player:

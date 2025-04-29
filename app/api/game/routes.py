@@ -98,3 +98,14 @@ def get_summary(user):
         return jsonify({"error":"provided bad session id"}), 400
     session = Session.query.filter_by(uuid=session_id).first_or_404("Session not found")
     return return_400_on_error(game_type[session.type].summary,data,user,session)[0:2]
+
+@game_bp.route("/ping",methods=["POST"])
+@login_required
+def ping(user):
+    data = request.get_json()
+    session_id = data.get("id")
+    
+    if not session_id:
+        return jsonify({"error":"provided bad session id"}), 400
+    session = Session.query.filter_by(uuid=session_id).first_or_404("Session not found")
+    return return_400_on_error(game_type[session.type].ping,data,user,session)[0:2]

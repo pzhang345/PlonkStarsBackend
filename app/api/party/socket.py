@@ -1,8 +1,6 @@
-from flask import request
 from flask_socketio import disconnect, emit, join_room
 from api.account.auth import get_user_from_token
 
-from models.db import db
 from models.party import Party, PartyMember
 
 def register_party_socket(socketio,namespace):
