@@ -108,6 +108,7 @@ class LiveGame(BaseGame):
         if guess_count < player_count and not timed_out(player,round.time_limit):
             return {"error":"not everyone guessed"},400
         
+        socketio.emit("summary",namespace="/socket/party",room=data.get("code"))
         ret = ChallengeGame().summary(data, user, session)
         for round_stats in RoundStats.query.filter_by(user_id=player.user_id,session_id=session.id,round=session.max_rounds):
             user_map_stat = UserMapStats.query.filter_by(user_id=user.id,map_id=session.map_id, nmpz=session.nmpz).first()
