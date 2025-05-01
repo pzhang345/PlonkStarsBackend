@@ -51,8 +51,10 @@ class LiveGame(BaseGame):
         ChallengeGame().guess(data, user, session)
         player = Player.query.filter_by(user_id=user.id,session_id=session.id).first()
         round = super().get_round(player, session)
+        socketio.emit("guess",user.to_json(),namespace="/socket/party",room=data.get("code"))
         if Guess.query.filter_by(round_id=round.id).count() <= Player.query.filter_by(session_id=session.id).count():
             socketio.emit("next",namespace="/socket/party",room=data.get("code"))
+            
         return {"message":"guess submitted"},200
     
     def get_state(self, data, user, session):
@@ -63,14 +65,25 @@ class LiveGame(BaseGame):
         round = super().get_round(player, session)
         player_count = Player.query.filter_by(session_id=session.id).count()
         guess_count = Guess.query.filter_by(round_id=round.id).count()
-        print(guess_count,player_count)
         
         if  guess_count < player_count and not timed_out(player,round.time_limit):
             guess = Guess.query.filter_by(user_id=user.id,round_id=round.id).first()
             if guess:
-                return {"state":"waiting","round":player.current_round,"lat":guess.latitude,"lng":guess.longitude},200
+                return {
+                    "state":"waiting",
+                    "round":player.current_round,
+                    "lat":guess.latitude,
+                    "lng":guess.longitude,
+                    "guess":guess_count,
+                    "player":player_count
+                },200
             else:
-                return {"state":"playing","round":player.current_round},200
+                return {
+                    "state":"playing",
+                    "round":player.current_round,
+                    "guess":guess_count,
+                    "player":player_count
+                },200
         else:
             next_round = player.current_round + 1
             if next_round > session.max_rounds:
