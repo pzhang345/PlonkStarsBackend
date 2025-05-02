@@ -16,7 +16,8 @@ def register_party_socket(socketio,namespace):
 
     @socketio.on("join",namespace=namespace)
     def handle_join_room(data):
-        room = data.get('id')
+        room = data.get('code')
+        session = data.get('id')
         user = get_user_from_token(data.get("token"))
         party = Party.query.filter_by(code=room).first_or_404("Cannot find map")
         
@@ -26,6 +27,8 @@ def register_party_socket(socketio,namespace):
             return
         socketio.emit("leave",{"reason":"joined new party"},namespace=namespace,room=f"{user.id}_{room}")
         join_room(f"{user.id}_{room}")
+        if session:
+            join_room(session)
         join_room(room)
         
         emit("message",{"message":"joined party"})

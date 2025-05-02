@@ -41,7 +41,7 @@ class LiveGame(BaseGame):
             player.current_round = host_player.current_round
             player.start_time = host_player.start_time
         db.session.commit()
-        socketio.emit("next",self.get_state(data,user,session),namespace="/socket/party",room=data.get("code"))
+        socketio.emit("next",self.get_state(data,user,session),namespace="/socket/party",room=session.uuid)
         return ret
         
     def get_round(self, data, user, session):
@@ -51,9 +51,9 @@ class LiveGame(BaseGame):
         ChallengeGame().guess(data, user, session)
         player = Player.query.filter_by(user_id=user.id,session_id=session.id).first()
         round = super().get_round(player, session)
-        socketio.emit("guess",user.to_json(),namespace="/socket/party",room=data.get("code"))
+        socketio.emit("guess",user.to_json(),namespace="/socket/party",room=session.uuid)
         if Guess.query.filter_by(round_id=round.id).count() <= Player.query.filter_by(session_id=session.id).count():
-            socketio.emit("next",self.get_state(data,user,session),namespace="/socket/party",room=data.get("code"))
+            socketio.emit("next",self.get_state(data,user,session),namespace="/socket/party",room=session.uuid)
             
         return {"message":"guess submitted"},200
     
@@ -108,7 +108,7 @@ class LiveGame(BaseGame):
         if guess_count < player_count and not timed_out(player,round.time_limit):
             return {"error":"not everyone guessed"},400
         
-        socketio.emit("summary",namespace="/socket/party",room=data.get("code"))
+        socketio.emit("summary",namespace="/socket/party",room=session.uuid)
         ret = ChallengeGame().summary(data, user, session)
         for round_stats in RoundStats.query.filter_by(user_id=player.user_id,session_id=session.id,round=session.max_rounds):
             user_map_stat = UserMapStats.query.filter_by(user_id=user.id,map_id=session.map_id, nmpz=session.nmpz).first()
@@ -143,4 +143,4 @@ class LiveGame(BaseGame):
             for player in Player.query.filter_by(session_id=session.id):
                 if RoundStats.query.filter_by(user_id=player.user_id,session_id=session.id,round=player.current_round).count() == 0:
                     create_round_stats(player.user,session,player.current_round)
-            socketio.emit("next",self.get_state(data,user,session),namespace="/socket/party",room=data.get("code"))        
+            socketio.emit("next",self.get_state(data,user,session),namespace="/socket/party",room=session.uuid)        
