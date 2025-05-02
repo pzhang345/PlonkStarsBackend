@@ -72,3 +72,9 @@ def get_default():
         "NMPZ":NMPZ,
     }),200
     
+@session_bp.route("/host", methods=["GET"])
+@login_required
+def is_host(user):
+    data = request.args
+    session = Session.query.filter_by(uuid=data.get("id")).first_or_404("Session not found")
+    return jsonify({"is_host":session.host_id == user.id}),200
