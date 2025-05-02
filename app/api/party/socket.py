@@ -24,6 +24,7 @@ def register_party_socket(socketio,namespace):
         if not member:
             emit("error",{"error":"join through the RESTAPI first"})
             return
+        socketio.emit("leave",{"reason":"joined new party"},namespace=namespace,room=f"{user.id}_{room}")
         join_room(f"{user.id}_{room}")
         join_room(room)
         

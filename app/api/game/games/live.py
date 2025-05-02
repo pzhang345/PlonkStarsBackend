@@ -41,7 +41,7 @@ class LiveGame(BaseGame):
             player.current_round = host_player.current_round
             player.start_time = host_player.start_time
         db.session.commit()
-        socketio.emit("next",namespace="/socket/party",room=data.get("code"))
+        socketio.emit("next",self.get_state(data,user,session),namespace="/socket/party",room=data.get("code"))
         return ret
         
     def get_round(self, data, user, session):
@@ -53,7 +53,7 @@ class LiveGame(BaseGame):
         round = super().get_round(player, session)
         socketio.emit("guess",user.to_json(),namespace="/socket/party",room=data.get("code"))
         if Guess.query.filter_by(round_id=round.id).count() <= Player.query.filter_by(session_id=session.id).count():
-            socketio.emit("next",namespace="/socket/party",room=data.get("code"))
+            socketio.emit("next",self.get_state(data,user,session),namespace="/socket/party",room=data.get("code"))
             
         return {"message":"guess submitted"},200
     
@@ -143,4 +143,4 @@ class LiveGame(BaseGame):
             for player in Player.query.filter_by(session_id=session.id):
                 if RoundStats.query.filter_by(user_id=player.user_id,session_id=session.id,round=player.current_round).count() == 0:
                     create_round_stats(player.user,session,player.current_round)
-            socketio.emit("next",namespace="/socket/party",room=data.get("code"))        
+            socketio.emit("next",self.get_state(data,user,session),namespace="/socket/party",room=data.get("code"))        
