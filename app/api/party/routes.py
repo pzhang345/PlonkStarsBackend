@@ -234,8 +234,8 @@ def set_rules(user):
     map = GameMap.query.filter_by(uuid=data.get("map_id")).first()
     
     rules.map_id = map.id if map else rules.map_id
-    rules.time_limit = data.get("time_limit") if data.get("time_limit") else rules.time_limit
-    rules.max_rounds = data.get("max_rounds") if data.get("max_rounds") else rules.max_rounds
+    rules.time_limit = data.get("time") if data.get("time") else rules.time_limit
+    rules.max_rounds = data.get("rounds") if data.get("rounds") else rules.max_rounds
     rules.nmpz = data.get("nmpz") if data.get("nmpz") else rules.nmpz
     db.session.commit()
     
