@@ -7,7 +7,7 @@ class BaseGame(ABC):
         map_id = data.get("map_id") if data.get("map_id") else data.get("map").get("id")
         time_limit = data.get("time") if data.get("time") else -1
         num_rounds = data.get("rounds") if data.get("rounds") else 5
-        nmpz = data.get("nmpz") if data.get("nmpz") else False
+        nmpz = data.get("nmpz") if data.get("nmpz") != None else False
 
         if num_rounds <= 0 and num_rounds != -1:
             raise Exception("Invalid number of rounds")

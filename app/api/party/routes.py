@@ -233,10 +233,11 @@ def set_rules(user):
     rules = PartyRules.query.filter_by(party_id=party.id).first_or_404("Cannot find rules")
     map = GameMap.query.filter_by(uuid=data.get("map_id")).first()
     
+    print(data)
     rules.map_id = map.id if map else rules.map_id
     rules.time_limit = data.get("time") if data.get("time") else rules.time_limit
     rules.max_rounds = data.get("rounds") if data.get("rounds") else rules.max_rounds
-    rules.nmpz = data.get("nmpz") if data.get("nmpz") else rules.nmpz
+    rules.nmpz = data.get("nmpz") if data.get("nmpz") != None else rules.nmpz
     db.session.commit()
     
     socketio.emit("update_rules", get_party_rule(party), namespace="/socket/party", room=party.code)
