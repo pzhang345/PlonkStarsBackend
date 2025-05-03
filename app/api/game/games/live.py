@@ -108,20 +108,19 @@ class LiveGame(BaseGame):
         if guess_count < player_count and not timed_out(player,round.time_limit):
             return {"error":"not everyone guessed"},400
         
-        socketio.emit("summary",namespace="/socket/party",room=session.uuid)
         ret = ChallengeGame().summary(data, user, session)
-        for round_stats in RoundStats.query.filter_by(user_id=player.user_id,session_id=session.id,round=session.max_rounds):
-            user_map_stat = UserMapStats.query.filter_by(user_id=user.id,map_id=session.map_id, nmpz=session.nmpz).first()
+        for round_stat in RoundStats.query.filter_by(session_id=session.id,round=session.max_rounds):
+            user_map_stat = UserMapStats.query.filter_by(user_id=round_stat.user_id,map_id=session.map_id, nmpz=session.nmpz).first()
             if not user_map_stat:
-                user_map_stat = UserMapStats(user_id=user.id,map_id=session.map_id, nmpz=session.nmpz)
+                user_map_stat = UserMapStats(user_id=round_stat.user_id,map_id=session.map_id, nmpz=session.nmpz)
                 db.session.add(user_map_stat)
                 db.session.commit()
             
-            if (user_map_stat.high_average_score,user_map_stat.high_round_number,-user_map_stat.high_average_time) < (round_stats.total_score/session.max_rounds,session.max_rounds,-round_stats.total_time/session.max_rounds):
+            if (user_map_stat.high_average_score,user_map_stat.high_round_number,-user_map_stat.high_average_time) < (round_stat.total_score/session.max_rounds,session.max_rounds,-round_stat.total_time/session.max_rounds):
                 user_map_stat.high_round_number = session.max_rounds
-                user_map_stat.high_average_score = round_stats.total_score/session.max_rounds
-                user_map_stat.high_average_distance = round_stats.total_distance/session.max_rounds
-                user_map_stat.high_average_time = round_stats.total_time/session.max_rounds
+                user_map_stat.high_average_score = round_stat.total_score/session.max_rounds
+                user_map_stat.high_average_distance = round_stat.total_distance/session.max_rounds
+                user_map_stat.high_average_time = round_stat.total_time/session.max_rounds
                 user_map_stat.high_session_id = session.id
                 db.session.commit()
         
@@ -130,6 +129,7 @@ class LiveGame(BaseGame):
         party.session_id = None
         session.type = GameType.CHALLENGE
         db.session.commit()
+        socketio.emit("summary",namespace="/socket/party",room=session.uuid)
         return ret
     
     def ping(self,data,user,session):
