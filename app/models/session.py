@@ -59,7 +59,7 @@ class Player(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     session_id = db.Column(db.Integer,db.ForeignKey("sessions.id", ondelete="CASCADE"), nullable=False)
     current_round = db.Column(db.Integer, nullable=False, default=0)
-    start_time = db.Column(db.DateTime, nullable=False,default=datetime.now(tz=pytz.utc))
+    start_time = db.Column(db.DateTime, nullable=False,default=lambda: datetime.now(tz=pytz.utc))
     
 class Guess(db.Model):
     __tablename__ = "guesses"

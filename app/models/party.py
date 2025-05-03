@@ -1,3 +1,6 @@
+from datetime import datetime
+
+import pytz
 from models.db import db
 
 from models.session import GameType
@@ -10,6 +13,7 @@ class Party(db.Model):
     code = db.Column(db.String(4), unique=True, nullable=False, default=lambda: generate_code(Party))
     session_id = db.Column(db.Integer, db.ForeignKey("sessions.id"))
     host_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    last_activity = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(tz=pytz.utc))
     
     members = db.relationship("PartyMember", backref="party", cascade="all,delete", passive_deletes=True)
     rules = db.relationship("PartyRules", backref="party", cascade="all,delete", passive_deletes=True, uselist=False)

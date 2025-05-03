@@ -1,6 +1,9 @@
+from datetime import datetime
 from flask_socketio import disconnect, emit, join_room
+import pytz
 from api.account.auth import get_user_from_token
 
+from models.db import db
 from models.party import Party, PartyMember
 
 def register_party_socket(socketio,namespace):
@@ -19,7 +22,9 @@ def register_party_socket(socketio,namespace):
         room = data.get('code')
         session = data.get('id')
         user = get_user_from_token(data.get("token"))
-        party = Party.query.filter_by(code=room).first_or_404("Cannot find map")
+        party = Party.query.filter_by(code=room).first_or_404("Cannot find party")
+        party.last_activity = datetime.now(tz=pytz.utc)
+        db.session.commit()
         
         member = PartyMember.query.filter_by(party_id=party.id,user_id=user.id).first()
         if not member:
