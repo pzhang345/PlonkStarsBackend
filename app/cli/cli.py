@@ -1,5 +1,6 @@
 import pytz
 from api.game.gameutils import create_round
+from models.party import Party
 from models.session import DailyChallenge, GameType, Session
 from datetime import datetime, timedelta
 from models.db import db
@@ -37,3 +38,11 @@ def register_commands(app):
         db.session.commit()
         
         print("Daily challenge created successfully.")
+        
+    @app.cli.command("clean-parties")
+    def clean_party():
+        """Deletes all inactive parties"""
+        cutoff = datetime.now(tz=pytz.utc) - timedelta(days=1)
+        Party.query.filter(Party.last_activity < cutoff).delete(synchronize_session=False)
+        db.session.commit()
+        print("Inactive parties deleted successfully.")
