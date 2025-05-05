@@ -85,7 +85,7 @@ class ChallengeGame(BaseGame):
         
         time = (now - pytz.utc.localize(player.start_time)).total_seconds()
         
-        if round.time_limit != -1 and time > round.time_limit:
+        if round.time_limit != -1 and time > round.time_limit + 1:
             raise Exception("timed out")
 
         guess = create_guess(lat,lng,user,round,time)
