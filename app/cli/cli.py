@@ -44,8 +44,10 @@ def register_commands(app):
     def clean_party():
         """Deletes all inactive parties"""
         cutoff = datetime.now(tz=pytz.utc) - timedelta(days=1)
+        parties = Party.query.filter(Party.last_activity < cutoff)
+        parties_count = parties.count()
         for party in Party.query.filter(Party.last_activity < cutoff):
             socketio.emit("leave", {"reason": "Party expired"}, namespace="/socket/party", room=party.code)
             db.session.delete(party)
         db.session.commit()
-        print("Inactive parties deleted successfully.")
+        print(f"{parties_count} parties deleted")
