@@ -5,6 +5,7 @@ from models.session import DailyChallenge, GameType, Session
 from datetime import datetime, timedelta
 from models.db import db
 from models.configs import Configs
+from fsocket import socketio
         
 def register_commands(app):
     @app.cli.command("create-daily")
@@ -43,6 +44,8 @@ def register_commands(app):
     def clean_party():
         """Deletes all inactive parties"""
         cutoff = datetime.now(tz=pytz.utc) - timedelta(days=1)
-        Party.query.filter(Party.last_activity < cutoff).delete(synchronize_session=False)
+        for party in Party.query.filter(Party.last_activity < cutoff):
+            socketio.emit("leave", {"reason": "Party expired"}, namespace="/socket/party", room=party.code)
+            db.session.delete(party)
         db.session.commit()
         print("Inactive parties deleted successfully.")
