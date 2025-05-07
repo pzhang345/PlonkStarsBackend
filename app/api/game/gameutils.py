@@ -81,7 +81,7 @@ def create_guess(lat,lng,user,round,time):
         longitude=lng,
         distance=distance,
         score=caculate_score(max(0,distance-0.05),round.session.map.max_distance,5000),
-        time=time
+        time=min(time,round.time_limit) if round.time_limit != -1 else time
     )
     
     stats = MapStats.query.filter_by(map_id=round.session.map.id,nmpz=round.nmpz).first()

@@ -52,7 +52,8 @@ class LiveGame(BaseGame):
         player = Player.query.filter_by(user_id=user.id,session_id=session.id).first()
         round = super().get_round(player, session)
         socketio.emit("guess",user.to_json(),namespace="/socket/party",room=session.uuid)
-        if Guess.query.filter_by(round_id=round.id).count() <= Player.query.filter_by(session_id=session.id).count():
+        if Player.query.filter_by(session_id=session.id).count() <= Guess.query.filter_by(round_id=round.id).count():
+            print("pinging",Player.query.filter_by(session_id=session.id).count(),Guess.query.filter_by(round_id=round.id).count())
             socketio.emit("next",self.get_state(data,user,session),namespace="/socket/party",room=session.uuid)
             
         return {"message":"guess submitted"},200
@@ -138,8 +139,8 @@ class LiveGame(BaseGame):
         
         player_count = Player.query.filter_by(session_id=session.id).count()
         guess_count = Guess.query.filter_by(round_id=round.id).count()
-
-        if guess_count < player_count and timed_out(player,round.time_limit):
+        
+        if guess_count < player_count and timed_out(player,round.time_limit + 1):
             for player in Player.query.filter_by(session_id=session.id):
                 if RoundStats.query.filter_by(user_id=player.user_id,session_id=session.id,round=player.current_round).count() == 0:
                     create_round_stats(player.user,session,player.current_round)
