@@ -17,9 +17,10 @@ class ChallengeGame(BaseGame):
         return {"id":session.uuid},200,session
 
     def join(self,data,user,session):
-        state = self.get_state(data,session.host,session)[0]
-        if state["state"] != "finished" and session.daily_challenge == None and session.host_id != user.id:
-            raise Exception("Host has not finished the session")
+        if session.daily_challenge == None and session.host_id != user.id:
+            state = self.get_state(data,session.host,session)[0]
+            if state["state"] != "finished":
+                raise Exception("Host has not finished the session")
         player = Player(session_id=session.id,user_id=user.id)
         db.session.add(player)
         db.session.commit()
@@ -97,7 +98,12 @@ class ChallengeGame(BaseGame):
         return {"message":"guess added"},200
     
     def get_state(self,data,user,session):
-        player = player = Player.query.filter_by(user_id=user.id,session_id=session.id).first()
+        if session.daily_challenge == None and session.host_id != user.id:
+            state = self.get_state(data,session.host,session)[0]
+            if state["state"] != "finished":
+                return {"state":"unfinished"},200
+        
+        player = Player.query.filter_by(user_id=user.id,session_id=session.id).first()
         if not player or player.current_round == 0:
             return {"state":"not_playing"},200
         round = super().get_round(player,session)
