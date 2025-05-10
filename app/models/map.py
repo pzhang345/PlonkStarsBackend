@@ -29,6 +29,15 @@ class GameMap(db.Model):
     def __str__(self):
         return self.name
     
+    def to_json(self):
+        return {
+            "id":self.id,
+            "name":self.name,
+            "uuid":self.uuid,
+            "description":self.description,
+            "creator_id":self.creator_id,
+        }
+    
 class Bound(db.Model):
     __tablename__="bounds"
     

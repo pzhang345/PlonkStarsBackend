@@ -3,6 +3,7 @@ from flask_bcrypt import Bcrypt
 
 from models.db import db
 from models.user import User, UserCosmetics
+from models.map import GameMap
 from api.account.auth import generate_token,login_required
 
 bcrypt = Bcrypt()
@@ -94,5 +95,15 @@ def avatar_customize(user):
     db.session.commit()
     
     return jsonify({"message": "Avatar customization updated successfully"}), 200
-    
+
+@account_bp.route("/permissions/map-edit", methods=["GET"])
+@login_required
+def get_map_edit_permissions(user):
+    # Check if the user has map edit permissions
+    if id:
+        # since there's no permission system yet, we're just returning maps created by user at the moment
+        maps = GameMap.query.filter_by(creator_id=user.id).all()
+        return jsonify([map.to_json() for map in maps]),200
+    else:
+        return [],200
     
