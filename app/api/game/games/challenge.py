@@ -17,6 +17,9 @@ class ChallengeGame(BaseGame):
         return {"id":session.uuid},200,session
 
     def join(self,data,user,session):
+        state = self.get_state(data,session.host,session)[0]
+        if state["state"] != "finished" and session.daily_challenge == None and session.host_id != user.id:
+            raise Exception("Host has not finished the session")
         player = Player(session_id=session.id,user_id=user.id)
         db.session.add(player)
         db.session.commit()
@@ -29,7 +32,7 @@ class ChallengeGame(BaseGame):
         if player.current_round != 0:
             round = super().get_round(player,session)
             
-            if not timed_out(player,session.time_limit) and Guess.query.filter_by(user_id=user.id,round_id=round.id).count() == 0:
+            if not timed_out(player,round.time_limit) and Guess.query.filter_by(user_id=user.id,round_id=round.id).count() == 0:
                 raise Exception("Player has not finished the current round")
         
         if player.current_round + 1 > session.current_round:
@@ -85,7 +88,7 @@ class ChallengeGame(BaseGame):
         
         time = (now - pytz.utc.localize(player.start_time)).total_seconds()
         
-        if timed_out(player,round.time_limit + 1):
+        if timed_out(player,round.time_limit + 1 if round.time_limit != -1 else -1):
             raise Exception("timed out")
 
         guess = create_guess(lat,lng,user,round,time)
@@ -199,8 +202,8 @@ class ChallengeGame(BaseGame):
         
         player = super().get_player(user,session)
         round = Round.query.filter_by(session_id=session.id,round_number=session.max_rounds).first()
-        if player.current_round < session.max_rounds or (player.current_round == session.max_rounds and
-            (Guess.query.filter_by(user_id=user.id,round_id=round.id).count() == 0 and not timed_out(player,round.time_limit))):
+        state = self.get_state(data,user,session)[0]
+        if state["state"] != "finished":
             raise Exception("The game is not finished first")
         
         
