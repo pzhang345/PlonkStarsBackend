@@ -1,5 +1,5 @@
 from flask import Blueprint,request, jsonify
-from sqlalchemy import Float, case, cast, desc, func, literal_column, or_
+from sqlalchemy import Float, and_, case, cast, desc, func, literal_column, or_
 
 from api.account.auth import login_required
 from models.session import Guess, Round, Session
@@ -44,7 +44,10 @@ def get_all_maps(user):
         maps = maps.outerjoin(MapEditor, GameMap.id == MapEditor.map_id).filter(
             or_(
                 GameMap.creator_id == user.id,
-                MapEditor.permission_level > 0
+                and_(
+                    MapEditor.user_id == user.id,
+                    MapEditor.permission_level > 0
+                )
             )
         )
     
