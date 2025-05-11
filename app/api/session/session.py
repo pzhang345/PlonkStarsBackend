@@ -1,6 +1,7 @@
 from flask import jsonify
 from sqlalchemy import func
 
+from api.game.games.challenge import ChallengeGame
 from api.game.gameutils import timed_out
 from models.db import db
 from models.map import GameMap
@@ -11,6 +12,9 @@ from models.stats import MapStats
 def get_session_info(session,user):
     if session.type != GameType.CHALLENGE:
         return {"error":"not a challenge session"},400
+    
+    if ChallengeGame().get_state(user=session.host,session=session) == "unfinished":
+        return {"error":"host has not finished game"},400
     
     player = Player.query.filter_by(session_id=session.id,user_id=user.id).first()
     
