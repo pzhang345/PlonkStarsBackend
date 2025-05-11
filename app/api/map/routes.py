@@ -5,7 +5,7 @@ from api.account.auth import login_required
 from models.session import Guess, Round, Session
 from models.db import db
 from models.user import User
-from models.map import GameMap
+from models.map import GameMap, MapEditor
 from models.stats import MapStats, UserMapStats
 from api.game.gameutils import guess_to_json
 from api.map.edit.route import map_edit_bp
@@ -20,6 +20,7 @@ def get_all_maps(user):
     name = request.args.get("name","")
     page = request.args.get("page", 1, type=int)
     per_page = request.args.get("per_page", 10, type=int)
+    editable = not not request.args.get("editable")
     nmpz = request.args.get("nmpz") == "true" if request.args.get("nmpz") else None
     
     maps = (
@@ -38,6 +39,15 @@ def get_all_maps(user):
             )
         )
     )
+    
+    if not user.is_admin and editable:
+        maps = maps.outerjoin(MapEditor, GameMap.id == MapEditor.map_id).filter(
+            or_(
+                GameMap.creator_id == user.id,
+                MapEditor.permission_level > 0
+            )
+        )
+    
     if nmpz != None:
         maps = maps.filter(MapStats.nmpz == nmpz)
         
