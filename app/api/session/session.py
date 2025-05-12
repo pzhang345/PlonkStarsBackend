@@ -13,7 +13,7 @@ def get_session_info(session,user):
     if session.type != GameType.CHALLENGE:
         return {"error":"not a challenge session"},400
     
-    if ChallengeGame().get_state(user=session.host,session=session) == "unfinished":
+    if ChallengeGame().get_state({},session.host,session) == "unfinished":
         return {"error":"host has not finished game"},400
     
     player = Player.query.filter_by(session_id=session.id,user_id=user.id).first()
