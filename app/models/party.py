@@ -27,6 +27,7 @@ class PartyMember(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     party_id = db.Column(db.Integer, db.ForeignKey("party.id", ondelete="CASCADE"), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    in_lobby = db.Column(db.Boolean, nullable=False, default=True)
 
     def __str__(self):
         return f"{self.party} member ({self.user})"
