@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify
 
 from api.account.auth import login_required
-from api.game.gametype import str_to_type_socket,game_type
+from api.game.gametype import game_type
 from api.party.party import get_party_rule
 from models.db import db
 from models.map import GameMap
@@ -99,7 +99,7 @@ def join_party(user):
 
 @party_bp.route("/game/join", methods=["POST"])
 @login_required
-def start_game(user):
+def join_game(user):
     data = request.get_json()
     code = data.get("code")
     
@@ -259,3 +259,16 @@ def join_lobby(user):
     db.session.commit()
         
     return jsonify({"message": "joined lobby"}), 200
+
+@party_bp.route("/lobby/leave", methods=["POST"])
+@login_required
+def leave_lobby(user):
+    data = request.get_json()
+    code = data.get("code")
+    
+    party = Party.query.filter_by(code=code).first_or_404("Cannot find party")
+    member = PartyMember.query.filter_by(party_id=party.id, user_id=user.id).first_or_404("Cannot find member")
+    member.in_lobby = False
+    db.session.commit()
+        
+    return jsonify({"message": "left lobby"}), 200
