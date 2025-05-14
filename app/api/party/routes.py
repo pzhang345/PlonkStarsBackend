@@ -1,11 +1,12 @@
 from flask import Blueprint, request, jsonify
 
 from api.account.auth import login_required
-from api.game.gametype import str_to_type_socket,game_type
+from api.game.gametype import game_type
 from api.party.party import get_party_rule
 from models.db import db
 from models.map import GameMap
 from models.party import Party, PartyMember, PartyRules
+from models.session import Player
 from models.user import User
 from models.configs import Configs
 from utils import return_400_on_error
@@ -62,8 +63,10 @@ def start_party(user):
     party.session_id = session.id
     db.session.commit()
     
-    for member in party.members:
+    for member in PartyMember.query.filter_by(party_id=party.id,in_lobby=True).all():
         return_400_on_error(game_type[type].join, data, member.user, session)
+        member.in_lobby = False
+    db.session.commit()
     
     return_400_on_error(game_type[type].next, data, user, session)
     
@@ -96,7 +99,7 @@ def join_party(user):
 
 @party_bp.route("/game/join", methods=["POST"])
 @login_required
-def start_game(user):
+def join_game(user):
     data = request.get_json()
     code = data.get("code")
     
@@ -107,7 +110,7 @@ def start_game(user):
     
     return return_400_on_error(game_type[session.type].join, data, user, session)
 
-@party_bp.route("host", methods=["GET"])
+@party_bp.route("/host", methods=["GET"])
 @login_required
 def is_host(user):
     data = request.args
@@ -129,7 +132,8 @@ def get_game_state(user):
         return jsonify({"state": "lobby"}), 200
     
     else:
-        return {"state":"playing","id": session.uuid,"type":session.type.name}, 200
+        player = Player.query.filter_by(user_id=user.id, session_id=session.id).first()
+        return {"state":"playing","id": session.uuid,"type":session.type.name,"joined":not not player}, 200
     
 @party_bp.route("/users", methods=["GET"])
 @login_required
@@ -152,7 +156,6 @@ def remove_user(user):
     data = request.get_json()
     code = data.get("code")
     username = data.get("username")
-    reason = data.get("reason") if data.get("reason") else "removed from party"
     
     remove_user = User.query.filter_by(username=username).first_or_404("Cannot find user")
     party = Party.query.filter_by(code=code).first_or_404("Cannot find party")
@@ -167,7 +170,7 @@ def remove_user(user):
     db.session.delete(member)
     db.session.commit()
     
-    socketio.emit("leave",{"reason":reason},namespace="/socket/party", room=f"{member.user_id}_{code}")
+    socketio.emit("leave",{"reason":"Kicked from party"},namespace="/socket/party", room=f"{member.user_id}_{code}")
     socketio.emit("remove_user", {"username": member.user.username}, namespace="/socket/party", room=code)
     
     return jsonify({"message": "removed user"}), 200
@@ -202,7 +205,7 @@ def delete_party(user):
     db.session.delete(party)
     db.session.commit()
     
-    socketio.emit("leave", {"reason": "party disbanded"}, namespace="/socket/party", room=code)
+    socketio.emit("leave", {"reason": "Party disbanded"}, namespace="/socket/party", room=code)
     
     return jsonify({"message": "deleted party"}), 200
 
@@ -233,7 +236,6 @@ def set_rules(user):
     rules = PartyRules.query.filter_by(party_id=party.id).first_or_404("Cannot find rules")
     map = GameMap.query.filter_by(uuid=data.get("map_id")).first()
     
-    print(data)
     rules.map_id = map.id if map else rules.map_id
     rules.time_limit = data.get("time") if data.get("time") else rules.time_limit
     rules.max_rounds = data.get("rounds") if data.get("rounds") else rules.max_rounds
@@ -243,3 +245,29 @@ def set_rules(user):
     socketio.emit("update_rules", get_party_rule(party), namespace="/socket/party", room=party.code)
     
     return jsonify({"message": "rules updated"}), 200
+
+@party_bp.route("/lobby/join", methods=["POST"])
+@login_required
+def join_lobby(user):
+    data = request.get_json()
+    code = data.get("code")
+    
+    party = Party.query.filter_by(code=code).first_or_404("Cannot find party")
+    member = PartyMember.query.filter_by(party_id=party.id, user_id=user.id).first_or_404("Cannot find member")
+    member.in_lobby = True
+    db.session.commit()
+        
+    return jsonify({"message": "joined lobby"}), 200
+
+@party_bp.route("/lobby/leave", methods=["POST"])
+@login_required
+def leave_lobby(user):
+    data = request.get_json()
+    code = data.get("code")
+    
+    party = Party.query.filter_by(code=code).first_or_404("Cannot find party")
+    member = PartyMember.query.filter_by(party_id=party.id, user_id=user.id).first_or_404("Cannot find member")
+    member.in_lobby = False
+    db.session.commit()
+        
+    return jsonify({"message": "left lobby"}), 200
