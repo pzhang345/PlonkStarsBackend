@@ -112,9 +112,9 @@ def avatar_customize(user):
         return jsonify({"error": f"You do not own the hat cosmetic"}), 403
 
     # Update user cosmetics
-    cosmetic.hue = hue if hue == None else user.cosmetics.hue
-    cosmetic.saturation = saturation if saturation == None else user.cosmetics.saturation
-    cosmetic.brightness = brightness if brightness == None else user.cosmetics.brightness
+    cosmetic.hue = user.cosmetics.hue if hue == None else hue
+    cosmetic.saturation = user.cosmetics.saturation if saturation == None else saturation
+    cosmetic.brightness = user.cosmetics.brightness if brightness == None else brightness
     cosmetic.face = face_cos
     cosmetic.body = body_cos
     cosmetic.hat = hat_cos
