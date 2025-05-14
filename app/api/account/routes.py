@@ -2,7 +2,7 @@ from flask import Blueprint, request, jsonify
 from flask_bcrypt import Bcrypt
 
 from models.db import db
-from models.user import User, UserCosmetics
+from models.user import Cosmetics, CosmeticsOwnership, User, UserCosmetics, Cosmetic_Type
 from models.map import GameMap
 from api.account.auth import generate_token,login_required
 
@@ -84,15 +84,94 @@ def avatar_customize(user):
     hue = data.get("hue")
     saturation = data.get("saturation")
     brightness = data.get("brightness")
+    face = data.get("face")
+    body = data.get("body")
+    hat = data.get("hat")
 
     if hue is None or saturation is None or brightness is None:
         return jsonify({"error": "Missing required parameters"}), 400
-    
-    # Update the user's avatar settings in the database
+
+    # Helper to check ownership
+    def owns_cosmetic(image_name):
+        if not image_name:
+            return True  # Null (unequipped) is always allowed
+        return db.session.query(CosmeticsOwnership).filter_by(
+            user_id=user.id,
+            cosmetics_image=image_name
+        ).first() is not None
+
+    # Check ownership of each equipped item
+    if face and not owns_cosmetic(face["image"]):
+        return jsonify({"error": f"You do not own the face cosmetic"}), 403
+    if body and not owns_cosmetic(body["image"]):
+        return jsonify({"error": f"You do not own the body cosmetic"}), 403
+    if hat and not owns_cosmetic(hat["image"]):
+        return jsonify({"error": f"You do not own the hat cosmetic"}), 403
+
+    # Update user cosmetics
     user.cosmetics.hue = hue
     user.cosmetics.saturation = saturation
     user.cosmetics.brightness = brightness
+    user.cosmetics.face = face["image"] if face else None
+    user.cosmetics.body = body["image"] if body else None
+    user.cosmetics.hat = hat["image"] if hat else None
+
     db.session.commit()
+    return jsonify({"message": "Avatar changes saved!"}), 200
+
+
+@account_bp.route("/profile/cosmetics", methods=["GET"])
+@login_required
+def get_cosmetic_ownership(user):
+
+    # Create subquery
+    owned_cosmetic_images_subq = db.session.query(
+        CosmeticsOwnership.cosmetics_image
+    ).filter_by(user_id=user.id).subquery()
+
+    # Use select() when using in_()
+    owned_select = db.select(owned_cosmetic_images_subq)
+
+    # Owned cosmetics by type
+    owned_faces = Cosmetics.query.filter(
+        Cosmetics.image.in_(owned_select),
+        Cosmetics.type == Cosmetic_Type.FACE
+    ).all()
+
+    owned_body = Cosmetics.query.filter(
+        Cosmetics.image.in_(owned_select),
+        Cosmetics.type == Cosmetic_Type.BODY
+    ).all()
+
+    owned_hats = Cosmetics.query.filter(
+        Cosmetics.image.in_(owned_select),
+        Cosmetics.type == Cosmetic_Type.HAT
+    ).all()
+
+    # Unowned cosmetics by type
+    unowned_faces = Cosmetics.query.filter(
+        ~Cosmetics.image.in_(owned_select),
+        Cosmetics.type == Cosmetic_Type.FACE
+    ).all()
+
+    unowned_body = Cosmetics.query.filter(
+        ~Cosmetics.image.in_(owned_select),
+        Cosmetics.type == Cosmetic_Type.BODY
+    ).all()
+
+    unowned_hats = Cosmetics.query.filter(
+        ~Cosmetics.image.in_(owned_select),
+        Cosmetics.type == Cosmetic_Type.HAT
+    ).all()
     
-    return jsonify({"message": "Avatar customization updated successfully"}), 200
+    return jsonify({
+        "owned_faces": [cosmetic.to_json() for cosmetic in owned_faces],
+        "unowned_faces": [cosmetic.to_json() for cosmetic in unowned_faces],
+        "owned_bodies": [cosmetic.to_json() for cosmetic in owned_body],
+        "unowned_bodies": [cosmetic.to_json() for cosmetic in unowned_body],
+        "owned_hats": [cosmetic.to_json() for cosmetic in owned_hats],
+        "unowned_hats": [cosmetic.to_json() for cosmetic in unowned_hats],
+    }), 200
+
+
     
