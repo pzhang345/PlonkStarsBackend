@@ -156,7 +156,6 @@ def remove_user(user):
     data = request.get_json()
     code = data.get("code")
     username = data.get("username")
-    reason = data.get("reason") if data.get("reason") else "removed from party"
     
     remove_user = User.query.filter_by(username=username).first_or_404("Cannot find user")
     party = Party.query.filter_by(code=code).first_or_404("Cannot find party")
@@ -171,7 +170,7 @@ def remove_user(user):
     db.session.delete(member)
     db.session.commit()
     
-    socketio.emit("leave",{"reason":reason},namespace="/socket/party", room=f"{member.user_id}_{code}")
+    socketio.emit("leave",{"reason":"Kicked from party"},namespace="/socket/party", room=f"{member.user_id}_{code}")
     socketio.emit("remove_user", {"username": member.user.username}, namespace="/socket/party", room=code)
     
     return jsonify({"message": "removed user"}), 200
@@ -206,7 +205,7 @@ def delete_party(user):
     db.session.delete(party)
     db.session.commit()
     
-    socketio.emit("leave", {"reason": "party disbanded"}, namespace="/socket/party", room=code)
+    socketio.emit("leave", {"reason": "Party disbanded"}, namespace="/socket/party", room=code)
     
     return jsonify({"message": "deleted party"}), 200
 
