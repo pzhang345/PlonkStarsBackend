@@ -8,7 +8,7 @@ from models.map import GameMap
 from models.session import Guess, Round, Session
 from models.stats import MapStats, UserMapStats
 from models.user import User
-from models.cosmetics import UserCosmetics
+from models.cosmetics import UserCosmetics, Cosmetic_Type, Tier, Cosmetics
 
 admin_bp = Blueprint("admin_bp",__name__)
 
@@ -163,9 +163,21 @@ def add_cosmetic(user):
     data = request.get_json()
     image = data.get("image")
     item_name = data.get("item_name")
-    type = db.Column(db.Enum(Cosmetic_Type), nullable=False)
-    tier = db.Column(db.Enum(Tier), nullable=False, default=Tier.COMMON)
-    top_position = db.Column(db.Float, nullable=False, default=0)
-    left_position = db.Column(db.Float, nullable=False, default=0)
-    scale = db.Column(db.Float, nullable=False, default=0)
+    type = Cosmetic_Type[data.get("type").upper()]
+    tier = Tier[data.get("tier").upper()]
+    top_position = data.get("top_position")
+    left_position = data.get("left_position")
+    scale = data.get("scale")
+    
+    db.session.add(Cosmetics(
+        image=image,
+        item_name=item_name,
+        type=type,
+        tier=tier,
+        top_position=top_position,
+        left_position=left_position,
+        scale=scale
+    ))
+    db.session.commit()
+    return jsonify({"message":"Cosmetic added"}),200
     

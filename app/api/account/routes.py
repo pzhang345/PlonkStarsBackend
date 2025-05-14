@@ -130,7 +130,7 @@ def get_cosmetic_ownership(user):
     # Create subquery
     owned_cosmetic_images_subq = db.session.query(
         CosmeticsOwnership.cosmetics_id
-    ).join(Cosmetics, CosmeticsOwnership.cosmetics_id == Cosmetics.id).filter_by(user_id=user.id).subquery()
+    ).join(Cosmetics, CosmeticsOwnership.cosmetics_id == Cosmetics.id).filter(CosmeticsOwnership.user_id==user.id).subquery()
 
     # Use select() when using in_()
     owned_select = db.select(owned_cosmetic_images_subq)

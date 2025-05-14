@@ -31,16 +31,16 @@ class UserCosmetics(db.Model):
 
     
 class Tier(enum.Enum):
-    COMMON = "common"
-    UNCOMMON = "uncommon"
-    RARE = "rare"
-    EPIC = "epic"
-    LEGENDARY = "legendary"
+    COMMON = 0
+    UNCOMMON = 1
+    RARE = 2
+    EPIC = 3
+    LEGENDARY = 4
 
 class Cosmetic_Type(enum.Enum):
-    FACE = "face"
-    BODY = "body"
-    HAT = "hat"
+    FACE = 0
+    BODY = 1
+    HAT = 2
     
 class Cosmetics(db.Model):
     __tablename__ = "cosmetics"
@@ -67,8 +67,8 @@ class Cosmetics(db.Model):
     def to_json(self):
         return {
             "item_name": self.item_name,
-            "tier": self.tier.value,
-            "type": self.type.value,
+            "tier": self.tier.name.lower(),
+            "type": self.type.name.lower(),
             "image": self.image,
             "top_position": self.top_position,
             "left_position": self.left_position,
