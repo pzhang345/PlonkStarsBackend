@@ -153,3 +153,19 @@ def get_config(user):
         return jsonify({"error":"Config not found"}),404
     
     return jsonify({"value":value}),200
+
+@admin_bp.route("/cosmetic/add",methods=["POST"])
+@login_required
+def add_cosmetic(user):
+    if not user.is_admin:
+        return jsonify({"error":"You are not an admin"}),403
+    
+    data = request.get_json()
+    image = data.get("image")
+    item_name = data.get("item_name")
+    type = db.Column(db.Enum(Cosmetic_Type), nullable=False)
+    tier = db.Column(db.Enum(Tier), nullable=False, default=Tier.COMMON)
+    top_position = db.Column(db.Float, nullable=False, default=0)
+    left_position = db.Column(db.Float, nullable=False, default=0)
+    scale = db.Column(db.Float, nullable=False, default=0)
+    

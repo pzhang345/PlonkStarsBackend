@@ -101,9 +101,9 @@ def avatar_customize(user):
         return item.id if item else -1
 
     # Check ownership of each equipped item
-    face_cos = owns_cosmetic(face["image"])
-    body_cos = owns_cosmetic(body["image"])
-    hat_cos = owns_cosmetic(hat["image"])
+    face_cos = owns_cosmetic(face["image"]) if face else None
+    body_cos = owns_cosmetic(body["image"]) if body else None
+    hat_cos = owns_cosmetic(hat["image"]) if hat else None
     if face_cos == -1:
         return jsonify({"error": f"You do not own the face cosmetic"}), 403
     if body_cos == -1:
