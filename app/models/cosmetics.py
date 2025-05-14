@@ -67,8 +67,8 @@ class Cosmetics(db.Model):
     def to_json(self):
         return {
             "item_name": self.item_name,
-            "tier": self.tier.name.lower(),
-            "type": self.type.name.lower(),
+            "tier": self.tier.name,
+            "type": self.type.name,
             "image": self.image,
             "top_position": self.top_position,
             "left_position": self.left_position,
