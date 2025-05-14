@@ -1,5 +1,4 @@
 from functools import wraps
-from flask_socketio import disconnect
 import jwt
 from datetime import datetime, timedelta
 import pytz

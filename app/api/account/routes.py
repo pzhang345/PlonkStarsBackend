@@ -2,8 +2,8 @@ from flask import Blueprint, request, jsonify
 from flask_bcrypt import Bcrypt
 
 from models.db import db
-from models.user import Cosmetics, CosmeticsOwnership, User, UserCosmetics, Cosmetic_Type
-from models.map import GameMap
+from models.user import User
+from models.cosmetics import Cosmetics, CosmeticsOwnership, UserCosmetics, Cosmetic_Type
 from api.account.auth import generate_token,login_required
 
 bcrypt = Bcrypt()
@@ -87,34 +87,37 @@ def avatar_customize(user):
     face = data.get("face")
     body = data.get("body")
     hat = data.get("hat")
-
-    if hue is None or saturation is None or brightness is None:
-        return jsonify({"error": "Missing required parameters"}), 400
+    cosmetic = user.cosmetics
 
     # Helper to check ownership
     def owns_cosmetic(image_name):
         if not image_name:
-            return True  # Null (unequipped) is always allowed
-        return db.session.query(CosmeticsOwnership).filter_by(
-            user_id=user.id,
-            cosmetics_image=image_name
-        ).first() is not None
+            return None  # Null (unequipped) is always allowed
+        item = Cosmetics.query.join(CosmeticsOwnership, Cosmetics.id == CosmeticsOwnership.cosmetics_id).filter(
+            CosmeticsOwnership.user_id==user.id,
+            Cosmetics.image==image_name
+        ).first()
+        
+        return item.id if item else -1
 
     # Check ownership of each equipped item
-    if face and not owns_cosmetic(face["image"]):
+    face_cos = owns_cosmetic(face["image"])
+    body_cos = owns_cosmetic(body["image"])
+    hat_cos = owns_cosmetic(hat["image"])
+    if face_cos == -1:
         return jsonify({"error": f"You do not own the face cosmetic"}), 403
-    if body and not owns_cosmetic(body["image"]):
+    if body_cos == -1:
         return jsonify({"error": f"You do not own the body cosmetic"}), 403
-    if hat and not owns_cosmetic(hat["image"]):
+    if hat_cos == -1:
         return jsonify({"error": f"You do not own the hat cosmetic"}), 403
 
     # Update user cosmetics
-    user.cosmetics.hue = hue
-    user.cosmetics.saturation = saturation
-    user.cosmetics.brightness = brightness
-    user.cosmetics.face = face["image"] if face else None
-    user.cosmetics.body = body["image"] if body else None
-    user.cosmetics.hat = hat["image"] if hat else None
+    cosmetic.hue = hue if hue == None else user.cosmetics.hue
+    cosmetic.saturation = saturation if saturation == None else user.cosmetics.saturation
+    cosmetic.brightness = brightness if brightness == None else user.cosmetics.brightness
+    cosmetic.face = face_cos
+    cosmetic.body = body_cos
+    cosmetic.hat = hat_cos
 
     db.session.commit()
     return jsonify({"message": "Avatar changes saved!"}), 200
@@ -126,43 +129,43 @@ def get_cosmetic_ownership(user):
 
     # Create subquery
     owned_cosmetic_images_subq = db.session.query(
-        CosmeticsOwnership.cosmetics_image
-    ).filter_by(user_id=user.id).subquery()
+        CosmeticsOwnership.cosmetics_id
+    ).join(Cosmetics, CosmeticsOwnership.cosmetics_id == Cosmetics.id).filter_by(user_id=user.id).subquery()
 
     # Use select() when using in_()
     owned_select = db.select(owned_cosmetic_images_subq)
 
     # Owned cosmetics by type
     owned_faces = Cosmetics.query.filter(
-        Cosmetics.image.in_(owned_select),
+        Cosmetics.id.in_(owned_select),
         Cosmetics.type == Cosmetic_Type.FACE
-    ).all()
+    )
 
     owned_body = Cosmetics.query.filter(
-        Cosmetics.image.in_(owned_select),
+        Cosmetics.id.in_(owned_select),
         Cosmetics.type == Cosmetic_Type.BODY
-    ).all()
+    )
 
     owned_hats = Cosmetics.query.filter(
-        Cosmetics.image.in_(owned_select),
+        Cosmetics.id.in_(owned_select),
         Cosmetics.type == Cosmetic_Type.HAT
-    ).all()
+    )
 
     # Unowned cosmetics by type
     unowned_faces = Cosmetics.query.filter(
-        ~Cosmetics.image.in_(owned_select),
+        ~Cosmetics.id.in_(owned_select),
         Cosmetics.type == Cosmetic_Type.FACE
-    ).all()
+    )
 
     unowned_body = Cosmetics.query.filter(
-        ~Cosmetics.image.in_(owned_select),
+        ~Cosmetics.id.in_(owned_select),
         Cosmetics.type == Cosmetic_Type.BODY
-    ).all()
+    )
 
     unowned_hats = Cosmetics.query.filter(
-        ~Cosmetics.image.in_(owned_select),
+        ~Cosmetics.id.in_(owned_select),
         Cosmetics.type == Cosmetic_Type.HAT
-    ).all()
+    )
     
     return jsonify({
         "owned_faces": [cosmetic.to_json() for cosmetic in owned_faces],

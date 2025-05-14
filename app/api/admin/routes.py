@@ -7,7 +7,8 @@ from models.db import db
 from models.map import GameMap
 from models.session import Guess, Round, Session
 from models.stats import MapStats, UserMapStats
-from models.user import User, UserCosmetics
+from models.user import User
+from models.cosmetics import UserCosmetics
 
 admin_bp = Blueprint("admin_bp",__name__)
 
