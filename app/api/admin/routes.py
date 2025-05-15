@@ -8,7 +8,7 @@ from models.map import GameMap
 from models.session import Guess, Round, Session
 from models.stats import MapStats, UserMapStats
 from models.user import User
-from models.cosmetics import UserCosmetics, Cosmetic_Type, Tier, Cosmetics
+from models.cosmetics import UserCoins, UserCosmetics, Cosmetic_Type, Tier, Cosmetics
 
 admin_bp = Blueprint("admin_bp",__name__)
 
@@ -181,3 +181,17 @@ def add_cosmetic(user):
     db.session.commit()
     return jsonify({"message":"Cosmetic added"}),200
     
+    
+@admin_bp.route("/coins/init",methods=["POST"])
+@login_required
+def init_coins(user):
+    if not user.is_admin:
+        return jsonify({"error":"You are not an admin"}),400
+    for user in User.query:
+        user_coins = UserCoins.query.filter_by(user_id=user.id).first()
+        if not user_coins:
+            user_coins = UserCoins(user_id=user.id, coins=0)
+            db.session.add(user_coins)
+    db.session.commit()
+    
+    return jsonify({"message":"Coins initialized"}),200

@@ -32,6 +32,9 @@ def register():
     
     new_cosmetics = UserCosmetics(user_id=new_user.id)
     db.session.add(new_cosmetics)
+    
+    coins = UserCoins(user_id=new_user.id, coins=0)
+    db.session.add(coins)
     db.session.commit()
 
     return jsonify({"message": "User registered successfully"}), 200
