@@ -1,9 +1,11 @@
+import random
 from flask import Blueprint, request, jsonify
 from flask_bcrypt import Bcrypt
+from sqlalchemy import and_
 
 from models.db import db
 from models.user import User
-from models.cosmetics import Cosmetics, CosmeticsOwnership, UserCosmetics, Cosmetic_Type
+from models.cosmetics import Cosmetics, CosmeticsOwnership, UserCoins, UserCosmetics, Cosmetic_Type
 from api.account.auth import generate_token,login_required
 
 bcrypt = Bcrypt()
@@ -76,6 +78,58 @@ def delete_account(user):
     db.session.commit()
     return jsonify({"message": "Account deleted successfully"}), 200
 
+@account_bp.route("/profile/coins", methods=["GET"])
+@login_required
+def get_coins(user):
+    coins = UserCoins.query.filter_by(user_id=user.id).first()
+    if not coins:
+        # Create new entry with default coins (assumed 0)
+        coins = UserCoins(user_id=user.id, coins=0)
+        db.session.add(coins)
+        db.session.commit()
+    
+    return jsonify({
+        "coins": coins.coins,
+        "message": "Queried user coins successfully"
+    }), 200
+
+@account_bp.route("/profile/buy", methods=["POST"])
+@login_required
+def buy_crate(user):
+    data = request.get_json()
+    crate_price = data.get("price")
+    crate_rarity = data.get("rarity")
+
+    if crate_price is None or crate_rarity is None:
+        return jsonify({"message": "Missing crate information"}), 403
+
+    user_coins = UserCoins.query.filter_by(user_id=user.id).first()
+    if not user_coins or user_coins.coins < crate_price:
+        return jsonify({"message": "Not enough coins to purchase this crate"}), 403
+    
+    owned_cosmetic_ids = db.session.query(CosmeticsOwnership.cosmetics_id).filter_by(user_id=user.id)
+    randomization_pool = (
+        Cosmetics.query.filter(
+            and_(Cosmetics.tier == crate_rarity, ~Cosmetics.id.in_(owned_cosmetic_ids))).all()
+    )
+    print(randomization_pool)
+    if not randomization_pool:
+        return jsonify({"message": "No unowned cosmetics available left for this tier"}), 404
+
+    cosmetic = random.choice(randomization_pool)
+    
+    # Making the transaction
+    user_coins.coins -= crate_price
+    db.session.add(user_coins)
+    ownership = CosmeticsOwnership(user_id = user.id, cosmetics_id = cosmetic.id)
+    db.session.add(ownership)
+    db.session.commit()
+
+    return jsonify({
+        "cosmetic": cosmetic.to_json(),
+        "message": f"{crate_rarity.capitalize()} Crate purchased successfully!"}), 200
+
+
 # Avatar customize route
 @account_bp.route("/profile/avatar-customize", methods=["PUT"])
 @login_required
@@ -89,6 +143,8 @@ def avatar_customize(user):
     hat = data.get("hat")
     cosmetic = user.cosmetics
 
+    print(data)
+
     # Helper to check ownership
     def owns_cosmetic(image_name):
         if not image_name:
@@ -98,7 +154,7 @@ def avatar_customize(user):
             Cosmetics.image==image_name
         ).first()
         
-        return item.id if item else -1
+        return item if item else -1
 
     # Check ownership of each equipped item
     face_cos = owns_cosmetic(face["image"]) if face else None

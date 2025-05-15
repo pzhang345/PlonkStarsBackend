@@ -1,3 +1,4 @@
+from sqlalchemy import CheckConstraint
 from models.db import db
 import enum
 from random import randint
@@ -89,4 +90,22 @@ class CosmeticsOwnership(db.Model):
             "user": {
                 "username": self.user.username
             } if self.user else None
+        }
+
+class UserCoins(db.Model):
+    __tablename__ = "user_coins"
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    coins = db.Column(db.Integer, nullable = False, default = 0)
+
+    __table_args__ = (
+        CheckConstraint('coins >= 0', name='check_coins_positive'),
+    )
+
+    def __str__(self):
+        return f'Coins: {self.coins}'
+
+    def to_json(self):
+        return {
+            "coins": self.coins,
         }
