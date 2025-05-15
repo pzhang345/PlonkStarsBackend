@@ -6,88 +6,14 @@ from datetime import datetime, timedelta
 from models.db import db
 from models.configs import Configs
 from fsocket import socketio
-from sqlalchemy import func, and_
+from sqlalchemy import desc, func
 from models.stats import RoundStats
 from models.cosmetics import UserCoins
-
-def award_daily_challenge_coins(session_id):
-    # Step 1: Get latest round per user
-    latest_rounds_subq = (
-        db.session.query(
-            RoundStats.user_id,
-            func.max(RoundStats.round).label("max_round")
-        )
-        .filter(RoundStats.session_id == session_id)
-        .group_by(RoundStats.user_id)
-        .subquery()
-    )
-
-    # Step 2: Get the actual RoundStats entries for each user's latest round
-    latest_rounds = (
-        db.session.query(RoundStats)
-        .join(
-            latest_rounds_subq,
-            and_(
-                RoundStats.user_id == latest_rounds_subq.c.user_id,
-                RoundStats.round == latest_rounds_subq.c.max_round
-            )
-        )
-        .filter(RoundStats.session_id == session_id)
-        .all()
-    )
-
-    # Step 3: Sort players by total_score (descending)
-    sorted_players = sorted(latest_rounds, key=lambda x: x.total_score, reverse=True)
-
-    # If no players participated, return early without awarding anything
-    if not sorted_players:
-        return {"message": "No participants found, no coins awarded"}, 200
-
-    # Step 4: Award top prizes starting from the lowest prize for the number of participants (max 5)
-    coin_rewards = [1000, 800, 600, 400, 200]  # highest to lowest
-    num_participants = len(sorted_players)
-    top_prizes_to_award = min(num_participants, 5)
-
-    # Reverse prizes so we assign lowest prizes to lowest rank among top players
-    prizes_to_give = coin_rewards[-top_prizes_to_award:]  # get last N prizes
-    prizes_to_give.reverse()  # now lowest prize first, highest prize last
-
-    top_5_ids = set()
-
-    for i, player in enumerate(sorted_players[:top_prizes_to_award]):
-        reward = prizes_to_give[i]
-        top_5_ids.add(player.user_id)
-        user_coins = UserCoins.query.filter_by(user_id=player.user_id).first()
-        if not user_coins:
-            user_coins = UserCoins(user_id=player.user_id, coins=reward + 100)  # include participation
-            db.session.add(user_coins)
-        else:
-            user_coins.coins += reward + 100  # include participation
-
-    # Step 5: Award 100 coins to everyone else (excluding top prize winners)
-    for player in sorted_players:
-        if player.user_id in top_5_ids:
-            continue  # already handled above
-        user_coins = UserCoins.query.filter_by(user_id=player.user_id).first()
-        if not user_coins:
-            user_coins = UserCoins(user_id=player.user_id, coins=100)
-            db.session.add(user_coins)
-        else:
-            user_coins.coins += 100
-
-    db.session.commit()
-
-    return {"message": "Coins awarded successfully"}, 200
 
 def register_commands(app):
     @app.cli.command("create-daily")
     def create_daily():
         today = datetime.now(tz=pytz.utc).date()
-
-        '''get results before creating new daily'''
-        previous_session = DailyChallenge.query.filter_by(date=today).first()
-        award_daily_challenge_coins(previous_session.id)
-
 
         """Create a new daily challenge"""
         tomorrow = today + timedelta(days=1)
@@ -131,6 +57,45 @@ def register_commands(app):
         db.session.commit()
         print(f"{parties_count} parties deleted")
 
+    @app.cli.command("daily-coins")
+    def award_daily_challenge_coins():
+        """Award coins to users based on their performance in the daily challenge"""
+        today = datetime.now(tz=pytz.utc).date()
+
+        session = DailyChallenge.query.filter_by(date=today - timedelta(days=1)).first().session
+        stats = RoundStats.query.filter_by(session_id=session.id,round=session.max_rounds).subquery()
+        ranked_users = db.session.query(
+            func.rank().over(order_by=(desc(stats.c.total_score),stats.c.total_time)).label("rank"),
+            UserCoins
+        ).join(UserCoins,UserCoins.id == stats.c.user_id).order_by("rank")
+        
+        # Step 4: Award top prizes starting from the lowest prize for the number of participants (max 5)
+        total_participants = ranked_users.count()
+        
+        # going to have to balance this later
+        placement_rewards = {1:1000, 2:900, 3:800}
+        percentile_rewards = {0.01:500, 0.1:250, 0.25:100, 0.5:50, 0.75:25, 1:10}
+        percentages = list(percentile_rewards.keys()).sort()
+        current_percentile = 0
+        
+        for rank,coins in ranked_users:
+            if rank in placement_rewards:
+                coins.coins += placement_rewards[rank]
+            else:
+                percent = percentages[current_percentile]
+                while rank/total_participants > percent:
+                    current_percentile += 1
+                    if current_percentile >= len(percentages):
+                        db.session.commit()
+                        print("Coins awarded sucessfully")
+                        return
+                    percent = percentages[current_percentile]
+                
+                coins.coins += percentile_rewards[percent]
+        
+        db.session.commit()
+
+        print("Coins awarded successfully")
     
 # New CLI command to test awarding coins manually
     # @app.cli.command("test-award-coins")

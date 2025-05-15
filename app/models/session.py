@@ -84,6 +84,8 @@ class DailyChallenge(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     session_id = db.Column(db.Integer, db.ForeignKey("sessions.id", ondelete="CASCADE"), nullable=False)
     date = db.Column(db.Date, nullable=False, unique=True, default=datetime.now(tz=pytz.utc).date())
+    coins_added = db.Column(db.Boolean, default=False)
+
 
     def __str__(self):
         return f"{self.date} {self.map.name}"
