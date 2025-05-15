@@ -62,7 +62,12 @@ def register_commands(app):
         """Award coins to users based on their performance in the daily challenge"""
         today = datetime.now(tz=pytz.utc).date()
 
-        session = DailyChallenge.query.filter_by(date=today - timedelta(days=1)).first().session
+        daily = DailyChallenge.query.filter_by(date=today - timedelta(days=1)).first()
+        if daily.coins_added:
+            print("Coins already awarded for this daily challenge.")
+            return
+        
+        session = daily.session
         stats = RoundStats.query.filter_by(session_id=session.id,round=session.max_rounds).subquery()
         ranked_users = db.session.query(
             func.rank().over(order_by=(desc(stats.c.total_score),stats.c.total_time)).label("rank"),
@@ -86,6 +91,7 @@ def register_commands(app):
                 while rank/total_participants > percent:
                     current_percentile += 1
                     if current_percentile >= len(percentages):
+                        daily.coins_added = True
                         db.session.commit()
                         print("Coins awarded sucessfully")
                         return
@@ -93,6 +99,7 @@ def register_commands(app):
                 
                 coins.coins += percentile_rewards[percent]
         
+        daily.coins_added = True
         db.session.commit()
 
         print("Coins awarded successfully")
