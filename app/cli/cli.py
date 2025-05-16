@@ -71,19 +71,21 @@ def register_commands(app):
         stats = RoundStats.query.filter_by(session_id=session.id,round=session.max_rounds).subquery()
         ranked_users = db.session.query(
             func.rank().over(order_by=(desc(stats.c.total_score),stats.c.total_time)).label("rank"),
-            UserCoins
+            UserCoins,
+            stats.c.total_score,
         ).join(UserCoins,UserCoins.id == stats.c.user_id).order_by("rank")
         
         # Step 4: Award top prizes starting from the lowest prize for the number of participants (max 5)
         total_participants = ranked_users.count()
         
         # going to have to balance this later
-        placement_rewards = {1:1000, 2:900, 3:800}
-        percentile_rewards = {0.01:500, 0.1:250, 0.25:100, 0.5:50, 0.75:25, 1:10}
+        placement_rewards = {1:600, 2:500, 3:400}
+        points_rewards = 100 # every 5000pts = 100 coins
+        percentile_rewards = {0.01:300, 0.1:200, 0.25:100, 0.5:50, 0.75:20, 1:10}
         percentages = list(percentile_rewards.keys()).sort()
         current_percentile = 0
         
-        for rank,coins in ranked_users:
+        for rank,coins, total_score in ranked_users:
             if rank in placement_rewards:
                 coins.coins += placement_rewards[rank]
             else:
@@ -98,6 +100,7 @@ def register_commands(app):
                     percent = percentages[current_percentile]
                 
                 coins.coins += percentile_rewards[percent]
+            coins.coins += (total_score // 5000) * points_rewards
         
         daily.coins_added = True
         db.session.commit()
