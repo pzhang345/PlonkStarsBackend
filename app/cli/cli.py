@@ -79,28 +79,28 @@ def register_commands(app):
         total_participants = ranked_users.count()
         
         # going to have to balance this later
-        placement_rewards = {1:600, 2:500, 3:400}
-        points_rewards = 100 # every 5000pts = 100 coins
-        percentile_rewards = {0.01:300, 0.1:200, 0.25:100, 0.5:50, 0.75:20, 1:10}
+        placement_rewards = {1:500, 2:450, 3:400}
+        score_per_coin = 50 # every 50pts = 1 coins
+        percentile_rewards = {0.01:350, 0.1:250, 0.25:100, 0.5:50}
         percentages = list(percentile_rewards.keys()).sort()
         current_percentile = 0
         
         for rank,coins, total_score in ranked_users:
             if rank in placement_rewards:
                 coins.coins += placement_rewards[rank]
-            else:
+            elif current_percentile < len(percentages):
                 percent = percentages[current_percentile]
+                
                 while rank/total_participants > percent:
                     current_percentile += 1
                     if current_percentile >= len(percentages):
-                        daily.coins_added = True
-                        db.session.commit()
-                        print("Coins awarded sucessfully")
-                        return
+                        break
                     percent = percentages[current_percentile]
                 
-                coins.coins += percentile_rewards[percent]
-            coins.coins += (total_score // 5000) * points_rewards
+                if current_percentile < len(percentages):
+                    coins.coins += percentile_rewards[percent]
+                    
+            coins.coins += total_score // score_per_coin
         
         daily.coins_added = True
         db.session.commit()
