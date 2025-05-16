@@ -2,7 +2,7 @@ from api.game.games.basegame import BaseGame
 from api.game.games.challenge import ChallengeGame
 from api.game.gameutils import timed_out, create_round_stats
 from models.db import db
-from models.session import Player,GameType, Round, Guess
+from models.session import Player,GameType, Guess
 from models.stats import RoundStats, UserMapStats
 from fsocket import socketio
 

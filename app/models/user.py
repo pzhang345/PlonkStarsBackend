@@ -20,6 +20,7 @@ class User(db.Model):
     party_member = db.relationship("PartyMember", backref="user", cascade="all,delete", passive_deletes=True)
     cosmetics_items = db.relationship("CosmeticsOwnership", backref="user", cascade="all, delete", passive_deletes=True)
     coins = db.relationship("UserCoins", backref="user", cascade="all, delete",uselist=False, passive_deletes=True)
+    team_players = db.relationship("TeamPlayer", backref="user", cascade="all, delete", passive_deletes=True)
 
     def __str__(self):
         return self.username

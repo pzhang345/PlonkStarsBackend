@@ -8,6 +8,7 @@ from models.db import db
 class GameType(enum.Enum):
     CHALLENGE = 0
     LIVE = 1
+    DUELS = 2
     
 class Session(db.Model):
     __tablename__ = "sessions"
@@ -29,6 +30,8 @@ class Session(db.Model):
     high_scores = db.relationship("UserMapStats",backref="high_session",cascade="all,delete", passive_deletes=True)
     daily_challenge = db.relationship("DailyChallenge",backref="session",cascade="all,delete", passive_deletes=True, uselist=False)
     party = db.relationship("Party", backref="session", passive_deletes=True, uselist=False)
+    duel_rules = db.relationship("DuelsRules", backref="session", cascade="all,delete", uselist=False, passive_deletes=True)
+    teams = db.relationship("GameTeam", backref="session", cascade="all,delete", passive_deletes=True)
     
     def __str__(self):
         return self.uuid
@@ -46,6 +49,7 @@ class Round(db.Model):
     nmpz = db.Column(db.Boolean, nullable=False, default=False)
 
     guesses = db.relationship("Guess", backref="round", cascade="all,delete", passive_deletes=True)
+    duel_states = db.relationship("DuelState", backref="round", cascade="all,delete", passive_deletes=True)
 
     def __str__(self):
         return f"{self.round_number}. {self.session.uuid[:4]} {self.location}"

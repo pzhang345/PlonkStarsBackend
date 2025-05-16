@@ -6,7 +6,6 @@ from fsocket import socketio
 from api.routes import api_bp
 from api.socket import register_sockets
 
-
 from cli.cli import register_commands
 
 from admin import admin
