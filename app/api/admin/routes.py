@@ -212,6 +212,9 @@ def add_crate(user):
     image = data.get("image")
     items = data.get("items")
     
+    if Crate.query.filter_by(name=name).first():
+        return jsonify({"error":"Crate already exists"}),400
+    
     if not name or not price or not items:
         return jsonify({"error":"Missing name, price or total_weight"}),400
     
