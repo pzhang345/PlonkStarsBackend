@@ -10,6 +10,7 @@ class Crate(db.Model):
     description = db.Column(db.String(200), nullable=False, default="")
     image = db.Column(db.String(50))
     price = db.Column(db.Integer, nullable=False)
+    total_weight = db.Column(db.Integer, nullable=False, default=0)
 
     def __str__(self):
         return self.name
