@@ -1,4 +1,3 @@
-import uuid
 from models.db import db
 from models.cosmetics import Tier
 

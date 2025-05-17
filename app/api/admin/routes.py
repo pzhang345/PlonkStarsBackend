@@ -1,8 +1,11 @@
+from decimal import Decimal
+import math
 from flask import Blueprint,request, jsonify
 from sqlalchemy import Float, cast, func
 
 from api.account.auth import login_required
 from models.configs import Configs
+from models.crates import Crate, CrateItem
 from models.db import db
 from models.map import GameMap
 from models.session import Guess, Round, Session
@@ -195,3 +198,57 @@ def init_coins(user):
     db.session.commit()
     
     return jsonify({"message":"Coins initialized"}),200
+
+@admin_bp.route("/crate/add",methods=["POST"])
+@login_required
+def add_crate(user):
+    if not user.is_admin:
+        return jsonify({"error":"You are not an admin"}),403
+    
+    data = request.get_json()
+    name = data.get("name")
+    price = data.get("price")
+    description = data.get("description") 
+    image = data.get("image")
+    items = data.get("items")
+    
+    if not name or not price or not items:
+        return jsonify({"error":"Missing name, price or total_weight"}),400
+    
+    description = description if description else ""
+    
+    crate = Crate(
+        name=name,
+        price=price,
+        image=image,
+        description=description,
+    )
+    db.session.add(crate)
+    db.session.flush()
+    try:
+        def count_decimal_digits(x):
+            d = Decimal(str(x["weight"]))
+            normalized = d.normalize()
+            exponent = normalized.as_tuple().exponent
+            return -exponent if exponent < 0 else 0
+            
+        max_length = count_decimal_digits(max(items, key=count_decimal_digits))
+    except Exception as e:
+        return jsonify({"error":"Invalid weight"}),400
+    
+    for item in items:
+        tier = Tier.from_str(item.get("tier"))
+        weight = item.get("weight") * (10**max_length)
+        if (item.get("tier") != None and not tier) or not weight:
+            return jsonify({"error":"Incorrect tier or weight"}),400
+        if item.get("tier") != None:
+            db.session.add(CrateItem(
+                crate_id=crate.id,
+                tier=tier,
+                weight=weight
+            ))
+        crate.total_weight += weight
+        
+    db.session.commit()
+    
+    return jsonify({"message":f"{name} added"}),200

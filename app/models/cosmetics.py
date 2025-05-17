@@ -37,6 +37,10 @@ class Tier(enum.Enum):
     RARE = 2
     EPIC = 3
     LEGENDARY = 4
+    
+    def from_str(str):
+        strings = {"common": Tier.COMMON, "uncommon": Tier.UNCOMMON, "rare": Tier.RARE, "epic": Tier.EPIC, "legendary": Tier.LEGENDARY}
+        return strings[str.lower()] if str and str.lower() in strings else None
 
 class Cosmetic_Type(enum.Enum):
     FACE = 0
