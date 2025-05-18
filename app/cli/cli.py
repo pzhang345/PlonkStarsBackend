@@ -73,7 +73,7 @@ def register_commands(app):
             func.rank().over(order_by=(desc(stats.c.total_score),stats.c.total_time)).label("rank"),
             UserCoins,
             stats.c.total_score,
-        ).join(UserCoins,UserCoins.id == stats.c.user_id).order_by("rank")
+        ).join(UserCoins,UserCoins.user_id == stats.c.user_id).order_by("rank")
         
         # Step 4: Award top prizes starting from the lowest prize for the number of participants (max 5)
         total_participants = ranked_users.count()
