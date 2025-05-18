@@ -172,15 +172,24 @@ def add_cosmetic(user):
     left_position = data.get("left_position")
     scale = data.get("scale")
     
-    db.session.add(Cosmetics(
-        image=image,
-        item_name=item_name,
-        type=type,
-        tier=tier,
-        top_position=top_position,
-        left_position=left_position,
-        scale=scale
-    ))
+    cosmetics = Cosmetics.query.filter_by(image=image).first()
+    if cosmetics:
+        cosmetics.item_name = item_name
+        cosmetics.type = type
+        cosmetics.tier = tier
+        cosmetics.top_position = top_position
+        cosmetics.left_position = left_position
+        cosmetics.scale = scale
+    else:
+        db.session.add(Cosmetics(
+            image=image,
+            item_name=item_name,
+            type=type,
+            tier=tier,
+            top_position=top_position,
+            left_position=left_position,
+            scale=scale
+        ))
     db.session.commit()
     return jsonify({"message":"Cosmetic added"}),200
     

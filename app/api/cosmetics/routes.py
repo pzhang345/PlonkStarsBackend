@@ -72,33 +72,33 @@ def get_cosmetic_ownership(user):
     owned_faces = Cosmetics.query.filter(
         Cosmetics.id.in_(owned_select),
         Cosmetics.type == Cosmetic_Type.FACE
-    )
+    ).order_by(Cosmetics.tier)
 
     owned_body = Cosmetics.query.filter(
         Cosmetics.id.in_(owned_select),
         Cosmetics.type == Cosmetic_Type.BODY
-    )
+    ).order_by(Cosmetics.tier)
 
     owned_hats = Cosmetics.query.filter(
         Cosmetics.id.in_(owned_select),
         Cosmetics.type == Cosmetic_Type.HAT
-    )
+    ).order_by(Cosmetics.tier)
 
     # Unowned cosmetics by type
     unowned_faces = Cosmetics.query.filter(
         ~Cosmetics.id.in_(owned_select),
         Cosmetics.type == Cosmetic_Type.FACE
-    )
+    ).order_by(Cosmetics.tier)
 
     unowned_body = Cosmetics.query.filter(
         ~Cosmetics.id.in_(owned_select),
         Cosmetics.type == Cosmetic_Type.BODY
-    )
+    ).order_by(Cosmetics.tier)
 
     unowned_hats = Cosmetics.query.filter(
         ~Cosmetics.id.in_(owned_select),
         Cosmetics.type == Cosmetic_Type.HAT
-    )
+    ).order_by(Cosmetics.tier)
     
     return jsonify({
         "owned_faces": [cosmetic.to_json() for cosmetic in owned_faces],
