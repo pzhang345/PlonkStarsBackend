@@ -1,4 +1,5 @@
-from sqlalchemy import CheckConstraint, UniqueConstraint
+from sqlalchemy import Column, Enum, Float, ForeignKey, Integer, String, CheckConstraint, UniqueConstraint
+
 from models.db import db
 import enum
 from random import randint
@@ -6,16 +7,16 @@ from random import randint
 class UserCosmetics(db.Model):
     __tablename__ = "user_cosmetics"
 
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    user_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False, unique=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, unique=True)
 
-    hue = db.Column(db.Integer, nullable=False, default=lambda: randint(0, 360))
-    saturation = db.Column(db.Integer, nullable=False, default=lambda: randint(90, 150))
-    brightness = db.Column(db.Integer, nullable=False, default=lambda: randint(90, 150))
+    hue = Column(Integer, nullable=False, default=lambda: randint(0, 360))
+    saturation = Column(Integer, nullable=False, default=lambda: randint(90, 150))
+    brightness = Column(Integer, nullable=False, default=lambda: randint(90, 150))
 
-    face_id = db.Column(db.Integer, db.ForeignKey("cosmetics.id", ondelete="CASCADE"), default=None)
-    body_id = db.Column(db.Integer, db.ForeignKey("cosmetics.id", ondelete="CASCADE"), default=None)
-    hat_id = db.Column(db.Integer, db.ForeignKey("cosmetics.id", ondelete="CASCADE"), default=None)
+    face_id = Column(Integer, ForeignKey("cosmetics.id", ondelete="CASCADE"), default=None)
+    body_id = Column(Integer, ForeignKey("cosmetics.id", ondelete="CASCADE"), default=None)
+    hat_id = Column(Integer, ForeignKey("cosmetics.id", ondelete="CASCADE"), default=None)
 
     def __str__(self):
         return f"UserCosmetics(user_id={self.user_id}, face='{self.face.image}', body='{self.body.image}', hat='{self.hat.image}')"
@@ -50,15 +51,15 @@ class Cosmetic_Type(enum.Enum):
 class Cosmetics(db.Model):
     __tablename__ = "cosmetics"
     
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
 
-    image = db.Column(db.String(50), unique=True, nullable=False)
-    item_name = db.Column(db.String(50), unique=True, nullable=False)
-    type = db.Column(db.Enum(Cosmetic_Type), nullable=False)
-    tier = db.Column(db.Enum(Tier), nullable=False, default=Tier.COMMON)
-    top_position = db.Column(db.Float, nullable=False, default=0)
-    left_position = db.Column(db.Float, nullable=False, default=0)
-    scale = db.Column(db.Float, nullable=False, default=0)
+    image = Column(String(50), unique=True, nullable=False)
+    item_name = Column(String(50), unique=True, nullable=False)
+    type = Column(Enum(Cosmetic_Type), nullable=False)
+    tier = Column(Enum(Tier), nullable=False, default=Tier.COMMON)
+    top_position = Column(Float, nullable=False, default=0)
+    left_position = Column(Float, nullable=False, default=0)
+    scale = Column(Float, nullable=False, default=0)
 
     # Added relationship
     ownerships = db.relationship("CosmeticsOwnership", backref="cosmetic", cascade="all, delete", passive_deletes=True)
@@ -83,9 +84,9 @@ class Cosmetics(db.Model):
 class CosmeticsOwnership(db.Model):
     __tablename__ = "cosmetics_ownership"
 
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    user_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    cosmetics_id = db.Column(db.Integer, db.ForeignKey("cosmetics.id", ondelete="CASCADE"), nullable=False)
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    cosmetics_id = Column(Integer, ForeignKey("cosmetics.id", ondelete="CASCADE"), nullable=False)
 
     __table_args__ = (
         UniqueConstraint('user_id', 'cosmetics_id'),
@@ -102,9 +103,9 @@ class CosmeticsOwnership(db.Model):
 
 class UserCoins(db.Model):
     __tablename__ = "user_coins"
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    user_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False, unique=True)
-    coins = db.Column(db.Integer, nullable = False, default = 0)
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, unique=True)
+    coins = Column(Integer, nullable = False, default = 0)
 
     __table_args__ = (
         CheckConstraint('coins >= 0', name='check_coins_positive'),

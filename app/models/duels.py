@@ -1,40 +1,40 @@
 import uuid
 
-from sqlalchemy import UniqueConstraint
+from sqlalchemy import Column, Float, ForeignKey, Integer, String, UniqueConstraint
 from models.db import db
 
 class DuelsRules(db.Model):
     __tablename__ = "duels_rules"
     
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    session_id = db.Column(db.Integer, db.ForeignKey("sessions.id", ondelete="CASCADE"), nullable=False, unique=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    session_id = Column(Integer, ForeignKey("sessions.id", ondelete="CASCADE"), nullable=False, unique=True)
     
-    start_hp = db.Column(db.Integer, nullable=False, default=5000)
+    start_hp = Column(Integer, nullable=False, default=5000)
     
-    damage_multi_start_round = db.Column(db.Integer, nullable=False, default=1)
-    damage_multi_mult = db.Column(db.Float, nullable=False, default=1)
-    damage_multi_add = db.Column(db.Float, nullable=False, default=0)
-    damage_multi_freq = db.Column(db.Integer, nullable=False, default=1)
+    damage_multi_start_round = Column(Integer, nullable=False, default=1)
+    damage_multi_mult = Column(Float, nullable=False, default=1)
+    damage_multi_add = Column(Float, nullable=False, default=0)
+    damage_multi_freq = Column(Integer, nullable=False, default=1)
     
-    guess_time_limit = db.Column(db.Integer, nullable=False, default=15)
+    guess_time_limit = Column(Integer, nullable=False, default=15)
 
 class DuelState(db.Model):
     __tablename__ = "duel_state"
     
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    round_id = db.Column(db.Integer, db.ForeignKey("rounds.id", ondelete="CASCADE"), nullable=False, unique=True)
-    multi = db.Column(db.Float, nullable=False, default=1)
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    round_id = Column(Integer, ForeignKey("rounds.id", ondelete="CASCADE"), nullable=False, unique=True)
+    multi = Column(Float, nullable=False, default=1)
     
     team_hps = db.relationship("DuelHp", backref="state", cascade="all,delete", passive_deletes=True)
 
 class GameTeam(db.Model):
     __tablename__ = "game_teams"
     
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    uuid = db.Column(db.String(36), default=lambda: str(uuid.uuid4()), unique=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    uuid = Column(String(36), default=lambda: str(uuid.uuid4()), unique=True)
     
-    color = db.Column(db.Integer, nullable=False, default=0)
-    session_id = db.Column(db.Integer, db.ForeignKey("sessions.id", ondelete="CASCADE"), nullable=False)
+    color = Column(Integer, nullable=False, default=0)
+    session_id = Column(Integer, ForeignKey("sessions.id", ondelete="CASCADE"), nullable=False)
     
     team_players = db.relationship("TeamPlayer", backref="team", cascade="all,delete", passive_deletes=True)
     round_hps = db.relationship("DuelHp", backref="team", cascade="all,delete", passive_deletes=True)
@@ -42,9 +42,9 @@ class GameTeam(db.Model):
 class TeamPlayer(db.Model):
     __tablename__ = "team_players"
     
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    team_id = db.Column(db.Integer, db.ForeignKey("game_teams.id", ondelete="CASCADE"), nullable=False)
-    user_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    team_id = Column(Integer, ForeignKey("game_teams.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     
     __table_args__ = (
         UniqueConstraint('team_id', 'user_id'),
@@ -53,10 +53,10 @@ class TeamPlayer(db.Model):
 class DuelHp(db.Model):
     __tablename__ = "duel_hp"
     
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    state_id = db.Column(db.Integer, db.ForeignKey("duel_state.id", ondelete="CASCADE"), nullable=False)
-    team_id = db.Column(db.Integer, db.ForeignKey("game_teams.id", ondelete="CASCADE"), nullable=False)
-    hp = db.Column(db.Integer, nullable=False)
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    state_id = Column(Integer, ForeignKey("duel_state.id", ondelete="CASCADE"), nullable=False)
+    team_id = Column(Integer, ForeignKey("game_teams.id", ondelete="CASCADE"), nullable=False)
+    hp = Column(Integer, nullable=False)
     
     __table_args__ = (
         UniqueConstraint('state_id', 'team_id'),

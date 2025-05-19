@@ -1,12 +1,14 @@
+from sqlalchemy import Boolean, Column, Integer, String
+
 from models.db import db
 
 class User(db.Model):
     __tablename__ = "users"
 
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    username = db.Column(db.String(50), unique=True, nullable=False)
-    password = db.Column(db.String(70), nullable=False)
-    is_admin = db.Column(db.Boolean, nullable=False, default=False)
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    username = Column(String(50), unique=True, nullable=False)
+    password = Column(String(70), nullable=False)
+    is_admin = Column(Boolean, nullable=False, default=False)
 
     guess = db.relationship("Guess", backref="user", cascade="all,delete", passive_deletes=True)
     sessions = db.relationship("Session",backref="host",cascade="all,delete", passive_deletes=True)

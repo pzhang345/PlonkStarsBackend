@@ -1,13 +1,13 @@
-from sqlalchemy import UniqueConstraint
+from sqlalchemy import Column, Double, Integer, UniqueConstraint
 from models.db import db
 
 
 class SVLocation(db.Model):
     __tablename__ = "svlocations"
 
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    latitude = db.Column(db.Double, nullable=False)
-    longitude = db.Column(db.Double, nullable=False)
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    latitude = Column(Double, nullable=False)
+    longitude = Column(Double, nullable=False)
 
     rounds = db.relationship("Round", backref="location", cascade="all,delete", passive_deletes=True)
     

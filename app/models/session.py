@@ -2,7 +2,7 @@ from datetime import datetime
 import enum
 import uuid
 import pytz
-from sqlalchemy import UniqueConstraint
+from sqlalchemy import Boolean, Column, DateTime, Double, Enum, ForeignKey, Integer, String, UniqueConstraint
 
 from models.db import db
 
@@ -14,16 +14,16 @@ class GameType(enum.Enum):
 class Session(db.Model):
     __tablename__ = "sessions"
 
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    uuid = db.Column(db.String(36), default=lambda: str(uuid.uuid4()), unique=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    uuid = Column(String(36), default=lambda: str(uuid.uuid4()), unique=True)
 
-    max_rounds = db.Column(db.Integer, nullable=False, default=-1)
-    current_round = db.Column(db.Integer, nullable=False, default=0)
-    host_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    map_id = db.Column(db.Integer, db.ForeignKey("maps.id", ondelete="CASCADE"), nullable=False)
-    time_limit = db.Column(db.Integer, nullable=False, default=-1)
-    type = db.Column(db.Enum(GameType), nullable=False, default=GameType.CHALLENGE)
-    nmpz = db.Column(db.Boolean, nullable=False, default=False)
+    max_rounds = Column(Integer, nullable=False, default=-1)
+    current_round = Column(Integer, nullable=False, default=0)
+    host_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    map_id = Column(Integer, ForeignKey("maps.id", ondelete="CASCADE"), nullable=False)
+    time_limit = Column(Integer, nullable=False, default=-1)
+    type = Column(Enum(GameType), nullable=False, default=GameType.CHALLENGE)
+    nmpz = Column(Boolean, nullable=False, default=False)
     
     rounds = db.relationship("Round", backref="session", cascade="all,delete", passive_deletes=True)
     players = db.relationship("Player",backref="session",cascade="all,delete", passive_deletes=True)
@@ -41,13 +41,13 @@ class Session(db.Model):
 class Round(db.Model):
     __tablename__= "rounds"
 
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
 
-    location_id = db.Column(db.Integer, db.ForeignKey("svlocations.id", ondelete="CASCADE"), nullable=False)
-    session_id = db.Column(db.Integer, db.ForeignKey("sessions.id", ondelete="CASCADE"), nullable=False)
-    round_number = db.Column(db.Integer, nullable=False)
-    time_limit = db.Column(db.Integer, nullable=False, default=-1)
-    nmpz = db.Column(db.Boolean, nullable=False, default=False)
+    location_id = Column(Integer, ForeignKey("svlocations.id", ondelete="CASCADE"), nullable=False)
+    session_id = Column(Integer, ForeignKey("sessions.id", ondelete="CASCADE"), nullable=False)
+    round_number = Column(Integer, nullable=False)
+    time_limit = Column(Integer, nullable=False, default=-1)
+    nmpz = Column(Boolean, nullable=False, default=False)
 
     guesses = db.relationship("Guess", backref="round", cascade="all,delete", passive_deletes=True)
     duel_states = db.relationship("DuelState", backref="round", cascade="all,delete", passive_deletes=True)
@@ -63,12 +63,12 @@ class Round(db.Model):
 class Player(db.Model):
     __tablename__= "players"
 
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
 
-    user_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    session_id = db.Column(db.Integer,db.ForeignKey("sessions.id", ondelete="CASCADE"), nullable=False)
-    current_round = db.Column(db.Integer, nullable=False, default=0)
-    start_time = db.Column(db.DateTime, nullable=False,default=lambda: datetime.now(tz=pytz.utc))
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    session_id = Column(Integer,ForeignKey("sessions.id", ondelete="CASCADE"), nullable=False)
+    current_round = Column(Integer, nullable=False, default=0)
+    start_time = Column(DateTime, nullable=False,default=lambda: datetime.now(tz=pytz.utc))
     
     __table_args__ = (
         UniqueConstraint('user_id', 'session_id'),
@@ -77,16 +77,16 @@ class Player(db.Model):
 class Guess(db.Model):
     __tablename__ = "guesses"
 
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    user_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    round_id = db.Column(db.Integer, db.ForeignKey("rounds.id", ondelete="CASCADE"), nullable=False)
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    round_id = Column(Integer, ForeignKey("rounds.id", ondelete="CASCADE"), nullable=False)
 
-    latitude = db.Column(db.Double, nullable=False)
-    longitude = db.Column(db.Double, nullable=False)
+    latitude = Column(Double, nullable=False)
+    longitude = Column(Double, nullable=False)
 
-    distance = db.Column(db.Double,nullable=False)
-    score = db.Column(db.Integer, nullable=False)
-    time = db.Column(db.Integer, nullable=False, default=0)
+    distance = Column(Double,nullable=False)
+    score = Column(Integer, nullable=False)
+    time = Column(Integer, nullable=False, default=0)
     
     __table_args__ = (
         UniqueConstraint('user_id', 'round_id'),
@@ -98,10 +98,10 @@ class Guess(db.Model):
 class DailyChallenge(db.Model):
     __tablename__ = "daily_challenge"
 
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    session_id = db.Column(db.Integer, db.ForeignKey("sessions.id", ondelete="CASCADE"), nullable=False, unique=True)
-    date = db.Column(db.Date, nullable=False, unique=True, default=datetime.now(tz=pytz.utc).date())
-    coins_added = db.Column(db.Boolean, nullable=False,default=False)
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    session_id = Column(Integer, ForeignKey("sessions.id", ondelete="CASCADE"), nullable=False, unique=True)
+    date = Column(db.Date, nullable=False, unique=True, default=datetime.now(tz=pytz.utc).date())
+    coins_added = Column(Boolean, nullable=False,default=False)
 
 
     def __str__(self):
