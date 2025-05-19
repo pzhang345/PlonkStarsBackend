@@ -1,5 +1,7 @@
 import uuid
 
+from sqlalchemy import UniqueConstraint
+
 from models.db import db
 
 class GameMap(db.Model):
@@ -50,6 +52,10 @@ class Bound(db.Model):
     
     map_bounds = db.relationship("MapBound", backref="bound", cascade="all,delete", passive_deletes=True)
     
+    __table_args__ = (
+        UniqueConstraint('start_latitude', 'start_longitude', 'end_latitude', 'end_longitude'),
+    )
+    
     def __str__(self):
         return f"({self.start_latitude},{self.start_longitude})-({self.end_latitude},{self.end_longitude})"
     
@@ -74,6 +80,10 @@ class MapBound(db.Model):
     map_id = db.Column(db.Integer, db.ForeignKey("maps.id", ondelete="CASCADE"), nullable=False)
     weight = db.Column(db.Integer, nullable=False)
     
+    __table_args__ = (
+        UniqueConstraint('bound_id', 'map_id'),
+    )
+    
 class MapEditor(db.Model):
     __tablename__="mapeditors"
     
@@ -83,11 +93,15 @@ class MapEditor(db.Model):
     map_id = db.Column(db.Integer, db.ForeignKey("maps.id", ondelete="CASCADE"), nullable=False)
     permission_level = db.Column(db.Integer, nullable=False, default=0)
     
+    __table_args__ = (
+        UniqueConstraint('user_id', 'map_id'),
+    )
+    
 class GenerationTime(db.Model):
     __tablename__="generationtimes"
     
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     
-    map_id = db.Column(db.Integer, db.ForeignKey("maps.id", ondelete="CASCADE"), nullable=False)
+    map_id = db.Column(db.Integer, db.ForeignKey("maps.id", ondelete="CASCADE"), nullable=False, unique=True)
     total_generation_time = db.Column(db.Integer, nullable=False, default=0)
     total_loads = db.Column(db.Integer, nullable=False, default=0)

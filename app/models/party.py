@@ -1,6 +1,7 @@
 from datetime import datetime
 
 import pytz
+from sqlalchemy import UniqueConstraint
 from models.db import db
 
 from models.session import GameType
@@ -28,7 +29,11 @@ class PartyMember(db.Model):
     party_id = db.Column(db.Integer, db.ForeignKey("party.id", ondelete="CASCADE"), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     in_lobby = db.Column(db.Boolean, nullable=False, default=True)
-
+    
+    __table_args__ = (
+        UniqueConstraint('party_id', 'user_id'),
+    )
+    
     def __str__(self):
         return f"{self.party} member ({self.user})"
 
@@ -36,7 +41,7 @@ class PartyRules(db.Model):
     __tablename__ = "party_rules"
     
     id = db.Column(db.Integer, primary_key=True)
-    party_id = db.Column(db.Integer, db.ForeignKey("party.id", ondelete="CASCADE"), nullable=False)
+    party_id = db.Column(db.Integer, db.ForeignKey("party.id", ondelete="CASCADE"), nullable=False, unique=True)
     map_id = db.Column(db.Integer, db.ForeignKey("maps.id", ondelete="CASCADE"), nullable=False)
     max_rounds = db.Column(db.Integer, nullable=False, default=-1)
     time_limit = db.Column(db.Integer, nullable=False, default=-1)

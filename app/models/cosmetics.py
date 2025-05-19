@@ -1,4 +1,4 @@
-from sqlalchemy import CheckConstraint
+from sqlalchemy import CheckConstraint, UniqueConstraint
 from models.db import db
 import enum
 from random import randint
@@ -7,7 +7,7 @@ class UserCosmetics(db.Model):
     __tablename__ = "user_cosmetics"
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    user_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False, unique=True)
 
     hue = db.Column(db.Integer, nullable=False, default=lambda: randint(0, 360))
     saturation = db.Column(db.Integer, nullable=False, default=lambda: randint(90, 150))
@@ -87,6 +87,10 @@ class CosmeticsOwnership(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     cosmetics_id = db.Column(db.Integer, db.ForeignKey("cosmetics.id", ondelete="CASCADE"), nullable=False)
 
+    __table_args__ = (
+        UniqueConstraint('user_id', 'cosmetics_id'),
+    )
+    
     def to_json(self):
         return {
             "cosmetics_image": self.cosmetics.image,
@@ -99,7 +103,7 @@ class CosmeticsOwnership(db.Model):
 class UserCoins(db.Model):
     __tablename__ = "user_coins"
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    user_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False, unique=True)
     coins = db.Column(db.Integer, nullable = False, default = 0)
 
     __table_args__ = (

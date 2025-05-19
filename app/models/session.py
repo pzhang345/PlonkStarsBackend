@@ -2,6 +2,7 @@ from datetime import datetime
 import enum
 import uuid
 import pytz
+from sqlalchemy import UniqueConstraint
 
 from models.db import db
 
@@ -50,6 +51,10 @@ class Round(db.Model):
 
     guesses = db.relationship("Guess", backref="round", cascade="all,delete", passive_deletes=True)
     duel_states = db.relationship("DuelState", backref="round", cascade="all,delete", passive_deletes=True)
+    
+    __table_args__ = (
+        UniqueConstraint('session_id', 'round_number'),
+    )
 
     def __str__(self):
         return f"{self.round_number}. {self.session.uuid[:4]} {self.location}"
@@ -65,6 +70,10 @@ class Player(db.Model):
     current_round = db.Column(db.Integer, nullable=False, default=0)
     start_time = db.Column(db.DateTime, nullable=False,default=lambda: datetime.now(tz=pytz.utc))
     
+    __table_args__ = (
+        UniqueConstraint('user_id', 'session_id'),
+    )
+    
 class Guess(db.Model):
     __tablename__ = "guesses"
 
@@ -78,6 +87,10 @@ class Guess(db.Model):
     distance = db.Column(db.Double,nullable=False)
     score = db.Column(db.Integer, nullable=False)
     time = db.Column(db.Integer, nullable=False, default=0)
+    
+    __table_args__ = (
+        UniqueConstraint('user_id', 'round_id'),
+    )
 
     def __str__(self):
         return f"({self.latitude},{self.longitude})"
@@ -86,7 +99,7 @@ class DailyChallenge(db.Model):
     __tablename__ = "daily_challenge"
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    session_id = db.Column(db.Integer, db.ForeignKey("sessions.id", ondelete="CASCADE"), nullable=False)
+    session_id = db.Column(db.Integer, db.ForeignKey("sessions.id", ondelete="CASCADE"), nullable=False, unique=True)
     date = db.Column(db.Date, nullable=False, unique=True, default=datetime.now(tz=pytz.utc).date())
     coins_added = db.Column(db.Boolean, nullable=False,default=False)
 

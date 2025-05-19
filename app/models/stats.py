@@ -1,3 +1,4 @@
+from sqlalchemy import UniqueConstraint
 from models.db import db
 
 class UserMapStats(db.Model):
@@ -18,6 +19,10 @@ class UserMapStats(db.Model):
     high_round_number = db.Column(db.Integer, nullable=False, default=0)
     high_session_id = db.Column(db.Integer, db.ForeignKey("sessions.id", ondelete="CASCADE"))
     
+    __table_args__ = (
+        UniqueConstraint('user_id', 'map_id', 'nmpz'),
+    )
+    
 class MapStats(db.Model):
     __tablename__="mapstats"
     
@@ -29,6 +34,10 @@ class MapStats(db.Model):
     total_score = db.Column(db.Integer, nullable=False, default=0)
     total_distance = db.Column(db.Double, nullable=False, default=0)
     total_guesses = db.Column(db.Integer, nullable=False, default=0)
+    
+    __table_args__ = (
+        UniqueConstraint('map_id', 'nmpz'),
+    )
 
 class RoundStats(db.Model):
     __tablename__ = "roundstats"
@@ -41,4 +50,9 @@ class RoundStats(db.Model):
     total_time = db.Column(db.Integer, nullable=False, default=0)
     total_score = db.Column(db.Integer, nullable=False, default=0)
     total_distance = db.Column(db.Double, nullable=False, default=0)
+    
+    
+    __table_args__ = (
+        UniqueConstraint('user_id', 'session_id', 'round'),
+    )
     

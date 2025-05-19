@@ -1,11 +1,13 @@
 import uuid
+
+from sqlalchemy import UniqueConstraint
 from models.db import db
 
 class DuelsRules(db.Model):
     __tablename__ = "duels_rules"
     
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    session_id = db.Column(db.Integer, db.ForeignKey("sessions.id", ondelete="CASCADE"), nullable=False)
+    session_id = db.Column(db.Integer, db.ForeignKey("sessions.id", ondelete="CASCADE"), nullable=False, unique=True)
     
     start_hp = db.Column(db.Integer, nullable=False, default=5000)
     
@@ -20,7 +22,7 @@ class DuelState(db.Model):
     __tablename__ = "duel_state"
     
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    round_id = db.Column(db.Integer, db.ForeignKey("rounds.id", ondelete="CASCADE"), nullable=False)
+    round_id = db.Column(db.Integer, db.ForeignKey("rounds.id", ondelete="CASCADE"), nullable=False, unique=True)
     multi = db.Column(db.Float, nullable=False, default=1)
     
     team_hps = db.relationship("DuelHp", backref="state", cascade="all,delete", passive_deletes=True)
@@ -44,6 +46,10 @@ class TeamPlayer(db.Model):
     team_id = db.Column(db.Integer, db.ForeignKey("game_teams.id", ondelete="CASCADE"), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     
+    __table_args__ = (
+        UniqueConstraint('team_id', 'user_id'),
+    )
+    
 class DuelHp(db.Model):
     __tablename__ = "duel_hp"
     
@@ -51,3 +57,7 @@ class DuelHp(db.Model):
     state_id = db.Column(db.Integer, db.ForeignKey("duel_state.id", ondelete="CASCADE"), nullable=False)
     team_id = db.Column(db.Integer, db.ForeignKey("game_teams.id", ondelete="CASCADE"), nullable=False)
     hp = db.Column(db.Integer, nullable=False)
+    
+    __table_args__ = (
+        UniqueConstraint('state_id', 'team_id'),
+    )
