@@ -36,11 +36,7 @@ def register_commands(app):
         
         session = Session(
             host_id=HOST_ID,
-            map_id=MAP_ID,
-            time_limit=TIME_LIMIT,
-            max_rounds=ROUND_NUMBER,
             type=GameType.CHALLENGE, 
-            nmpz=NMPZ,
             base_rule_id=rules.id,
         ) ######
         db.session.add(session)
@@ -76,7 +72,7 @@ def register_commands(app):
             return
         
         session = daily.session
-        stats = RoundStats.query.filter_by(session_id=session.id,round=session.max_rounds).subquery()
+        stats = RoundStats.query.filter_by(session_id=session.id,round=session.base_rules.max_rounds).subquery()
         ranked_users = db.session.query(
             func.rank().over(order_by=(desc(stats.c.total_score),stats.c.total_time)).label("rank"),
             UserCoins,

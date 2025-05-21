@@ -113,7 +113,7 @@ class LiveGame(BaseGame):
         
         max_rounds = session.base_rules.max_rounds
         for round_stat in RoundStats.query.filter_by(session_id=session.id,round=max_rounds):
-            user_map_stat = UserMapStats.query.filter_by(user_id=round_stat.user_id,map_id=session.base_rules.map_id, nmpz=session.nmpz).first()
+            user_map_stat = UserMapStats.query.filter_by(user_id=round_stat.user_id,map_id=session.base_rules.map_id, nmpz=session.base_rules.nmpz).first()
             if not user_map_stat:
                 user_map_stat = UserMapStats(user_id=round_stat.user_id,map_id=session.map_id, nmpz=session.base_rules.nmpz)
                 db.session.add(user_map_stat)

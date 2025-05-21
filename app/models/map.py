@@ -21,7 +21,6 @@ class GameMap(db.Model):
     max_distance = Column(Double, nullable=False,default=-1)
     
     map_bounds = db.relationship("MapBound", backref="map", cascade="all,delete", passive_deletes=True)
-    sessions = db.relationship("Session", backref="map", cascade="all,delete", passive_deletes=True)
     stats = db.relationship("MapStats", backref="map", cascade="all,delete", passive_deletes=True)
     user_map_stats = db.relationship("UserMapStats",backref="map",cascade="all,delete", passive_deletes=True)
     editors = db.relationship("MapEditor", backref="map", cascade="all,delete", passive_deletes=True)

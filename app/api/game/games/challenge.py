@@ -55,6 +55,7 @@ class ChallengeGame(BaseGame):
       
         prev_round_stats = RoundStats.query.filter_by(user_id=user.id,session_id=session.id,round=player.current_round-1).first()
         location = round.location
+        map = session.base_rules.map
         ret = {
             "round":player.current_round,
             "lat":location.latitude,
@@ -63,18 +64,18 @@ class ChallengeGame(BaseGame):
             "nmpz": round.base_rules.nmpz,
             "map_bounds":{
                 "start":{
-                    "lat":session.map.start_latitude,
-                    "lng":session.map.start_longitude,
+                    "lat":map.start_latitude,
+                    "lng":map.start_longitude,
                 },
                 "end":{
-                    "lat":session.map.end_latitude,
-                    "lng":session.map.end_longitude,
+                    "lat":map.end_latitude,
+                    "lng":map.end_longitude,
                 },
             },
         }
-        if round.time_limit != -1:
+        if round.base_rules.time_limit != -1:
             ret["time"] = pytz.utc.localize(player.start_time) + timedelta(seconds=round.base_rules.time_limit)
-            ret["time_limit"] = round.time_limit
+            ret["time_limit"] = round.base_rules.time_limit
         return ret,200
     
     def guess(self,data,user,session):
@@ -97,7 +98,7 @@ class ChallengeGame(BaseGame):
         return {"message":"guess added"},200
     
     def get_state(self,data,user,session):
-        if session.daily_challenge == None and session.host_id != user.id:
+        if session.daily_challenge == None and session.host_id != user.id and session.type == GameType.CHALLENGE:
             state = self.get_state(data,session.host,session)[0]
             if state["state"] != "finished":
                 return {"state":"unfinished"},200
@@ -110,7 +111,7 @@ class ChallengeGame(BaseGame):
             return {"state":"playing","round":player.current_round},200
         else:
             next_round = player.current_round + 1
-            if next_round > session.max_rounds:
+            if next_round > session.base_rules.max_rounds:
                 return {"state":"finished"},200
             return {"state":"results","round":player.current_round},200
             
@@ -271,9 +272,9 @@ class ChallengeGame(BaseGame):
                 "guesses":[guess_to_json(user,round) for round in rounds]
             }
         
-        user_map_stat = UserMapStats.query.filter_by(user_id=user.id,map_id=session.map_id, nmpz=session.base_rules.nmpz).first()
+        user_map_stat = UserMapStats.query.filter_by(user_id=user.id,map_id=session.base_rules.map_id, nmpz=session.base_rules.nmpz).first()
         if not user_map_stat:
-            user_map_stat = UserMapStats(user_id=user.id,map_id=session.map_id, nmpz=session.base_rules.nmpz)
+            user_map_stat = UserMapStats(user_id=user.id,map_id=session.base_rules.map_id, nmpz=session.base_rules.nmpz)
             db.session.add(user_map_stat)
             db.session.commit()
             

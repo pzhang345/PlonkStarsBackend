@@ -17,14 +17,10 @@ class Session(db.Model):
     id = Column(Integer, primary_key=True, autoincrement=True)
     uuid = Column(String(36), default=lambda: str(uuid.uuid4()), unique=True)
 
-    max_rounds = Column(Integer, nullable=False, default=-1)
     current_round = Column(Integer, nullable=False, default=0)
     host_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    map_id = Column(Integer, ForeignKey("maps.id", ondelete="CASCADE"), nullable=False)
-    time_limit = Column(Integer, nullable=False, default=-1)
     type = Column(Enum(GameType), nullable=False, default=GameType.CHALLENGE)
-    nmpz = Column(Boolean, nullable=False, default=False)
-    base_rule_id = Column(Integer, ForeignKey("base_rules.id", ondelete="CASCADE"), nullable=True)
+    base_rule_id = Column(Integer, ForeignKey("base_rules.id", ondelete="CASCADE"), nullable=False)
     
     rounds = db.relationship("Round", backref="session", cascade="all,delete", passive_deletes=True)
     players = db.relationship("Player",backref="session",cascade="all,delete", passive_deletes=True)
@@ -67,9 +63,7 @@ class Round(db.Model):
     location_id = Column(Integer, ForeignKey("svlocations.id", ondelete="CASCADE"), nullable=False)
     session_id = Column(Integer, ForeignKey("sessions.id", ondelete="CASCADE"), nullable=False)
     round_number = Column(Integer, nullable=False)
-    time_limit = Column(Integer, nullable=False, default=-1)
-    nmpz = Column(Boolean, nullable=False, default=False)
-    base_rule_id = Column(Integer, ForeignKey("base_rules.id", ondelete="CASCADE"), nullable=True)
+    base_rule_id = Column(Integer, ForeignKey("base_rules.id", ondelete="CASCADE"), nullable=False)
 
     guesses = db.relationship("Guess", backref="round", cascade="all,delete", passive_deletes=True)
     duel_states = db.relationship("DuelState", backref="round", cascade="all,delete", passive_deletes=True)

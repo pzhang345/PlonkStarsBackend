@@ -43,7 +43,7 @@ class BaseGame(ABC):
             db.session.add(rules)
             db.session.flush()
             
-        session = Session(host_id=user.id,map_id=map.id,time_limit=time_limit,max_rounds=num_rounds,type=type, nmpz=nmpz,base_rule_id=rules.id) ######
+        session = Session(host_id=user.id, type=type,base_rule_id=rules.id)
         return session
 
     def join(self,data,user,session):

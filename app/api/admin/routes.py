@@ -41,7 +41,7 @@ def recalculate_scores(user):
         db.session.query(
             User,
             GameMap,
-            Session.nmpz.label("nmpz"),
+            BaseRules.nmpz.label("nmpz"),
             func.sum(cast(Guess.score,Float)).label("total_score"),
             func.sum(cast(Guess.distance,Float)).label("total_distance"),
             func.sum(cast(Guess.time,Float)).label("total_time"),
@@ -50,7 +50,8 @@ def recalculate_scores(user):
         .join(User, Guess.user_id == User.id)
         .join(Round, Guess.round_id == Round.id)
         .join(Session, Round.session_id == Session.id)
-        .join(GameMap, Session.map_id == GameMap.id)
+        .join(BaseRules, Session.base_rule_id == BaseRules.id)
+        .join(GameMap, BaseRules.map_id == GameMap.id)
     )
     
     map_query = MapStats.query
@@ -65,7 +66,7 @@ def recalculate_scores(user):
         stats.total_distance = 0
     db.session.flush()
     
-    all_scores = all_scores.group_by(User.id, GameMap.id, Session.nmpz)
+    all_scores = all_scores.group_by(User.id, GameMap.id, BaseRules.nmpz)
     
     keys = set()
     for user,map,nmpz,score,distance,time,guess in all_scores:

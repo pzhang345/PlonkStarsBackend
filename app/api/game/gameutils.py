@@ -60,10 +60,8 @@ def create_round(session,base_rules):
         location_id=location.id,
         session_id=session.id,
         round_number=session.current_round + 1,
-        time_limit=base_rules.time_limit,
-        nmpz=base_rules.nmpz,
         base_rule_id=base_rules.id,
-    ) ######
+    )
     session.current_round += 1
     db.session.add(round)
     db.session.commit()
