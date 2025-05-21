@@ -2,7 +2,7 @@ from flask import Blueprint,request, jsonify
 from sqlalchemy import Float, and_, case, cast, desc, func, literal_column, or_
 
 from api.account.auth import login_required
-from models.session import Guess, Round, Session
+from models.session import BaseRules, Guess, Round, Session
 from models.db import db
 from models.user import User
 from models.map import GameMap, MapEditor
@@ -192,7 +192,7 @@ def get_map_info(user):
             "stat":best_average_stats[2]/best_average_stats[4]
         }
     
-    number_of_5ks = Guess.query.filter_by(score=5000).join(Round).join(Session).filter(Session.map_id == map.id).count()
+    number_of_5ks = Guess.query.filter_by(score=5000).join(Round).join(Session).join(BaseRules).filter(BaseRules.map_id == map.id).count()
     ret["other"]["5ks"] = number_of_5ks
     
     return jsonify(ret),200
