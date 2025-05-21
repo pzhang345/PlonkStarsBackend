@@ -53,7 +53,7 @@ class BaseRules(db.Model):
     )
 
     def __str__(self):
-        return f"Rounds:{self.max_rounds} Time:{self.time_limit} NMPZ:{self.nmpz}"
+        return f"Rounds:{self.max_rounds} Time:{self.time_limit} NMPZ:{self.nmpz} Map:{self.map}"
 
 class Round(db.Model):
     __tablename__= "rounds"
