@@ -6,7 +6,7 @@ from api.party.party import get_party_rule
 from models.db import db
 from models.map import GameMap
 from models.party import Party, PartyMember, PartyRules
-from models.session import Player
+from models.session import BaseRules, Player
 from models.user import User
 from models.configs import Configs
 from utils import return_400_on_error
@@ -233,13 +233,26 @@ def set_rules(user):
     if party.host_id != user.id:
         return jsonify({"error": "You are not the host of this party"}), 403
     
-    rules = PartyRules.query.filter_by(party_id=party.id).first_or_404("Cannot find rules")
+    party_rules = PartyRules.query.filter_by(party_id=party.id).first_or_404("Cannot find rules")
     map = GameMap.query.filter_by(uuid=data.get("map_id")).first()
     
-    rules.map_id = map.id if map else rules.map_id
-    rules.time_limit = data.get("time") if data.get("time") else rules.time_limit
-    rules.max_rounds = data.get("rounds") if data.get("rounds") else rules.max_rounds
-    rules.nmpz = data.get("nmpz") if data.get("nmpz") != None else rules.nmpz
+    map_id = map.id if map else party_rules.map_id
+    time_limit = data.get("time") if data.get("time") else party_rules.time_limit
+    max_rounds = data.get("rounds") if data.get("rounds") else party_rules.max_rounds
+    nmpz = data.get("nmpz") if data.get("nmpz") != None else party_rules.nmpz
+    
+    base_rule = BaseRules.query.filter_by(map_id=map_id, time_limit=time_limit, max_rounds=max_rounds, nmpz=nmpz).first()
+    if not base_rule:
+        base_rule = BaseRules(
+            map_id=map_id,
+            time_limit=time_limit,
+            max_rounds=max_rounds,
+            nmpz=nmpz
+        )
+        db.session.add(base_rule)
+        db.session.flush()
+    
+    party_rules.base_rule_id = base_rule.id
     db.session.commit()
     
     socketio.emit("update_rules", get_party_rule(party), namespace="/socket/party", room=party.code)

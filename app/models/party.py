@@ -42,8 +42,5 @@ class PartyRules(db.Model):
     
     id = Column(Integer, primary_key=True)
     party_id = Column(Integer, ForeignKey("party.id", ondelete="CASCADE"), nullable=False, unique=True)
-    map_id = Column(Integer, ForeignKey("maps.id", ondelete="CASCADE"), nullable=False)
-    max_rounds = Column(Integer, nullable=False, default=-1)
-    time_limit = Column(Integer, nullable=False, default=-1)
     type = Column(Enum(GameType), nullable=False, default=GameType.LIVE)
-    nmpz = Column(Boolean, nullable=False, default=False)
+    base_rule_id = Column(Integer, ForeignKey("base_rules.id", ondelete="CASCADE"),nullable=False)

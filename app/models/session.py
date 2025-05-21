@@ -24,6 +24,7 @@ class Session(db.Model):
     time_limit = Column(Integer, nullable=False, default=-1)
     type = Column(Enum(GameType), nullable=False, default=GameType.CHALLENGE)
     nmpz = Column(Boolean, nullable=False, default=False)
+    base_rule_id = Column(Integer, ForeignKey("base_rules.id", ondelete="CASCADE"), nullable=True)
     
     rounds = db.relationship("Round", backref="session", cascade="all,delete", passive_deletes=True)
     players = db.relationship("Player",backref="session",cascade="all,delete", passive_deletes=True)
@@ -38,6 +39,26 @@ class Session(db.Model):
         return self.uuid
 
 
+class BaseRules(db.Model):
+    __tablename__ = "base_rules"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    time_limit = Column(Integer, nullable=False, default=-1)
+    max_rounds = Column(Integer, nullable=False, default=-1)
+    nmpz = Column(Boolean, nullable=False, default=False)
+    map_id = Column(Integer, ForeignKey("maps.id", ondelete="CASCADE"), nullable=False)
+    
+    sessions = db.relationship("Session", backref="base_rules", cascade="all,delete", passive_deletes=True)
+    party_rules = db.relationship("PartyRules", backref="base_rules", cascade="all,delete", passive_deletes=True)
+    rounds = db.relationship("Round", backref="base_rules", cascade="all,delete", passive_deletes=True)
+    
+    __table_args__ = (
+        UniqueConstraint('map_id', 'time_limit', 'max_rounds', 'nmpz'),
+    )
+
+    def __str__(self):
+        return f"Rounds:{self.max_rounds} Time:{self.time_limit} NMPZ:{self.nmpz}"
+
 class Round(db.Model):
     __tablename__= "rounds"
 
@@ -48,6 +69,7 @@ class Round(db.Model):
     round_number = Column(Integer, nullable=False)
     time_limit = Column(Integer, nullable=False, default=-1)
     nmpz = Column(Boolean, nullable=False, default=False)
+    base_rule_id = Column(Integer, ForeignKey("base_rules.id", ondelete="CASCADE"), nullable=True)
 
     guesses = db.relationship("Guess", backref="round", cascade="all,delete", passive_deletes=True)
     duel_states = db.relationship("DuelState", backref="round", cascade="all,delete", passive_deletes=True)

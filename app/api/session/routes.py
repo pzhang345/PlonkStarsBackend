@@ -7,7 +7,7 @@ from api.session.session import get_session_info
 from models.db import db
 from models.configs import Configs
 from models.map import GameMap
-from models.session import DailyChallenge, GameType, Session
+from models.session import BaseRules, DailyChallenge, GameType, Session
 
 session_bp = Blueprint("session_bp", __name__)
 
@@ -32,6 +32,12 @@ def get_daily(user):
         NMPZ = Configs.get("DAILY_DEFAULT_NMPZ").lower() == "true"
         MAP_ID = int(Configs.get("DAILY_DEFAULT_MAP_ID"))
         HOST_ID = int(Configs.get("DAILY_DEFAULT_HOST_ID"))
+        rules = BaseRules.query.filter_by(
+            map_id=MAP_ID,
+            time_limit=TIME_LIMIT,
+            max_rounds=ROUND_NUMBER,
+            nmpz=NMPZ
+        ).first()
         
         session = Session(
             host_id=HOST_ID,
@@ -39,7 +45,8 @@ def get_daily(user):
             time_limit=TIME_LIMIT,
             max_rounds=ROUND_NUMBER,
             type=GameType.CHALLENGE, 
-            nmpz=NMPZ
+            nmpz=NMPZ,
+            base_rule_id=rules.id,
         )
         db.session.add(session)
         db.session.flush()

@@ -17,27 +17,25 @@ class ChallengeGame(BaseGame):
         return {"id":session.uuid},200,session
 
     def join(self,data,user,session):
-        if session.daily_challenge == None and session.host_id != user.id:
-            state = self.get_state(data,session.host,session)[0]
-            if state["state"] != "finished":
-                raise Exception("Host has not finished the session")
+        state = self.get_state(data,session.host,session)[0]
+        if state["state"] == "unfinished":
+            raise Exception("Host has not finished the session")
         player = Player(session_id=session.id,user_id=user.id)
         db.session.add(player)
         db.session.commit()
         return {"message":"session joined"},200
     
     def next(self,data,user,session):
-        player = super().get_player(user,session)
-        if player.current_round == session.max_rounds:
+        state = self.get_state(data,user,session)[0]
+        if state["state"] == "finished":
             raise Exception("No more rounds are available")
-        if player.current_round != 0:
-            round = super().get_round(player,session)
-            
-            if not timed_out(player,round.time_limit) and Guess.query.filter_by(user_id=user.id,round_id=round.id).count() == 0:
-                raise Exception("Player has not finished the current round")
         
+        if state["state"] == "playing":
+            raise Exception("Player has not finished the current round")
+        
+        player = super().get_player(user,session)
         if player.current_round + 1 > session.current_round:
-            create_round(session,session.time_limit)
+            create_round(session,session.base_rules)
         
         player.current_round += 1
         player.start_time = datetime.now(tz=pytz.utc)
@@ -51,7 +49,8 @@ class ChallengeGame(BaseGame):
         round = super().get_round(player,session)
         prev_round_stats = RoundStats.query.filter_by(user_id=user.id,session_id=session.id,round=player.current_round).first()
         
-        if player.current_round == 0 or (Guess.query.filter_by(user_id=user.id,round_id=round.id).count() == 0 and timed_out(player,round.time_limit)):
+        state = self.get_state(data,user,session)[0]
+        if state["state"] != "playing":
             raise Exception("Call the 'next' endpoint first")
       
         prev_round_stats = RoundStats.query.filter_by(user_id=user.id,session_id=session.id,round=player.current_round-1).first()
@@ -61,7 +60,7 @@ class ChallengeGame(BaseGame):
             "lat":location.latitude,
             "lng":location.longitude,
             "total":prev_round_stats.total_score if prev_round_stats else 0,
-            "nmpz": round.nmpz,
+            "nmpz": round.base_rules.nmpz,
             "map_bounds":{
                 "start":{
                     "lat":session.map.start_latitude,
@@ -74,7 +73,7 @@ class ChallengeGame(BaseGame):
             },
         }
         if round.time_limit != -1:
-            ret["time"] = pytz.utc.localize(player.start_time) + timedelta(seconds=round.time_limit)
+            ret["time"] = pytz.utc.localize(player.start_time) + timedelta(seconds=round.base_rules.time_limit)
             ret["time_limit"] = round.time_limit
         return ret,200
     
@@ -89,7 +88,7 @@ class ChallengeGame(BaseGame):
         
         time = (now - pytz.utc.localize(player.start_time)).total_seconds()
         
-        if timed_out(player,round.time_limit + 1 if round.time_limit != -1 else -1):
+        if timed_out(player,round.base_rules.time_limit + 1 if round.base_rules.time_limit != -1 else -1):
             raise Exception("timed out")
 
         guess = create_guess(lat,lng,user,round,time)
@@ -107,7 +106,7 @@ class ChallengeGame(BaseGame):
         if not player or player.current_round == 0:
             return {"state":"not_playing"},200
         round = super().get_round(player,session)
-        if not timed_out(player,round.time_limit) and Guess.query.filter_by(user_id=user.id,round_id=round.id).count() == 0:
+        if not timed_out(player,round.base_rules.time_limit) and Guess.query.filter_by(user_id=user.id,round_id=round.id).count() == 0:
             return {"state":"playing","round":player.current_round},200
         else:
             next_round = player.current_round + 1
@@ -134,11 +133,10 @@ class ChallengeGame(BaseGame):
         if not round:
             raise Exception("No round found")
         
-        
-        if player.current_round < round_num or (player.current_round == round_num and
-            (Guess.query.filter_by(user_id=user.id,round_id=round.id).count() == 0 and not timed_out(player,round.time_limit))):
-            raise Exception("Round not played yet")
-
+        state = self.get_state(data,user,session)[0]
+        if player.current_round < round_num or (player.current_round == round_num and state["state"] == "playing"):
+            raise Exception("Round not finished yet")
+            
         if not RoundStats.query.filter_by(session_id=session.id,round=round_num,user_id=user.id).first():
             create_round_stats(user,session,round_num=round_num)
         
@@ -206,8 +204,7 @@ class ChallengeGame(BaseGame):
         if per_page < 1:
             raise Exception("Please provide valid inputs")
         
-        player = super().get_player(user,session)
-        round = Round.query.filter_by(session_id=session.id,round_number=session.max_rounds).first()
+        round = Round.query.filter_by(session_id=session.id,round_number=session.base_rules.max_rounds).first()
         state = self.get_state(data,user,session)[0]
         if state["state"] != "finished":
             raise Exception("The game is not finished first")
@@ -215,11 +212,11 @@ class ChallengeGame(BaseGame):
         
         rounds = Round.query.filter_by(session_id=session.id).order_by(Round.round_number).all()
                 
-        user_stats = RoundStats.query.filter_by(user_id=user.id,session_id=session.id,round=session.max_rounds).first()
+        user_stats = RoundStats.query.filter_by(user_id=user.id,session_id=session.id,round=session.base_rules.max_rounds).first()
         if not user_stats:
-            create_round_stats(user,session,round_num=session.max_rounds)
+            create_round_stats(user,session,round_num=session.base_rules.max_rounds)
                 
-        stats = RoundStats.query.filter_by(session_id=session.id,round=session.max_rounds).subquery()
+        stats = RoundStats.query.filter_by(session_id=session.id,round=session.base_rules.max_rounds).subquery()
         ranked_users = db.session.query(
             stats.c.user_id,
             stats.c.total_distance,
@@ -274,17 +271,18 @@ class ChallengeGame(BaseGame):
                 "guesses":[guess_to_json(user,round) for round in rounds]
             }
         
-        user_map_stat = UserMapStats.query.filter_by(user_id=user.id,map_id=session.map_id, nmpz=session.nmpz).first()
+        user_map_stat = UserMapStats.query.filter_by(user_id=user.id,map_id=session.map_id, nmpz=session.base_rules.nmpz).first()
         if not user_map_stat:
-            user_map_stat = UserMapStats(user_id=user.id,map_id=session.map_id, nmpz=session.nmpz)
+            user_map_stat = UserMapStats(user_id=user.id,map_id=session.map_id, nmpz=session.base_rules.nmpz)
             db.session.add(user_map_stat)
             db.session.commit()
             
-        if session.host_id == user.id and (user_map_stat.high_average_score,user_map_stat.high_round_number,-user_map_stat.high_average_time) < (user_stats.total_score/session.max_rounds,session.max_rounds,-user_stats.total_time/session.max_rounds):
-            user_map_stat.high_round_number = session.max_rounds
-            user_map_stat.high_average_score = user_stats.total_score/session.max_rounds
-            user_map_stat.high_average_distance = user_stats.total_distance/session.max_rounds
-            user_map_stat.high_average_time = user_stats.total_time/session.max_rounds
+        max_round = session.base_rules.max_rounds
+        if session.host_id == user.id and (user_map_stat.high_average_score,user_map_stat.high_round_number,-user_map_stat.high_average_time) < (user_stats.total_score/max_round,max_round,-user_stats.total_time/max_round):
+            user_map_stat.high_round_number = max_round
+            user_map_stat.high_average_score = user_stats.total_score/max_round
+            user_map_stat.high_average_distance = user_stats.total_distance/max_round
+            user_map_stat.high_average_time = user_stats.total_time/max_round
             user_map_stat.high_session_id = session.id
             db.session.commit()
         

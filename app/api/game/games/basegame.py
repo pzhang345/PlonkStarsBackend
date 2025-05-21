@@ -1,6 +1,7 @@
 from abc import ABC,abstractmethod
 
-from models.session import Round,Session,Player
+from models.db import db
+from models.session import BaseRules, Round,Session,Player
 from models.map import GameMap
 class BaseGame(ABC):
     def create(self,data,type,user):
@@ -24,8 +25,25 @@ class BaseGame(ABC):
         
         if map.total_weight <= 0:
             raise Exception("Map has no locations")
+        
+        rules = BaseRules.query.filter_by(
+            map_id=map.id,
+            time_limit=time_limit,
+            max_rounds=num_rounds,
+            nmpz=nmpz
+        ).first()
+        
+        if not rules:
+            rules = BaseRules(
+                map_id=map.id,
+                time_limit=time_limit,
+                max_rounds=num_rounds,
+                nmpz=nmpz
+            )
+            db.session.add(rules)
+            db.session.flush()
             
-        session = Session(host_id=user.id,map_id=map.id,time_limit=time_limit,max_rounds=num_rounds,type=type, nmpz=nmpz)
+        session = Session(host_id=user.id,map_id=map.id,time_limit=time_limit,max_rounds=num_rounds,type=type, nmpz=nmpz,base_rule_id=rules.id) ######
         return session
 
     def join(self,data,user,session):

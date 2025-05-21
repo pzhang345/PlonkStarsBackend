@@ -1,7 +1,7 @@
 import pytz
 from api.game.gameutils import create_round
 from models.party import Party
-from models.session import DailyChallenge, GameType, Session
+from models.session import BaseRules, DailyChallenge, GameType, Session
 from datetime import datetime, timedelta
 from models.db import db
 from models.configs import Configs
@@ -27,18 +27,26 @@ def register_commands(app):
         MAP_ID = int(Configs.get("DAILY_DEFAULT_MAP_ID"))
         HOST_ID = int(Configs.get("DAILY_DEFAULT_HOST_ID"))
         
+        rules = BaseRules.query.filter_by(
+            map_id=MAP_ID,
+            time_limit=TIME_LIMIT,
+            max_rounds=ROUND_NUMBER,
+            nmpz=NMPZ
+        ).first()
+        
         session = Session(
             host_id=HOST_ID,
             map_id=MAP_ID,
             time_limit=TIME_LIMIT,
             max_rounds=ROUND_NUMBER,
             type=GameType.CHALLENGE, 
-            nmpz=NMPZ
-        )
+            nmpz=NMPZ,
+            base_rule_id=rules.id,
+        ) ######
         db.session.add(session)
         db.session.flush()
         for i in range(ROUND_NUMBER):
-            create_round(session,TIME_LIMIT)
+            create_round(session,rules)
         daily_challenge = DailyChallenge(session_id=session.id, date=tomorrow)
         db.session.add(daily_challenge)
         db.session.commit()

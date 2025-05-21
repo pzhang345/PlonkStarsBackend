@@ -67,7 +67,7 @@ class LiveGame(BaseGame):
         player_count = Player.query.filter_by(session_id=session.id).count()
         guess_count = Guess.query.filter_by(round_id=round.id).count()
         
-        if  guess_count < player_count and not timed_out(player,round.time_limit):
+        if  guess_count < player_count and not timed_out(player,round.base_rules.time_limit):
             guess = Guess.query.filter_by(user_id=user.id,round_id=round.id).first()
             if guess:
                 return {
@@ -87,7 +87,7 @@ class LiveGame(BaseGame):
                 },200
         else:
             next_round = player.current_round + 1
-            if next_round > session.max_rounds:
+            if next_round > session.base_rules.max_rounds:
                 return {"state":"finished","round":player.current_round},200
             return {"state":"results","round":player.current_round},200
     
@@ -96,7 +96,7 @@ class LiveGame(BaseGame):
         round = super().get_round(player, session)
         player_count = Player.query.filter_by(session_id=session.id).count()
         guess_count = Guess.query.filter_by(round_id=round.id).count()
-        if guess_count < player_count and not timed_out(player,round.time_limit):
+        if guess_count < player_count and not timed_out(player,round.base_rules.time_limit):
             return {"error":"not everyone guessed"},400
             
         return ChallengeGame().results(data, user, session)
@@ -106,22 +106,24 @@ class LiveGame(BaseGame):
         round = super().get_round(player, session)
         player_count = Player.query.filter_by(session_id=session.id).count()
         guess_count = Guess.query.filter_by(round_id=round.id).count()
-        if guess_count < player_count and not timed_out(player,round.time_limit):
+        if guess_count < player_count and not timed_out(player,round.base_rules.time_limit):
             return {"error":"not everyone guessed"},400
         
         ret = ChallengeGame().summary(data, user, session)
-        for round_stat in RoundStats.query.filter_by(session_id=session.id,round=session.max_rounds):
-            user_map_stat = UserMapStats.query.filter_by(user_id=round_stat.user_id,map_id=session.map_id, nmpz=session.nmpz).first()
+        
+        max_rounds = session.base_rules.max_rounds
+        for round_stat in RoundStats.query.filter_by(session_id=session.id,round=max_rounds):
+            user_map_stat = UserMapStats.query.filter_by(user_id=round_stat.user_id,map_id=session.base_rules.map_id, nmpz=session.nmpz).first()
             if not user_map_stat:
-                user_map_stat = UserMapStats(user_id=round_stat.user_id,map_id=session.map_id, nmpz=session.nmpz)
+                user_map_stat = UserMapStats(user_id=round_stat.user_id,map_id=session.map_id, nmpz=session.base_rules.nmpz)
                 db.session.add(user_map_stat)
                 db.session.commit()
             
-            if (user_map_stat.high_average_score,user_map_stat.high_round_number,-user_map_stat.high_average_time) < (round_stat.total_score/session.max_rounds,session.max_rounds,-round_stat.total_time/session.max_rounds):
-                user_map_stat.high_round_number = session.max_rounds
-                user_map_stat.high_average_score = round_stat.total_score/session.max_rounds
-                user_map_stat.high_average_distance = round_stat.total_distance/session.max_rounds
-                user_map_stat.high_average_time = round_stat.total_time/session.max_rounds
+            if (user_map_stat.high_average_score,user_map_stat.high_round_number,-user_map_stat.high_average_time) < (round_stat.total_score/max_rounds,max_rounds,-round_stat.total_time/max_rounds):
+                user_map_stat.high_round_number = max_rounds
+                user_map_stat.high_average_score = round_stat.total_score/max_rounds
+                user_map_stat.high_average_distance = round_stat.total_distance/max_rounds
+                user_map_stat.high_average_time = round_stat.total_time/max_rounds
                 user_map_stat.high_session_id = session.id
                 db.session.commit()
         
@@ -140,7 +142,7 @@ class LiveGame(BaseGame):
         player_count = Player.query.filter_by(session_id=session.id).count()
         guess_count = Guess.query.filter_by(round_id=round.id).count()
         
-        if guess_count < player_count and timed_out(player,round.time_limit + 1):
+        if guess_count < player_count and timed_out(player,round.base_rules.time_limit + 1):
             for player in Player.query.filter_by(session_id=session.id):
                 if RoundStats.query.filter_by(user_id=player.user_id,session_id=session.id,round=player.current_round).count() == 0:
                     create_round_stats(player.user,session,player.current_round)

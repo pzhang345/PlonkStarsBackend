@@ -29,9 +29,9 @@ def guess_to_json(user,round):
         "lng": guess.longitude
     }
 
-def create_round(session,time_limit):
+def create_round(session,base_rules):
     new_round_number = session.current_round + 1
-    map = session.map
+    map = base_rules.map
     generation = map.generation
     before = datetime.now(tz=pytz.utc)
     
@@ -60,9 +60,10 @@ def create_round(session,time_limit):
         location_id=location.id,
         session_id=session.id,
         round_number=session.current_round + 1,
-        time_limit=time_limit,
-        nmpz=session.nmpz
-    )
+        time_limit=base_rules.time_limit,
+        nmpz=base_rules.nmpz,
+        base_rule_id=base_rules.id,
+    ) ######
     session.current_round += 1
     db.session.add(round)
     db.session.commit()
@@ -74,21 +75,22 @@ def create_guess(lat,lng,user,round,time):
         raise Exception("user has already guessed")
     location = round.location
     distance = haversine(lat,lng,location.latitude,location.longitude)
+    rules = round.base_rules
     guess = Guess(
         user_id=user.id,
         round_id=round.id,
         latitude=lat,
         longitude=lng,
         distance=distance,
-        score=caculate_score(max(0,distance-0.05),round.session.map.max_distance,5000),
-        time=min(time,round.time_limit) if round.time_limit != -1 else time
+        score=caculate_score(max(0,distance-0.05),rules.map.max_distance,5000),
+        time=min(time,rules.time_limit) if rules.time_limit != -1 else time
     )
     
-    stats = MapStats.query.filter_by(map_id=round.session.map.id,nmpz=round.nmpz).first()
+    stats = MapStats.query.filter_by(map_id=rules.map.id,nmpz=rules.nmpz).first()
     if not stats:
         stats = MapStats(
-            map_id=round.session.map.id,
-            nmpz=round.nmpz
+            map_id=rules.map.id,
+            nmpz=rules.nmpz
         )
         db.session.add(stats)
         db.session.flush()
@@ -99,10 +101,9 @@ def create_guess(lat,lng,user,round,time):
     stats.total_guesses += 1
     db.session.commit()
     
-    session = round.session
-    user_stat = UserMapStats.query.filter_by(user_id=user.id,map_id=session.map_id, nmpz=session.nmpz).first()
+    user_stat = UserMapStats.query.filter_by(user_id=user.id,map_id=rules.map_id, nmpz=rules.nmpz).first()
     if not user_stat:
-        user_stat = UserMapStats(user_id=user.id,map_id=session.map_id, nmpz=session.nmpz)
+        user_stat = UserMapStats(user_id=user.id,map_id=rules.map_id, nmpz=rules.nmpz)
         db.session.add(user_stat)
         db.session.flush()
     

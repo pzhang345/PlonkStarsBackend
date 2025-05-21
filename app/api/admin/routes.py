@@ -8,7 +8,7 @@ from models.configs import Configs
 from models.crates import Crate, CrateItem
 from models.db import db
 from models.map import GameMap
-from models.session import Guess, Round, Session
+from models.session import BaseRules, Guess, Round, Session
 from models.stats import MapStats, UserMapStats
 from models.user import User
 from models.cosmetics import UserCoins, UserCosmetics, Cosmetic_Type, Tier, Cosmetics
@@ -166,20 +166,20 @@ def add_cosmetic(user):
     data = request.get_json()
     image = data.get("image")
     item_name = data.get("item_name")
-    type = Cosmetic_Type[data.get("type").upper()]
-    tier = Tier[data.get("tier").upper()]
+    type = Cosmetic_Type[data.get("type").upper()] if data.get("type") else None
+    tier = Tier[data.get("tier").upper()] if data.get("tier") else None
     top_position = data.get("top_position")
     left_position = data.get("left_position")
     scale = data.get("scale")
     
     cosmetics = Cosmetics.query.filter_by(image=image).first()
     if cosmetics:
-        cosmetics.item_name = item_name
-        cosmetics.type = type
-        cosmetics.tier = tier
-        cosmetics.top_position = top_position
-        cosmetics.left_position = left_position
-        cosmetics.scale = scale
+        cosmetics.item_name = item_name if item_name != None else cosmetics.item_name
+        cosmetics.type = type if type != None else cosmetics.type
+        cosmetics.tier = tier if tier != None else cosmetics.tier
+        cosmetics.top_position = top_position if top_position != None else cosmetics.top_position
+        cosmetics.left_position = left_position if left_position != None else cosmetics.left_position
+        cosmetics.scale = scale if scale != None  else cosmetics.scale
     else:
         db.session.add(Cosmetics(
             image=image,
@@ -264,3 +264,29 @@ def add_crate(user):
     db.session.commit()
     
     return jsonify({"message":f"{name} added"}),200
+
+@admin_bp.route("/rules/config",methods=["POST"])
+@login_required
+def reconfig_rules(user):
+    if not user.is_admin:
+        return jsonify({"error":"You are not an admin"}),403
+    
+    for session in Session.query:
+        rule = BaseRules.query.filter_by(time_limit=session.time_limit, nmpz=session.nmpz,max_rounds=session.max_rounds, map_id=session.map_id).first()
+        if not rule:
+            rule = BaseRules(
+                time_limit=session.time_limit,
+                nmpz=session.nmpz,
+                max_rounds=session.max_rounds,
+                map_id=session.map_id
+            )
+            db.session.add(rule)
+            db.session.flush()
+        session.base_rule_id = rule.id
+        
+        for round in session.rounds:
+            round.base_rule_id = rule.id
+    
+    db.session.commit()
+    
+    return jsonify({"message":"Rules configured"}),200

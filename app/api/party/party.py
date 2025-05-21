@@ -6,7 +6,7 @@ from models.stats import MapStats
 
 
 def get_party_rule(party):
-    rules = party.rules
+    rules = party.rules.base_rules
     map,score,guess = (db.session.query(
         GameMap,
         func.sum(MapStats.total_score).label("total_score"),
@@ -26,7 +26,7 @@ def get_party_rule(party):
         },
         "rounds": rules.max_rounds,
         "time": rules.time_limit,
-        "type": rules.type.name,
+        "type": party.rules.type.name,
         "nmpz": rules.nmpz,
     }
     
