@@ -29,7 +29,7 @@ def upgrade():
         batch_op.alter_column('base_rule_id',
                existing_type=mysql.INTEGER(),
                nullable=False)
-        batch_op.drop_constraint('sessions_map_id_fkey', type_='foreignkey')
+        batch_op.drop_constraint('sessions_ibfk_2', type_='foreignkey')
         batch_op.drop_column('map_id')
         batch_op.drop_column('max_rounds')
         batch_op.drop_column('nmpz')
