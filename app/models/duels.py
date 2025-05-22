@@ -7,7 +7,6 @@ class DuelsRules(db.Model):
     __tablename__ = "duels_rules"
     
     id = Column(Integer, primary_key=True, autoincrement=True)
-    session_id = Column(Integer, ForeignKey("sessions.id", ondelete="CASCADE"), nullable=False, unique=True)
     
     start_hp = Column(Integer, nullable=False, default=5000)
     
@@ -17,7 +16,23 @@ class DuelsRules(db.Model):
     damage_multi_freq = Column(Integer, nullable=False, default=1)
     
     guess_time_limit = Column(Integer, nullable=False, default=15)
+    
+    linker = db.relationship("DuelsRulesLinker", backref="rules", cascade="all,delete", passive_deletes=True)
+    
+    __table_args__ = (
+        UniqueConstraint('start_hp', 'damage_multi_start_round', 'damage_multi_mult', 'damage_multi_add', 'damage_multi_freq', 'guess_time_limit'),
+    )
 
+class DuelsRulesLinker(db.Model):
+    __tablename__ = "duels_rules_linker"
+    
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    session_id = Column(Integer, ForeignKey("sessions.id", ondelete="CASCADE"), nullable=False, unique=True)
+    rules_id = Column(Integer, ForeignKey("duels_rules.id", ondelete="CASCADE"), nullable=False)
+    
+    __table_args__ = (
+        UniqueConstraint('session_id', 'rules_id'),
+    )
 class DuelState(db.Model):
     __tablename__ = "duel_state"
     

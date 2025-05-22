@@ -30,6 +30,7 @@ class Session(db.Model):
     party = db.relationship("Party", backref="session", passive_deletes=True, uselist=False)
     duel_rules = db.relationship("DuelsRules", backref="session", cascade="all,delete", uselist=False, passive_deletes=True)
     teams = db.relationship("GameTeam", backref="session", cascade="all,delete", passive_deletes=True)
+    duel_rules = db.relationship("DuelsRulesLinker", backref="session", cascade="all,delete", passive_deletes=True, uselist=False)
     
     def __str__(self):
         return self.uuid
