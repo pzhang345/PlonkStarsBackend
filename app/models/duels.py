@@ -4,7 +4,7 @@ from sqlalchemy import Column, Float, ForeignKey, Integer, String, UniqueConstra
 from models.db import db
 
 class DuelsRules(db.Model):
-    __tablename__ = "duels_rules"
+    __tablename__ = "duel_rules"
     
     id = Column(Integer, primary_key=True, autoincrement=True)
     
@@ -24,11 +24,11 @@ class DuelsRules(db.Model):
     )
 
 class DuelsRulesLinker(db.Model):
-    __tablename__ = "duels_rules_linker"
+    __tablename__ = "duel_rules_linker"
     
     id = Column(Integer, primary_key=True, autoincrement=True)
     session_id = Column(Integer, ForeignKey("sessions.id", ondelete="CASCADE"), nullable=False, unique=True)
-    rules_id = Column(Integer, ForeignKey("duels_rules.id", ondelete="CASCADE"), nullable=False)
+    rules_id = Column(Integer, ForeignKey("duel_rules.id", ondelete="CASCADE"), nullable=False)
     
     __table_args__ = (
         UniqueConstraint('session_id', 'rules_id'),
@@ -69,6 +69,7 @@ class DuelHp(db.Model):
     __tablename__ = "duel_hp"
     
     id = Column(Integer, primary_key=True, autoincrement=True)
+    guess_id = Column(Integer, ForeignKey("guesses.id", ondelete="CASCADE"), nullable=False)
     state_id = Column(Integer, ForeignKey("duel_state.id", ondelete="CASCADE"), nullable=False)
     team_id = Column(Integer, ForeignKey("game_teams.id", ondelete="CASCADE"), nullable=False)
     hp = Column(Integer, nullable=False)

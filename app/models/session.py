@@ -111,6 +111,8 @@ class Guess(db.Model):
 
     def __str__(self):
         return f"({self.latitude},{self.longitude})"
+    
+    duels_high_guess = db.relationship("DuelHp", backref="guess", cascade="all,delete", passive_deletes=True)
 
 class DailyChallenge(db.Model):
     __tablename__ = "daily_challenge"
