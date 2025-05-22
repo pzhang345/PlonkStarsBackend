@@ -28,9 +28,8 @@ class Session(db.Model):
     high_scores = db.relationship("UserMapStats",backref="high_session",cascade="all,delete", passive_deletes=True)
     daily_challenge = db.relationship("DailyChallenge",backref="session",cascade="all,delete", passive_deletes=True, uselist=False)
     party = db.relationship("Party", backref="session", passive_deletes=True, uselist=False)
-    duel_rules = db.relationship("DuelsRules", backref="session", cascade="all,delete", uselist=False, passive_deletes=True)
     teams = db.relationship("GameTeam", backref="session", cascade="all,delete", passive_deletes=True)
-    duel_rules = db.relationship("DuelsRulesLinker", backref="session", cascade="all,delete", passive_deletes=True, uselist=False)
+    duel_rules = db.relationship("DuelRulesLinker", backref="session", cascade="all,delete", passive_deletes=True, uselist=False)
     
     def __str__(self):
         return self.uuid

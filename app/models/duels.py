@@ -3,7 +3,7 @@ import uuid
 from sqlalchemy import Column, Float, ForeignKey, Integer, String, UniqueConstraint
 from models.db import db
 
-class DuelsRules(db.Model):
+class DuelRules(db.Model):
     __tablename__ = "duel_rules"
     
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -17,13 +17,13 @@ class DuelsRules(db.Model):
     
     guess_time_limit = Column(Integer, nullable=False, default=15)
     
-    linker = db.relationship("DuelsRulesLinker", backref="rules", cascade="all,delete", passive_deletes=True)
+    linker = db.relationship("DuelRulesLinker", backref="rules", cascade="all,delete", passive_deletes=True)
     
     __table_args__ = (
         UniqueConstraint('start_hp', 'damage_multi_start_round', 'damage_multi_mult', 'damage_multi_add', 'damage_multi_freq', 'guess_time_limit'),
     )
 
-class DuelsRulesLinker(db.Model):
+class DuelRulesLinker(db.Model):
     __tablename__ = "duel_rules_linker"
     
     id = Column(Integer, primary_key=True, autoincrement=True)

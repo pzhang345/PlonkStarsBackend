@@ -1,7 +1,7 @@
 from api.game.games.basegame import BaseGame
 from models.db import db
 from models.session import GameType
-from models.duels import DuelsRules, DuelState, GameTeam, TeamPlayer, DuelHp, DuelsRulesLinker
+from models.duels import DuelRules, DuelState, GameTeam, TeamPlayer, DuelHp, DuelRulesLinker
 class DuelsGame(BaseGame):
     def create(self,data,user):
         session = super().create(data,GameType.DUELS,user)
