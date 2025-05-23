@@ -3,11 +3,15 @@ from datetime import datetime, timedelta
 import pytz
 
 from models.db import db
+from models.duels import GameTeam, TeamPlayer
+from models.party import PartyMember
 from models.session import Guess,Round
 from models.map import GenerationTime
 from models.stats import MapStats, RoundStats,UserMapStats
 from api.location.generate import generate_location,get_random_bounds,db_location
 from api.map.map import haversine
+from models.user import User
+from fsocket import socketio
 
 def caculate_score(distance, max_distance, max_score):
     return max_score * math.e ** (-10*distance/max_distance)
@@ -156,3 +160,41 @@ def create_round_stats(user,session,round_num = None,guess=None):
 
 def timed_out(player,time_limit):
     return time_limit != -1 and pytz.utc.localize(player.start_time) + timedelta(seconds=time_limit) < datetime.now(tz=pytz.utc)
+
+
+def assign_teams(teams,session,party):
+    if teams == None:
+        raise Exception("No teams provided")
+    
+    if len(teams) < 2:
+        raise Exception("Not enough teams")
+    
+    for json in teams:
+        team_color = json.get("color")
+        if not team_color:
+            raise Exception("No team color provided")
+        
+        team = GameTeam(session_id=session.id,color=team_color)
+        db.session.add(GameTeam(session_id=session.id,color=team_color))
+        db.session.flush()
+        
+        for user in json.get("users"):
+            user = User.query.filter_by(username=user).first()
+            if not user:
+                raise Exception(f"{user.username} not found")
+            
+            party_member = PartyMember.query.filter_by(user_id=user.id,party_id=party.id).first()
+            if not party_member:
+                raise Exception(f"{user.username} not in party")          
+            
+            if not party_member.in_lobby:
+                raise Exception(f"{user.username} not in lobby")
+            
+            db.session.add(TeamPlayer(user_id=user.id,team_id=team.id))
+            socketio.emit("team",{
+                "team":team.id,
+            },room=f"{user.id}_{party.code}",namespace="/socket/party")
+            
+            db.session.commit()
+        
+    

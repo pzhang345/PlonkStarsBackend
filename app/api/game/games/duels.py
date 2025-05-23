@@ -1,11 +1,18 @@
 from api.game.games.basegame import BaseGame
+from api.game.gameutils import assign_teams
 from models.db import db
-from models.session import GameType
+from models.session import GameType, Session
 from models.duels import DuelRules, DuelState, GameTeam, TeamPlayer, DuelHp, DuelRulesLinker
 class DuelsGame(BaseGame):
-    def create(self,data,user):
-        session = super().create(data,GameType.DUELS,user)
+    def create(self,data,user,party):
+        rules = party.rules
+        session = Session(host_id=user.id,type=GameType.DUELS,base_rule_id=rules.base_rule_id)
         db.session.add(session)
+        db.session.flush()
+        
+        db.session.add(DuelRulesLinker(session_id=session.id,rules_id=rules.duel_rules.id))
+        assign_teams(data.get("teams"),session,party)
+        
         db.session.commit()
         return {"id":session.uuid},200,session
 

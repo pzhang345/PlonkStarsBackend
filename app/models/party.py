@@ -44,3 +44,4 @@ class PartyRules(db.Model):
     party_id = Column(Integer, ForeignKey("party.id", ondelete="CASCADE"), nullable=False, unique=True)
     type = Column(Enum(GameType), nullable=False, default=GameType.LIVE)
     base_rule_id = Column(Integer, ForeignKey("base_rules.id", ondelete="CASCADE"),nullable=False)
+    duel_rules_id = Column(Integer, ForeignKey("duel_rules.id", ondelete="CASCADE"),nullable=False)

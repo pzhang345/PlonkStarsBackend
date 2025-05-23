@@ -18,6 +18,7 @@ class DuelRules(db.Model):
     guess_time_limit = Column(Integer, nullable=False, default=15)
     
     linker = db.relationship("DuelRulesLinker", backref="rules", cascade="all,delete", passive_deletes=True)
+    party_rules = db.relationship("PartyRules", backref="duel_rules", cascade="all,delete", passive_deletes=True)
     
     __table_args__ = (
         UniqueConstraint('start_hp', 'damage_multi_start_round', 'damage_multi_mult', 'damage_multi_add', 'damage_multi_freq', 'guess_time_limit'),

@@ -2,14 +2,20 @@ from api.game.games.basegame import BaseGame
 from api.game.games.challenge import ChallengeGame
 from api.game.gameutils import timed_out, create_round_stats
 from models.db import db
-from models.session import Player,GameType, Guess
+from models.party import PartyMember
+from models.session import Player,GameType, Guess, Session
 from models.stats import RoundStats, UserMapStats
 from fsocket import socketio
 
 class LiveGame(BaseGame):
-    def create(self,data,user):
-        session = super().create(data,GameType.LIVE,user)
+    def create(self,data,user,party):
+        session = Session(host_id=user.id,type=GameType.LIVE,base_rule_id=party.rules.base_rule_id)
         db.session.add(session)
+        db.session.flush()
+        
+        for member in PartyMember.query.filter_by(party_id=party.id,in_lobby=True).all():
+            LiveGame().join(data, member.user, session)
+            member.in_lobby = False
         db.session.commit()
         return {"id":session.uuid},200,session
     

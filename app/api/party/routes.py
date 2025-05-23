@@ -4,6 +4,7 @@ from api.account.auth import login_required
 from api.game.gametype import game_type
 from api.party.party import get_party_rule
 from models.db import db
+from models.duels import DuelRules
 from models.map import GameMap
 from models.party import Party, PartyMember, PartyRules
 from models.session import BaseRules, Player
@@ -25,6 +26,12 @@ def create_party(user):
     TIME_LIMIT =  int(Configs.get("GAME_DEFAULT_TIME_LIMIT"))
     NMPZ = Configs.get("GAME_DEFAULT_NMPZ").lower() == "true"
     MAP_ID = int(Configs.get("GAME_DEFAULT_MAP_ID"))
+    DUELS_START_HP = int(Configs.get("DUELS_DEFAULT_START_HP"))
+    DUELS_DAMAGE_MULTI_START_ROUND = int(Configs.get("DUELS_DEFAULT_DAMAGE_MULTI_START_ROUND"))
+    DUELS_DAMAGE_MULTI_MULT = int(Configs.get("DUELS_DEFAULT_DAMAGE_MULTI_MULT"))
+    DUELS_DAMAGE_MULTI_ADD = int(Configs.get("DUELS_DEFAULT_DAMAGE_MULTI_ADD"))
+    DUELS_DAMAGE_MULTI_FREQ = int(Configs.get("DUELS_DEFAULT_DAMAGE_MULTI_FREQ"))
+    DUELS_GUESS_TIME_LIMIT = int(Configs.get("DUELS_DEFAULT_GUESS_TIME_LIMIT"))
     
     rules = BaseRules.query.filter_by(
         map_id=MAP_ID,
@@ -42,9 +49,31 @@ def create_party(user):
         db.session.add(rules)
         db.session.flush()
     
+    duel_rules = DuelRules.query.filter_by(
+        start_hp=DUELS_START_HP,
+        damage_multi_start_round=DUELS_DAMAGE_MULTI_START_ROUND,
+        damage_multi_mult=DUELS_DAMAGE_MULTI_MULT,
+        damage_multi_add=DUELS_DAMAGE_MULTI_ADD,
+        damage_multi_freq=DUELS_DAMAGE_MULTI_FREQ,
+        guess_time_limit=DUELS_GUESS_TIME_LIMIT
+    ).first()
+    
+    if not duel_rules:
+        duel_rules = DuelRules(
+            start_hp=DUELS_START_HP,
+            damage_multi_start_round=DUELS_DAMAGE_MULTI_START_ROUND,
+            damage_multi_mult=DUELS_DAMAGE_MULTI_MULT,
+            damage_multi_add=DUELS_DAMAGE_MULTI_ADD,
+            damage_multi_freq=DUELS_DAMAGE_MULTI_FREQ,
+            guess_time_limit=DUELS_GUESS_TIME_LIMIT
+        )
+        db.session.add(duel_rules)
+        db.session.flush()
+    
     party_rules = PartyRules(
         party_id=party.id,
         base_rule_id=rules.id,
+        duel_rules_id=duel_rules.id
     )
     db.session.add(party_rules)
     member = PartyMember(user_id=user.id, party_id=party.id)
@@ -69,17 +98,12 @@ def start_party(user):
         return jsonify({"error": "You are not the host of this party"}), 403
     
     type = party.rules.type
-    ret = return_400_on_error(game_type[type].create, get_party_rule(party), user)
+    ret = return_400_on_error(game_type[type].create, get_party_rule(party), user, party)
     if ret[1] != 200:
         return ret
     
     session = ret[2]
     party.session_id = session.id
-    db.session.commit()
-    
-    for member in PartyMember.query.filter_by(party_id=party.id,in_lobby=True).all():
-        return_400_on_error(game_type[type].join, data, member.user, session)
-        member.in_lobby = False
     db.session.commit()
     
     return_400_on_error(game_type[type].next, data, user, session)
@@ -248,12 +272,21 @@ def set_rules(user):
         return jsonify({"error": "You are not the host of this party"}), 403
     
     base_rules = party.rules.base_rules
-    map = GameMap.query.filter_by(uuid=data.get("map_id")).first()
+    map = GameMap.query.filter_by(uuid=data.get("map_id")).first_or_404()
     
     map_id = map.id if map else base_rules.map_id
     time_limit = data.get("time") if data.get("time") else base_rules.time_limit
     max_rounds = data.get("rounds") if data.get("rounds") else base_rules.max_rounds
     nmpz = data.get("nmpz") if data.get("nmpz") != None else base_rules.nmpz
+    
+    if max_rounds <= 0 and max_rounds != -1:
+        raise Exception("Invalid number of rounds")
+
+    if time_limit <= 0 and time_limit != -1:
+        raise Exception("Invalid time limit")
+    
+    if map.total_weight <= 0:
+        raise Exception("Map has no locations")
     
     base_rule = BaseRules.query.filter_by(map_id=map_id, time_limit=time_limit, max_rounds=max_rounds, nmpz=nmpz).first()
     if not base_rule:

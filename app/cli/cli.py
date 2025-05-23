@@ -38,7 +38,7 @@ def register_commands(app):
             host_id=HOST_ID,
             type=GameType.CHALLENGE, 
             base_rule_id=rules.id,
-        ) ######
+        )
         db.session.add(session)
         db.session.flush()
         for i in range(ROUND_NUMBER):

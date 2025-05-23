@@ -41,11 +41,7 @@ def get_daily(user):
         
         session = Session(
             host_id=HOST_ID,
-            map_id=MAP_ID,
-            time_limit=TIME_LIMIT,
-            max_rounds=ROUND_NUMBER,
             type=GameType.CHALLENGE, 
-            nmpz=NMPZ,
             base_rule_id=rules.id,
         )
         db.session.add(session)
