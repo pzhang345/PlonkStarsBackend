@@ -22,3 +22,8 @@ class Configs(db.Model):
         if not config:
             return None
         return config.value
+    
+    def in_(key):
+        return Configs.query.filter_by(key=str(key)).count() > 0
+            
+        

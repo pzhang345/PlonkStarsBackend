@@ -2,12 +2,12 @@ from flask import Blueprint, request, jsonify
 
 from api.account.auth import login_required
 from api.game.gametype import game_type
-from api.party.party import get_party_rule
+from api.party.party import get_party_rule, set_default, set_party_rules
 from models.db import db
 from models.duels import DuelRules
 from models.map import GameMap
 from models.party import Party, PartyMember, PartyRules
-from models.session import BaseRules, Player
+from models.session import BaseRules, GameType, Player
 from models.user import User
 from models.configs import Configs
 from utils import return_400_on_error
@@ -272,35 +272,14 @@ def set_rules(user):
         return jsonify({"error": "You are not the host of this party"}), 403
     
     base_rules = party.rules.base_rules
-    map = GameMap.query.filter_by(uuid=data.get("map_id")).first_or_404()
-    
-    map_id = map.id if map else base_rules.map_id
-    time_limit = data.get("time") if data.get("time") else base_rules.time_limit
-    max_rounds = data.get("rounds") if data.get("rounds") else base_rules.max_rounds
-    nmpz = data.get("nmpz") if data.get("nmpz") != None else base_rules.nmpz
-    
-    if max_rounds <= 0 and max_rounds != -1:
-        raise Exception("Invalid number of rounds")
+    type = GameType[data.get("type").upper()] if data.get("type") else base_rules.type
 
-    if time_limit <= 0 and time_limit != -1:
-        raise Exception("Invalid time limit")
-    
-    if map.total_weight <= 0:
-        raise Exception("Map has no locations")
-    
-    base_rule = BaseRules.query.filter_by(map_id=map_id, time_limit=time_limit, max_rounds=max_rounds, nmpz=nmpz).first()
-    if not base_rule:
-        base_rule = BaseRules(
-            map_id=map_id,
-            time_limit=time_limit,
-            max_rounds=max_rounds,
-            nmpz=nmpz
-        )
-        db.session.add(base_rule)
-        db.session.flush()
-    
-    party.rules.base_rule_id = base_rule.id
-    db.session.commit()
+    if type != party.rules.type:
+        set_default(party,type)
+    else:
+        ret = return_400_on_error(set_party_rules, party, data)
+        if ret[1] != 200:
+            return ret
     
     socketio.emit("update_rules", get_party_rule(party), namespace="/socket/party", room=party.code)
     
