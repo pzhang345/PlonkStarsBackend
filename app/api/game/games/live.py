@@ -153,3 +153,6 @@ class LiveGame(BaseGame):
                 if RoundStats.query.filter_by(user_id=player.user_id,session_id=session.id,round=player.current_round).count() == 0:
                     create_round_stats(player.user,session,player.current_round)
             socketio.emit("next",self.get_state(data,user,session),namespace="/socket/party",room=session.uuid)        
+            
+    def rules_config(self):
+        return ChallengeGame().rules_config()

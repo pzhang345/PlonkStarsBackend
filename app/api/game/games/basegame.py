@@ -1,5 +1,6 @@
 from abc import ABC,abstractmethod
 
+from models.configs import Configs
 from models.db import db
 from models.session import BaseRules, Round,Session,Player
 from models.map import GameMap
@@ -74,8 +75,36 @@ class BaseGame(ABC):
     def get_state(self,data,user,session):
         pass
     
+    def rules_config(self):
+        return {
+            "time": {
+                "name": "Time Limit",
+                "type": "integer",
+                "min": 5,
+                "max": 300,
+                "step": 1,
+                "infinity": True,
+                "default": Configs.get("GAME_DEFAULT_TIME_LIMIT"),
+                
+            },
+            "rounds": {
+                "name": "Number of Rounds",
+                "type": "integer",
+                "min": 5,
+                "max": 20,
+                "step": 1,
+                "default": Configs.get("GAME_DEFAULT_ROUNDS"),
+            },
+            "nmpz": {
+                "name": "NMPZ",
+                "type": "boolean",
+                "default": Configs.get("GAME_DEFAULT_NMPZ").lower() == "true",
+            }
+        }
+    
     def ping(self,data,user,session):
         pass
+    
     
     def get_player(self,user,session):
         player = Player.query.filter_by(user_id=user.id,session_id=session.id).first()

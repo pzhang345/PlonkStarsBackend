@@ -3,7 +3,8 @@ from flask import Blueprint,jsonify,request
 from utils import return_400_on_error
 from api.account.auth import login_required
 from api.game.gametype import game_type,str_to_type
-from models.session import Session,Player
+from models.session import GameType, Session,Player
+
 
 game_bp = Blueprint("game",__name__)
 
@@ -14,7 +15,8 @@ def create_game(user):
         data = request.get_json()
     else:
         data = {}
-    type = str_to_type.get((data.get("type") if data.get("type") else "challenge").lower())
+    type = GameType[data.get("type").upper()] if data.get("type") else GameType.CHALLENGE
+    
     if not type:
         return jsonify({"error":"provided a correct type"}),400
     return return_400_on_error(game_type[type].create,data,user)[0:2]
@@ -109,3 +111,16 @@ def ping(user):
         return jsonify({"error":"provided bad session id"}), 400
     session = Session.query.filter_by(uuid=session_id).first_or_404("Session not found")
     return return_400_on_error(game_type[session.type].ping,data,user,session)[0:2]
+
+@game_bp.route("/rules/config",methods=["GET"])
+@login_required
+def get_rules_range(user):
+    data = request.args
+    if not data.get("type") or not data.get("type").upper() in GameType.__members__:
+        return jsonify({"error":"provided a correct type"}),400
+    
+    type = GameType[data.get("type").upper()]
+    
+    return return_400_on_error(game_type[type].rules_config)[0:2]
+    
+     

@@ -288,3 +288,6 @@ class ChallengeGame(BaseGame):
             db.session.commit()
         
         return json, 200
+
+    def rules_config(self):
+        return super().rules_config(),200
