@@ -86,7 +86,7 @@ def register_commands(app):
         placement_rewards = {1:500, 2:450, 3:400}
         score_per_coin = 50 # every 50pts = 1 coins
         percentile_rewards = {0.01:350, 0.1:250, 0.25:100, 0.5:50}
-        percentages = list(percentile_rewards.keys()).sort()
+        percentages = sorted(list(percentile_rewards.keys()))
         current_percentile = 0
         
         for rank,coins, total_score in ranked_users:
