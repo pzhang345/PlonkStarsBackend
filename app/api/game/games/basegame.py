@@ -80,6 +80,7 @@ class BaseGame(ABC):
             "time": {
                 "name": "Time Limit",
                 "type": "integer",
+                "display":"slider",
                 "min": 5,
                 "max": 300,
                 "step": 1,
@@ -90,6 +91,7 @@ class BaseGame(ABC):
             "rounds": {
                 "name": "Number of Rounds",
                 "type": "integer",
+                "display":"slider",
                 "min": 5,
                 "max": 20,
                 "step": 1,
@@ -98,6 +100,7 @@ class BaseGame(ABC):
             "nmpz": {
                 "name": "NMPZ",
                 "type": "boolean",
+                "display":"checkbox",
                 "default": Configs.get("GAME_DEFAULT_NMPZ").lower() == "true",
             }
         }

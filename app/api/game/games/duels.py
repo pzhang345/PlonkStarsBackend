@@ -56,36 +56,42 @@ class DuelsGame(BaseGame):
             "hp": {
                 "name": "HP",
                 "type": "integer",
+                "display":"input",
                 "min": 1,
                 "default": Configs.get("DUELS_DEFAULT_HP"),
             },
             "guess_time": {
                 "name": "Time After Guess",
                 "type": "integer",
+                "display":"input",
                 "min": 5,
                 "default": Configs.get("DUELS_DEFAULT_GUESS_TIME_LIMIT"),
             },
             "multi_start":{
                 "name": "Multi Start Round",
                 "type": "integer",
+                "display":"input",
                 "min": 1,
                 "default": Configs.get("DUELS_DEFAULT_DAMAGE_MULTI_START_ROUND"),
             },
             "multi_mult":{
                 "name": "Multi Multiplier",
                 "type": "number",
+                "display":"input",
                 "min": 1,
                 "default": Configs.get("DUELS_DEFAULT_DAMAGE_MULTI_MULT"),
             },
             "multi_add": {
                 "name": "Multi Additive",
                 "type": "number",
+                "display":"input",
                 "min": 0,
                 "default": Configs.get("DUELS_DEFAULT_DAMAGE_MULTI_ADD"),
             },
             "mult_freq":{
                 "name": "Multi Frequency",
                 "type": "integer",
+                "display":"input",
                 "min": 1,
                 "default": Configs.get("DUELS_DEFAULT_DAMAGE_MULTI_FREQ"),
             }
