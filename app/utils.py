@@ -22,6 +22,9 @@ def return_400_on_error(method,*args,**kwargs):
         ret = method(*args,**kwargs)
         if not ret:
             return jsonify(success=True),200
+        
+        if not isinstance(ret, tuple):
+            return jsonify(ret),200
     except Exception as e:
         print(e)
         return jsonify({"error":str(e)}),400

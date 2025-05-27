@@ -292,7 +292,7 @@ def rules_config(user):
     
     party = Party.query.filter_by(code=code).first_or_404("Cannot find party")
     type = party.rules.type
-    return return_400_on_error(game_type[type].rules_config)
+    return return_400_on_error(game_type[type].rules_config_list)
 
 
 @party_bp.route("/lobby/join", methods=["POST"])

@@ -120,3 +120,13 @@ class BaseGame(ABC):
         if not round:
             raise Exception("Round not found")
         return round
+    
+    def rules_config_list(self):
+        config = self.rules_config()
+        print(config)
+        return [
+            {
+                "key": key,
+                **value
+            } for key, value in config.items()
+        ]

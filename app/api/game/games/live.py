@@ -36,7 +36,7 @@ class LiveGame(BaseGame):
         db.session.add(player)
         db.session.commit()
     
-        return {"id":session.uuid},200
+        return {"id":session.uuid}
     
     def next(self,data,user,session):
         if user.id != session.host_id:
@@ -62,12 +62,12 @@ class LiveGame(BaseGame):
             print("pinging",Player.query.filter_by(session_id=session.id).count(),Guess.query.filter_by(round_id=round.id).count())
             socketio.emit("next",self.get_state(data,user,session),namespace="/socket/party",room=session.uuid)
             
-        return {"message":"guess submitted"},200
+        return {"message":"guess submitted"}
     
     def get_state(self, data, user, session):
         player = Player.query.filter_by(user_id=user.id,session_id=session.id).first()
         if not player:
-            return {"state":"not_playing"},200
+            return {"state":"not_playing"}
         
         round = super().get_round(player, session)
         player_count = Player.query.filter_by(session_id=session.id).count()
@@ -83,19 +83,19 @@ class LiveGame(BaseGame):
                     "lng":guess.longitude,
                     "guess":guess_count,
                     "player":player_count
-                },200
+                }
             else:
                 return {
                     "state":"playing",
                     "round":player.current_round,
                     "guess":guess_count,
                     "player":player_count
-                },200
+                }
         else:
             next_round = player.current_round + 1
             if next_round > session.base_rules.max_rounds:
-                return {"state":"finished","round":player.current_round},200
-            return {"state":"results","round":player.current_round},200
+                return {"state":"finished","round":player.current_round}
+            return {"state":"results","round":player.current_round}
     
     def results(self, data, user, session):
         player = super().get_player(user, session)
@@ -103,7 +103,7 @@ class LiveGame(BaseGame):
         player_count = Player.query.filter_by(session_id=session.id).count()
         guess_count = Guess.query.filter_by(round_id=round.id).count()
         if guess_count < player_count and not timed_out(player,round.base_rules.time_limit):
-            return {"error":"not everyone guessed"},400
+            raise Exception("not everyone guessed")
             
         return ChallengeGame().results(data, user, session)
     
@@ -113,7 +113,7 @@ class LiveGame(BaseGame):
         player_count = Player.query.filter_by(session_id=session.id).count()
         guess_count = Guess.query.filter_by(round_id=round.id).count()
         if guess_count < player_count and not timed_out(player,round.base_rules.time_limit):
-            return {"error":"not everyone guessed"},400
+            raise Exception("not everyone guessed")
         
         ret = ChallengeGame().summary(data, user, session)
         

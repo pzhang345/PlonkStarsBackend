@@ -121,6 +121,6 @@ def get_rules_range(user):
     
     type = GameType[data.get("type").upper()]
     
-    return return_400_on_error(game_type[type].rules_config)[0:2]
+    return return_400_on_error(game_type[type].rules_config_list)[0:2]
     
      

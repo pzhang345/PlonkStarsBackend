@@ -17,16 +17,16 @@ class ChallengeGame(BaseGame):
         return {"id":session.uuid},200,session
 
     def join(self,data,user,session):
-        state = self.get_state(data,session.host,session)[0]
+        state = self.get_state(data,session.host,session)
         if state["state"] == "unfinished":
             raise Exception("Host has not finished the session")
         player = Player(session_id=session.id,user_id=user.id)
         db.session.add(player)
         db.session.commit()
-        return {"message":"session joined"},200
+        return {"message":"session joined"}
     
     def next(self,data,user,session):
-        state = self.get_state(data,user,session)[0]
+        state = self.get_state(data,user,session)
         if state["state"] == "finished":
             raise Exception("No more rounds are available")
         
@@ -41,7 +41,7 @@ class ChallengeGame(BaseGame):
         player.start_time = datetime.now(tz=pytz.utc)
         db.session.commit()
         
-        return {"message":"round exists"},200
+        return {"message":"round exists"}
     
     
     def get_round(self,data,user,session):
@@ -49,7 +49,7 @@ class ChallengeGame(BaseGame):
         round = super().get_round(player,session)
         prev_round_stats = RoundStats.query.filter_by(user_id=user.id,session_id=session.id,round=player.current_round).first()
         
-        state = self.get_state(data,user,session)[0]
+        state = self.get_state(data,user,session)
         if state["state"] != "playing":
             raise Exception("Call the 'next' endpoint first")
       
@@ -76,7 +76,7 @@ class ChallengeGame(BaseGame):
         if round.base_rules.time_limit != -1:
             ret["time"] = pytz.utc.localize(player.start_time) + timedelta(seconds=round.base_rules.time_limit)
             ret["time_limit"] = round.base_rules.time_limit
-        return ret,200
+        return ret
     
     def guess(self,data,user,session):
         now = datetime.now(tz=pytz.utc)
@@ -95,25 +95,25 @@ class ChallengeGame(BaseGame):
         guess = create_guess(lat,lng,user,round,time)
         create_round_stats(user,session,guess=guess)
        
-        return {"message":"guess added"},200
+        return {"message":"guess added"}
     
     def get_state(self,data,user,session):
         if session.daily_challenge == None and session.host_id != user.id and session.type == GameType.CHALLENGE:
-            state = self.get_state(data,session.host,session)[0]
+            state = self.get_state(data,session.host,session)
             if state["state"] != "finished":
-                return {"state":"unfinished"},200
+                return {"state":"unfinished"}
         
         player = Player.query.filter_by(user_id=user.id,session_id=session.id).first()
         if not player or player.current_round == 0:
-            return {"state":"not_playing"},200
+            return {"state":"not_playing"}
         round = super().get_round(player,session)
         if not timed_out(player,round.base_rules.time_limit) and Guess.query.filter_by(user_id=user.id,round_id=round.id).count() == 0:
-            return {"state":"playing","round":player.current_round},200
+            return {"state":"playing","round":player.current_round}
         else:
             next_round = player.current_round + 1
             if next_round > session.base_rules.max_rounds:
-                return {"state":"finished"},200
-            return {"state":"results","round":player.current_round},200
+                return {"state":"finished"}
+            return {"state":"results","round":player.current_round}
             
     
     def results(self,data,user,session):
@@ -134,7 +134,7 @@ class ChallengeGame(BaseGame):
         if not round:
             raise Exception("No round found")
         
-        state = self.get_state(data,user,session)[0]
+        state = self.get_state(data,user,session)
         if player.current_round < round_num or (player.current_round == round_num and state["state"] == "playing"):
             raise Exception("Round not finished yet")
             
@@ -196,7 +196,7 @@ class ChallengeGame(BaseGame):
                 "guess":guess_to_json(user,round),
             }]
         
-        return json,200
+        return json
     
     def summary(self, data, user, session):
         page = data.get("page", 1, type=int)
@@ -206,7 +206,7 @@ class ChallengeGame(BaseGame):
             raise Exception("Please provide valid inputs")
         
         round = Round.query.filter_by(session_id=session.id,round_number=session.base_rules.max_rounds).first()
-        state = self.get_state(data,user,session)[0]
+        state = self.get_state(data,user,session)
         if state["state"] != "finished":
             raise Exception("The game is not finished first")
         
@@ -287,7 +287,7 @@ class ChallengeGame(BaseGame):
             user_map_stat.high_session_id = session.id
             db.session.commit()
         
-        return json, 200
+        return json
 
     def rules_config(self):
-        return super().rules_config(),200
+        return super().rules_config()

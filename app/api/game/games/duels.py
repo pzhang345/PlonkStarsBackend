@@ -95,4 +95,4 @@ class DuelsGame(BaseGame):
                 "min": 1,
                 "default": Configs.get("DUELS_DEFAULT_DAMAGE_MULTI_FREQ"),
             }
-        },200
+        }
