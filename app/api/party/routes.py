@@ -291,10 +291,6 @@ def rules_config(user):
     code = data.get("code")
     
     party = Party.query.filter_by(code=code).first_or_404("Cannot find party")
-    
-    if party.host_id != user.id:
-        return jsonify({"error": "You are not the host of this party"}), 403
-    
     type = party.rules.type
     return return_400_on_error(game_type[type].rules_config)
 
