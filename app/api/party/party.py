@@ -66,11 +66,11 @@ def set_party_rules(party,data):
         
 def set_default(party,type):
     rules = party.rules
-    prefix = rules.type.name.upper() if Configs.in_(f"{type.name.upper()}_DEFAULT_ROUNDS") else "GAME"
+    prefix = type.name.upper() if Configs.in_(f"{type.name.upper()}_DEFAULT_ROUNDS") else "GAME"
     party.rules.type = type
-    
-    rounds = int(Configs.get("{prefix}_DEFAULT_ROUNDS"))
-    time = int(Configs.get("{prefix}_DEFAULT_TIME_LIMIT"))
+    print(prefix)
+    rounds = int(Configs.get(f"{prefix}_DEFAULT_ROUNDS"))
+    time = int(Configs.get(f"{prefix}_DEFAULT_TIME_LIMIT"))
     nmpz = Configs.get(f"{prefix}_DEFAULT_NMPZ").lower() == "true"
     map_id = int(Configs.get(f"{prefix}_DEFAULT_MAP_ID"))
     

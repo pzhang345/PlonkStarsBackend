@@ -273,7 +273,6 @@ def set_rules(user):
     
     base_rules = party.rules.base_rules
     type = GameType[data.get("type").upper()] if data.get("type") else base_rules.type
-
     if type != party.rules.type:
         set_default(party,type)
     else:
@@ -284,6 +283,21 @@ def set_rules(user):
     socketio.emit("update_rules", get_party_rule(party), namespace="/socket/party", room=party.code)
     
     return jsonify({"message": "rules updated"}), 200
+
+@party_bp.route("/rules/config", methods=["GET"])
+@login_required
+def rules_config(user):
+    data = request.args
+    code = data.get("code")
+    
+    party = Party.query.filter_by(code=code).first_or_404("Cannot find party")
+    
+    if party.host_id != user.id:
+        return jsonify({"error": "You are not the host of this party"}), 403
+    
+    type = party.rules.type
+    return return_400_on_error(game_type[type].rules_config)
+
 
 @party_bp.route("/lobby/join", methods=["POST"])
 @login_required
