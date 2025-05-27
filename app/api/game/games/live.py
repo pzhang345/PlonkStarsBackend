@@ -22,7 +22,7 @@ class LiveGame(BaseGame):
     def join(self,data,user,session):
         player = Player.query.filter_by(user_id=user.id,session_id=session.id).first()
         if player:
-            return {"error":"You are already in a game"},400
+            raise Exception("You are already in a game")
         
         hostPlayer = Player.query.filter_by(user_id=session.host_id,session_id=session.id).first()
         player = Player(

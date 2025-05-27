@@ -8,6 +8,7 @@ from models.db import db
 from models.configs import Configs
 from models.map import GameMap
 from models.session import BaseRules, DailyChallenge, GameType, Session
+from utils import return_400_on_error
 
 session_bp = Blueprint("session_bp", __name__)
 
@@ -16,8 +17,7 @@ session_bp = Blueprint("session_bp", __name__)
 def get_session(user):
     data = request.args
     session = Session.query.filter_by(uuid=data.get("id")).first_or_404("Session not found")
-    session_info = get_session_info(session, user)
-    return jsonify(session_info[0]), session_info[1]
+    return return_400_on_error(get_session_info, session, user)
 
 @session_bp.route("/daily", methods=["GET"])
 @login_required
@@ -51,7 +51,10 @@ def get_daily(user):
         db.session.add(daily)
         db.session.commit()    
     
-    info = get_session_info(daily.session, user)[0]
+    info = return_400_on_error(get_session_info, daily.session, user, json=True)
+    
+    if isinstance(info, tuple):
+        return info
     
     tomorrow = datetime.combine(now.date() + timedelta(days=1), datetime.min.time(),tzinfo=now.tzinfo)
     info["next"] = tomorrow

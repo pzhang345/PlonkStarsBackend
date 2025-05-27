@@ -11,10 +11,10 @@ from models.stats import MapStats
 
 def get_session_info(session,user):
     if session.type != GameType.CHALLENGE:
-        return {"error":"not a challenge session"},400
+        raise Exception("not a challenge session")
     
     if ChallengeGame().get_state({},session.host,session) == "unfinished":
-        return {"error":"host has not finished game"},400
+        raise Exception("host has not finished game")
     
     player = Player.query.filter_by(session_id=session.id,user_id=user.id).first()
     
@@ -46,4 +46,4 @@ def get_session_info(session,user):
         },
         "playing": False if not player else True,
         "finished": finished,
-    },200
+    }

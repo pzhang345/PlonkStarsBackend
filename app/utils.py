@@ -17,13 +17,15 @@ def generate_code(Party):
             code += chr(randint(65, 90))
     return code
 
-def return_400_on_error(method,*args,**kwargs):
+def return_400_on_error(method, *args, json=False, **kwargs):
     try:
         ret = method(*args,**kwargs)
         if not ret:
             return jsonify(success=True),200
         
         if not isinstance(ret, tuple):
+            if json:
+                return ret
             return jsonify(ret),200
     except Exception as e:
         print(e)
