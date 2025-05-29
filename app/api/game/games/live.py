@@ -1,5 +1,5 @@
-from api.game.games.basegame import BaseGame
 from api.game.games.challenge import ChallengeGame
+from api.game.games.party_game import PartyGame
 from api.game.gameutils import timed_out, create_round_stats
 from models.db import db
 from models.party import PartyMember
@@ -7,7 +7,7 @@ from models.session import Player,GameType, Guess, Session
 from models.stats import RoundStats, UserMapStats
 from fsocket import socketio
 
-class LiveGame(BaseGame):
+class LiveGame(PartyGame):
     def create(self,data,user,party):
         session = Session(host_id=user.id,type=GameType.LIVE,base_rule_id=party.rules.base_rule_id)
         db.session.add(session)

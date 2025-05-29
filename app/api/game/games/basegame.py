@@ -6,10 +6,10 @@ from models.session import BaseRules, Round,Session,Player
 from models.map import GameMap
 class BaseGame(ABC):
     def create(self,data,type,user):
-        map_id = data.get("map_id") if data.get("map_id") else data.get("map").get("id")
-        time_limit = data.get("time") if data.get("time") else -1
-        num_rounds = data.get("rounds") if data.get("rounds") else 5
-        nmpz = data.get("nmpz") if data.get("nmpz") != None else False
+        map_id = data.get("map_id",int(Configs.get("GAME_DEFAULT_MAP_ID")))
+        time_limit = data.get("time", int(Configs.get("GAME_DEFAULT_TIME_LIMIT")))
+        num_rounds = data.get("rounds",int(Configs.get("GAME_DEFAULT_ROUNDS")))
+        nmpz = data.get("nmpz",Configs.get("GAME_DEFAULT_NMPZ").lower() == "true")
 
         if num_rounds <= 0 and num_rounds != -1:
             raise Exception("Invalid number of rounds")
@@ -105,9 +105,6 @@ class BaseGame(ABC):
             }
         }
     
-    def ping(self,data,user,session):
-        pass
-    
     
     def get_player(self,user,session):
         player = Player.query.filter_by(user_id=user.id,session_id=session.id).first()
@@ -123,7 +120,6 @@ class BaseGame(ABC):
     
     def rules_config_list(self):
         config = self.rules_config()
-        print(config)
         return [
             {
                 "key": key,
