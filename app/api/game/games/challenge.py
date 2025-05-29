@@ -46,7 +46,7 @@ class ChallengeGame(BaseGame):
     
     def get_round(self,data,user,session):
         player = super().get_player(user,session)
-        round = super().get_round(player,session)
+        round = super().get_round_(session,player.current_round)
         prev_round_stats = RoundStats.query.filter_by(user_id=user.id,session_id=session.id,round=player.current_round).first()
         
         state = self.get_state(data,user,session)
@@ -85,7 +85,7 @@ class ChallengeGame(BaseGame):
             raise Exception("provided: lat, lng")
         
         player = super().get_player(user,session)
-        round = super().get_round(player,session)
+        round = super().get_round_(session,player.current_round)
         
         time = (now - pytz.utc.localize(player.start_time)).total_seconds()
         
@@ -106,7 +106,7 @@ class ChallengeGame(BaseGame):
         player = Player.query.filter_by(user_id=user.id,session_id=session.id).first()
         if not player or player.current_round == 0:
             return {"state":"not_playing"}
-        round = super().get_round(player,session)
+        round = super().get_round_(session,player.current_round)
         if not timed_out(player,round.base_rules.time_limit) and Guess.query.filter_by(user_id=user.id,round_id=round.id).count() == 0:
             return {"state":"playing","round":player.current_round}
         else:

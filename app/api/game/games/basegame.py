@@ -112,8 +112,8 @@ class BaseGame(ABC):
             raise Exception("player not found")
         return player
     
-    def get_round(self,player,session):
-        round = Round.query.filter_by(session_id=session.id,round_number=player.current_round).first()
+    def get_round_(self,session,round_number=None):
+        round = Round.query.filter_by(session_id=session.id,round_number=round_number).first()
         if not round:
             raise Exception("Round not found")
         return round
