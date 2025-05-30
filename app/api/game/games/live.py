@@ -56,7 +56,7 @@ class LiveGame(PartyGame):
     def guess(self, data, user, session):
         ChallengeGame().guess(data, user, session)
         player = Player.query.filter_by(user_id=user.id,session_id=session.id).first()
-        round = super().get_round_(session,player.current_round)
+        round = self.get_round_(session,player.current_round)
         socketio.emit("guess",user.to_json(),namespace="/socket/party",room=session.uuid)
         if Player.query.filter_by(session_id=session.id).count() <= Guess.query.filter_by(round_id=round.id).count():
             print("pinging",Player.query.filter_by(session_id=session.id).count(),Guess.query.filter_by(round_id=round.id).count())
@@ -69,7 +69,7 @@ class LiveGame(PartyGame):
         if not player:
             return {"state":"not_playing"}
         
-        round = super().get_round_(session,player.current_round)
+        round = self.get_round_(session,player.current_round)
         player_count = Player.query.filter_by(session_id=session.id).count()
         guess_count = Guess.query.filter_by(round_id=round.id).count()
         
@@ -98,8 +98,8 @@ class LiveGame(PartyGame):
             return {"state":"results","round":player.current_round}
     
     def results(self, data, user, session):
-        player = super().get_player(user, session)
-        round = super().get_round_(session,player.current_round)
+        player = self.get_player(user, session)
+        round = self.get_round_(session,player.current_round)
         player_count = Player.query.filter_by(session_id=session.id).count()
         guess_count = Guess.query.filter_by(round_id=round.id).count()
         if guess_count < player_count and not timed_out(player,round.base_rules.time_limit):
@@ -108,8 +108,8 @@ class LiveGame(PartyGame):
         return ChallengeGame().results(data, user, session)
     
     def summary(self, data, user, session):
-        player = super().get_player(user, session)
-        round = super().get_round_(session,player.current_round)
+        player = self.get_player(user, session)
+        round = self.get_round_(session,player.current_round)
         player_count = Player.query.filter_by(session_id=session.id).count()
         guess_count = Guess.query.filter_by(round_id=round.id).count()
         if guess_count < player_count and not timed_out(player,round.base_rules.time_limit):
@@ -142,8 +142,8 @@ class LiveGame(PartyGame):
         return ret
     
     def ping(self,data,user,session):
-        player = super().get_player(session.host, session)
-        round = super().get_round_(session, player.current_round)
+        player = self.get_player(session.host, session)
+        round = self.get_round_(session, player.current_round)
         
         player_count = Player.query.filter_by(session_id=session.id).count()
         guess_count = Guess.query.filter_by(round_id=round.id).count()

@@ -3,8 +3,10 @@ from flask_socketio import disconnect, emit, join_room
 import pytz
 from api.account.auth import get_user_from_token
 
+from api.game.gametype import game_type
 from models.db import db
 from models.party import Party, PartyMember
+from models.session import Session
 
 def register_party_socket(socketio,namespace):
     @socketio.on("connect",namespace=namespace)
@@ -32,8 +34,9 @@ def register_party_socket(socketio,namespace):
             return
         socketio.emit("leave",{"reason":"joined new party"},namespace=namespace,room=f"{user.id}_{room}")
         join_room(f"{user.id}_{room}")
-        if session:
-            join_room(session)
         join_room(room)
+        if session:
+            session = Session.query.filter_by(uuid=session).first_or_404("Cannot find session")
+            game_type[session.type].join_socket(session,user)
         
         emit("message",{"message":"joined party"})

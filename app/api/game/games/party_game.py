@@ -1,3 +1,4 @@
+from flask_socketio import join_room
 from sqlalchemy import func
 
 from api.game.games.basegame import BaseGame
@@ -95,3 +96,6 @@ class PartyGame(BaseGame):
             "type": party.rules.type.name,
             "nmpz": rules.nmpz,
         }
+        
+    def join_socket(self,session,user):
+        join_room(session.uuid)

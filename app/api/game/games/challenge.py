@@ -33,7 +33,7 @@ class ChallengeGame(BaseGame):
         if state["state"] == "playing":
             raise Exception("Player has not finished the current round")
         
-        player = super().get_player(user,session)
+        player = self.get_player(user,session)
         if player.current_round + 1 > session.current_round:
             create_round(session,session.base_rules)
         
@@ -45,8 +45,8 @@ class ChallengeGame(BaseGame):
     
     
     def get_round(self,data,user,session):
-        player = super().get_player(user,session)
-        round = super().get_round_(session,player.current_round)
+        player = self.get_player(user,session)
+        round = self.get_round_(session,player.current_round)
         prev_round_stats = RoundStats.query.filter_by(user_id=user.id,session_id=session.id,round=player.current_round).first()
         
         state = self.get_state(data,user,session)
@@ -84,8 +84,8 @@ class ChallengeGame(BaseGame):
         if lat == None or lng == None:
             raise Exception("provided: lat, lng")
         
-        player = super().get_player(user,session)
-        round = super().get_round_(session,player.current_round)
+        player = self.get_player(user,session)
+        round = self.get_round_(session,player.current_round)
         
         time = (now - pytz.utc.localize(player.start_time)).total_seconds()
         
@@ -106,7 +106,7 @@ class ChallengeGame(BaseGame):
         player = Player.query.filter_by(user_id=user.id,session_id=session.id).first()
         if not player or player.current_round == 0:
             return {"state":"not_playing"}
-        round = super().get_round_(session,player.current_round)
+        round = self.get_round_(session,player.current_round)
         if not timed_out(player,round.base_rules.time_limit) and Guess.query.filter_by(user_id=user.id,round_id=round.id).count() == 0:
             return {"state":"playing","round":player.current_round}
         else:
@@ -129,7 +129,7 @@ class ChallengeGame(BaseGame):
         if round_num < 1 or per_page < 1:
             raise Exception("Please provide valid inputs")
         
-        player = super().get_player(user,session)
+        player = self.get_player(user,session)
         round = Round.query.filter_by(session_id=session.id,round_number=round_num).first()
         if not round:
             raise Exception("No round found")

@@ -1,3 +1,4 @@
+from flask_socketio import join_room
 from api.game.games.basegame import BaseGame
 from api.game.games.party_game import PartyGame
 from api.game.gameutils import assign_teams
@@ -37,7 +38,20 @@ class DuelsGame(PartyGame):
         pass
     
     def get_state(self,data,user,session):
-        pass
+        if session.current_round == 0:
+            return {"state":"not started"}
+        round = self.get_round_(session,session.current_round)
+        
+        state = DuelState.query.filter_by(round_id=round.id).first()
+        
+        if DuelHp.query.filter_by(state_id=state.id).count() == 0:
+            return {"state":"playing","round": round.round_number}
+        
+        if DuelHp.query.filter_by(state_id=state.id, hp=0).count() == 0:
+            return {"state":"finished"}
+    
+        return {"state":"results","round":round.round_number}
+        
     
     def ping(self,data,user,session):
         pass
@@ -147,3 +161,12 @@ class DuelsGame(PartyGame):
             "mult_freq": duel_rules.damage_multi_freq,
             "guess_time": duel_rules.guess_time_limit,
         }
+        
+    def join_socket(self, session, user):
+        super().join_socket(session, user)
+        team = GameTeam.query.filter_by(session_id=session.id).join(TeamPlayer).filter(TeamPlayer.user_id == user.id).first()
+        if team:
+            join_room(f"team_{team.uuid}")
+        else:
+            join_room(f"spectator_{session.uuid}")
+        
