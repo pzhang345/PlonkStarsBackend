@@ -164,37 +164,54 @@ def get_map_info(user):
             "stat":top_guesses_stats[4]
         }
     
-    fast_guesser_stats =map_stats.order_by(
-        case(
-            (func.sum(UserMapStats.total_guesses) == 0, None),
-            else_=func.sum(UserMapStats.total_time) / func.sum(UserMapStats.total_guesses)
-        )
-    ).first()
+    five_ks = Guess.query.filter_by(score=5000).join(Round).join(Session).join(BaseRules).filter(BaseRules.map_id == map.id)
+    if nmpz != None:
+        five_ks = five_ks.filter(BaseRules.nmpz == nmpz)
     
-    if fast_guesser_stats:
-        ret["other"]["fast_guesser"] = {
-            "user":fast_guesser_stats[0].to_json(),
-            "stat":fast_guesser_stats[1]/fast_guesser_stats[4]
-        }
-    
-    best_average_stats = map_stats.order_by(
-        desc(
-            case(
-                (func.sum(UserMapStats.total_guesses) == 0, 0),
-                else_=func.sum(UserMapStats.total_score) / func.sum(UserMapStats.total_guesses)
-            )
-        )
-    ).first()
-    
-    if best_average_stats:
-        ret["other"]["best_average"] = {
-            "user":best_average_stats[0].to_json(),
-            "stat":best_average_stats[2]/best_average_stats[4]
-        }
-    
-    number_of_5ks = Guess.query.filter_by(score=5000).join(Round).join(Session).join(BaseRules).filter(BaseRules.map_id == map.id).count()
+    number_of_5ks = five_ks.count()
     ret["other"]["5ks"] = number_of_5ks
     
+    if number_of_5ks > 0:
+        most_5ks_entry = (
+            five_ks.with_entities(Guess.user_id, func.count(Guess.id).label("count"))
+            .group_by(Guess.user_id)
+            .order_by(func.count(Guess.id).desc())
+            .first()
+        )
+        
+        ret["other"]["most_5ks"] = {
+            "user": User.query.filter_by(id=most_5ks_entry.user_id).first().to_json(),
+            "stat": most_5ks_entry.count
+        }
+        fastest_5k = five_ks.order_by(Guess.time).first()
+        ret["other"]["fastest_5k"] = {
+            "user":fastest_5k.user.to_json(),
+            "stat":fastest_5k.time,
+        }
+    else:
+        highest_score = Guess.query.join(Round).join(Session).join(BaseRules).filter(BaseRules.map_id == map.id).order_by(Guess.score.desc())
+        if nmpz != None:
+            highest_score = highest_score.filter(BaseRules.nmpz == nmpz)
+        highest_score = highest_score.first()
+        
+        if highest_score:
+            ret["other"]["highest_score"] = {
+                "user":highest_score.user.to_json(),
+                "stat":highest_score.score,
+            }
+        
+            highest_k = highest_score.score // 1000
+            fastest_nk = Guess.query.join(Round).join(Session).join(BaseRules).filter(BaseRules.map_id == map.id, Guess.score > highest_k * 1000).order_by(Guess.time)
+            if nmpz != None:
+                fastest_nk = fastest_nk.filter(BaseRules.nmpz == nmpz)
+            fastest_nk = fastest_nk.first()
+            if fastest_nk:
+                ret["other"]["fastest_nk"] = {
+                    "user":fastest_nk.user.to_json(),
+                    "stat":fastest_nk.time,
+                }
+    print(ret)
+
     return jsonify(ret),200
 
 @map_bp.route("/bounds",methods=["GET"])
