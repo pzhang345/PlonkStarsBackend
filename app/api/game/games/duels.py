@@ -4,8 +4,9 @@ from api.game.games.party_game import PartyGame
 from api.game.gameutils import assign_teams
 from models.configs import Configs
 from models.db import db
-from models.session import GameType, Session
-from models.duels import DuelRules, DuelState, GameTeam, TeamPlayer, DuelHp, DuelRulesLinker
+from models.session import GameType, Guess, Session
+from models.duels import DuelRules, DuelState, GameTeam, TeamPlayer, DuelHp, DuelRulesLinker, MarkerPosition
+from models.user import User
 class DuelsGame(PartyGame):
     def create(self,data,user,party):
         rules = party.rules
@@ -45,7 +46,33 @@ class DuelsGame(PartyGame):
         state = DuelState.query.filter_by(round_id=round.id).first()
         
         if DuelHp.query.filter_by(state_id=state.id).count() == 0:
-            return {"state":"playing","round": round.round_number}
+            game_team = GameTeam.query.filter_by(session_id=session.id).join(TeamPlayer).filter(TeamPlayer.user_id == user.id).first()
+            if not game_team:
+                return {"state":"spectating"}
+            
+            if data.get("state"):
+                return {"state":"playing" if Guess.query.filter_by(round_id=round.id,user_id=user.id).count() == 0 else "waiting"}
+                
+            return {
+                "state":"playing" if Guess.query.filter_by(round_id=round.id,user_id=user.id).count() == 0 else "waiting",
+                "round": round.round_number, 
+                "team": game_team.to_json(),
+                "markers": [
+                    {
+                        "user": marker.player.user.to_json(),
+                        "lat": marker.latitude,
+                        "lng": marker.longitude,
+                    } for marker in MarkerPosition.query.join(TeamPlayer).filter(game_team.id == TeamPlayer.team_id)
+                ],
+                "guesses": [
+                    {
+                        "user": guess.user.to_json(),
+                        "lat": guess.latitude,
+                        "lng": guess.longitude,
+                    } for guess in Guess.query.join(User).join(TeamPlayer,User.id == TeamPlayer.user_id).filter(game_team.id == TeamPlayer.team_id)
+                ],
+            }
+            
         
         if DuelHp.query.filter_by(state_id=state.id, hp=0).count() == 0:
             return {"state":"finished"}

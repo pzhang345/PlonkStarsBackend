@@ -66,6 +66,8 @@ class TeamPlayer(db.Model):
         UniqueConstraint('team_id', 'user_id'),
     )
     
+    marker_position = db.relationship("MarkerPosition", backref="player", cascade="all,delete", passive_deletes=True)
+    
 class DuelHp(db.Model):
     __tablename__ = "duel_hp"
     
@@ -78,3 +80,11 @@ class DuelHp(db.Model):
     __table_args__ = (
         UniqueConstraint('state_id', 'team_id'),
     )
+
+class MarkerPosition(db.Model):
+    __tablename__ = "marker_positions"
+    
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    player_id = Column(Integer, ForeignKey("team_players.id", ondelete="CASCADE"), nullable=False, unique=True)
+    latitude = Column(Float, nullable=False)
+    longitude = Column(Float, nullable=False)
