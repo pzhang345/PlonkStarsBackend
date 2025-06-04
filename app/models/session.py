@@ -66,7 +66,7 @@ class Round(db.Model):
     base_rule_id = Column(Integer, ForeignKey("base_rules.id", ondelete="CASCADE"), nullable=False)
 
     guesses = db.relationship("Guess", backref="round", cascade="all,delete", passive_deletes=True)
-    duel_states = db.relationship("DuelState", backref="round", cascade="all,delete", passive_deletes=True)
+    duel_state = db.relationship("DuelState", backref="round", cascade="all,delete", passive_deletes=True, uselist=False)
     
     __table_args__ = (
         UniqueConstraint('session_id', 'round_number'),

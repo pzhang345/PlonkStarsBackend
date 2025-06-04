@@ -1,6 +1,8 @@
+from datetime import datetime
 import uuid
 
-from sqlalchemy import Column, Float, ForeignKey, Integer, String, UniqueConstraint
+import pytz
+from sqlalchemy import Column, DateTime, Float, ForeignKey, Integer, String, UniqueConstraint
 from models.db import db
 
 class DuelRules(db.Model):
@@ -39,6 +41,7 @@ class DuelState(db.Model):
     
     id = Column(Integer, primary_key=True, autoincrement=True)
     round_id = Column(Integer, ForeignKey("rounds.id", ondelete="CASCADE"), nullable=False, unique=True)
+    start_time = Column(DateTime, nullable=False,default=lambda: datetime.now(tz=pytz.utc))
     multi = Column(Float, nullable=False, default=1)
     
     team_hps = db.relationship("DuelHp", backref="state", cascade="all,delete", passive_deletes=True)
@@ -54,6 +57,12 @@ class GameTeam(db.Model):
     
     team_players = db.relationship("TeamPlayer", backref="team", cascade="all,delete", passive_deletes=True)
     round_hps = db.relationship("DuelHp", backref="team", cascade="all,delete", passive_deletes=True)
+    
+    def to_json(self):
+        return {
+            "color": self.color,
+            "players": [player.user.to_json() for player in self.team_players],
+        }
     
 class TeamPlayer(db.Model):
     __tablename__ = "team_players"
