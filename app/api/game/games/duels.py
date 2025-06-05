@@ -1,10 +1,10 @@
-from datetime import timedelta
+from datetime import datetime, timedelta
 from flask_socketio import join_room
 import pytz
 
 from api.game.games.basegame import BaseGame
 from api.game.games.party_game import PartyGame
-from api.game.gameutils import assign_teams, create_round
+from api.game.gameutils import assign_teams, create_guess, create_round
 from fsocket import socketio
 from models.configs import Configs
 from models.db import db
@@ -29,7 +29,7 @@ class DuelsGame(PartyGame):
     
     def next(self,data,user,session):
         state = self.get_state(data,user,session,only_state=True)
-        if state["state"] != "results" or state["state"] != "not started":
+        if state["state"] != "results" and state["state"] != "not started":
             raise Exception("Game is in the wrong state")
         
         round = create_round(session,session.base_rules)
@@ -49,7 +49,7 @@ class DuelsGame(PartyGame):
             
     def get_round(self,data,user,session):
         state = self.get_state(data,user,session,only_state=True)
-        if state["state"] != "playing" or state["state"] != "waiting":
+        if state["state"] != "playing" and state["state"] != "waiting":
             raise Exception("Game is in the wrong state")
         
         round = self.get_round_(session,session.current_round)
@@ -68,8 +68,31 @@ class DuelsGame(PartyGame):
         return ret
         
     def guess(self,data,user,session):
-        pass
-    
+        state = self.get_state(data,user,session,only_state=True)
+        if state["state"] != "playing" and state["state"] != "waiting":
+            raise Exception("Game is in the wrong state")
+        
+        player = TeamPlayer.query.filter_by(user_id=user.id).join(GameTeam).filter(GameTeam.session_id == session.id).first()
+        if not player:
+            raise Exception("You are not in a team")
+        
+        game_team = player.team
+        
+        lat = data.get("lat")
+        lng = data.get("lng")
+        if lat == None or lng == None:
+            raise Exception("You must provide a latitude and longitude")
+            
+        round = self.get_round_(session,session.current_round)
+        if Guess.query.filter_by(round_id=round.id,user_id=user.id).count() > 0:
+            raise Exception("You have already guessed this round")
+        
+        now = datetime.now(tz=pytz.utc)
+        time = (now - pytz.utc.localize(player.start_time)).total_seconds()
+        create_guess(lat, lng, user, round, time)
+        
+        
+        
     def results(self,data,user,session):
         pass
     
@@ -130,7 +153,32 @@ class DuelsGame(PartyGame):
         
     
     def ping(self,data,user,session):
-        pass
+        if data.get("type") == "plonk":
+            state = self.get_state(data,user,session,only_state=True)
+            if state["state"] != "playing" and state["state"] != "waiting":
+                raise Exception("Game is in the wrong state")
+            
+            player = TeamPlayer.query.filter_by(user_id=user.id).join(GameTeam).filter(GameTeam.session_id == session.id).first()
+            if not player:
+                raise Exception("You are not in a team")
+            
+            game_team = player.team
+            
+            lat = data.get("lat")
+            lng = data.get("lng")
+            if lat == None or lng == None:
+                raise Exception("You must provide a latitude and longitude")
+            
+            marker = MarkerPosition.query.filter_by(player_id=player.id).first()
+            if not marker:
+                marker = MarkerPosition(player_id=player.id, latitude=lat, longitude=lng)
+                db.session.add(marker)
+            else:
+                marker.latitude = lat
+                marker.longitude = lng
+            
+            db.session.commit()
+            socketio.emit("plonk", {"user": user.to_json(), "lat": lat, "lng":lng}, namespace="/socket/party", room=f"team_{game_team.uuid}")
     
     def rules_config(self):
         base = super().rules_config()

@@ -89,7 +89,7 @@ class ChallengeGame(BaseGame):
         
         time = (now - pytz.utc.localize(player.start_time)).total_seconds()
         
-        if timed_out(player,round.base_rules.time_limit + 1 if round.base_rules.time_limit != -1 else -1):
+        if timed_out(player.start_time,round.base_rules.time_limit + 1 if round.base_rules.time_limit != -1 else -1):
             raise Exception("timed out")
 
         guess = create_guess(lat,lng,user,round,time)
@@ -107,7 +107,7 @@ class ChallengeGame(BaseGame):
         if not player or player.current_round == 0:
             return {"state":"not_playing"}
         round = self.get_round_(session,player.current_round)
-        if not timed_out(player,round.base_rules.time_limit) and Guess.query.filter_by(user_id=user.id,round_id=round.id).count() == 0:
+        if not timed_out(player.start_time,round.base_rules.time_limit) and Guess.query.filter_by(user_id=user.id,round_id=round.id).count() == 0:
             return {"state":"playing","round":player.current_round}
         else:
             next_round = player.current_round + 1

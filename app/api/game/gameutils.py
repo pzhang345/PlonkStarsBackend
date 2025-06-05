@@ -158,8 +158,8 @@ def create_round_stats(user,session,round_num = None,guess=None):
     db.session.commit()
     return round_stats
 
-def timed_out(player,time_limit):
-    return time_limit != -1 and pytz.utc.localize(player.start_time) + timedelta(seconds=time_limit) < datetime.now(tz=pytz.utc)
+def timed_out(start_time,time_limit):
+    return time_limit != -1 and pytz.utc.localize(start_time) + timedelta(seconds=time_limit) < datetime.now(tz=pytz.utc)
 
 
 def assign_teams(teams,session,party):

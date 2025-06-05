@@ -73,7 +73,7 @@ class LiveGame(PartyGame):
         player_count = Player.query.filter_by(session_id=session.id).count()
         guess_count = Guess.query.filter_by(round_id=round.id).count()
         
-        if  guess_count < player_count and not timed_out(player,round.base_rules.time_limit):
+        if guess_count < player_count and not timed_out(player.start_time,round.base_rules.time_limit + 1 if round.base_rules.time_limit != -1 else -1):
             guess = Guess.query.filter_by(user_id=user.id,round_id=round.id).first()
             if guess:
                 return {
@@ -98,22 +98,16 @@ class LiveGame(PartyGame):
             return {"state":"results","round":player.current_round}
     
     def results(self, data, user, session):
-        player = self.get_player(user, session)
-        round = self.get_round_(session,player.current_round)
-        player_count = Player.query.filter_by(session_id=session.id).count()
-        guess_count = Guess.query.filter_by(round_id=round.id).count()
-        if guess_count < player_count and not timed_out(player,round.base_rules.time_limit):
-            raise Exception("not everyone guessed")
+        state = self.get_state(data, user, session)
+        if state["state"] != "results" and state["state"] != "finished":
+           raise Exception("not correct state")
             
         return ChallengeGame().results(data, user, session)
     
     def summary(self, data, user, session):
-        player = self.get_player(user, session)
-        round = self.get_round_(session,player.current_round)
-        player_count = Player.query.filter_by(session_id=session.id).count()
-        guess_count = Guess.query.filter_by(round_id=round.id).count()
-        if guess_count < player_count and not timed_out(player,round.base_rules.time_limit):
-            raise Exception("not everyone guessed")
+        state = self.get_state(data, user, session)
+        if state["state"] != "finished":
+            raise Exception("not correct state")
         
         ret = ChallengeGame().summary(data, user, session)
         
@@ -142,13 +136,9 @@ class LiveGame(PartyGame):
         return ret
     
     def ping(self,data,user,session):
-        player = self.get_player(session.host, session)
-        round = self.get_round_(session, player.current_round)
+        state = self.get_state(data, user, session)
         
-        player_count = Player.query.filter_by(session_id=session.id).count()
-        guess_count = Guess.query.filter_by(round_id=round.id).count()
-        
-        if guess_count < player_count and timed_out(player,round.base_rules.time_limit + 1):
+        if state["state"] == "results" or state["state"] == "finished":
             for player in Player.query.filter_by(session_id=session.id):
                 if RoundStats.query.filter_by(user_id=player.user_id,session_id=session.id,round=player.current_round).count() == 0:
                     create_round_stats(player.user,session,player.current_round)

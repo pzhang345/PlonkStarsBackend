@@ -19,7 +19,7 @@ def get_session_info(session,user):
     player = Player.query.filter_by(session_id=session.id,user_id=user.id).first()
     
     last_round = Round.query.filter_by(session_id=session.id,round_number=session.base_rules.max_rounds).first()
-    finished = player.current_round == session.base_rules.max_rounds and (Guess.query.filter_by(user_id=user.id,round_id=last_round.id).count() > 0 or timed_out(player, last_round.base_rules.time_limit)) if player else False
+    finished = player.current_round == session.base_rules.max_rounds and (Guess.query.filter_by(user_id=user.id,round_id=last_round.id).count() > 0 or timed_out(player.start_time, last_round.base_rules.time_limit)) if player else False
     
     map,score,guess = (db.session.query(
         GameMap,
