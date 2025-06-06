@@ -144,10 +144,10 @@ class DuelsGame(PartyGame):
             else:
                 prev_duel_hp = prev_duel_hp.hp
             
-            ret.append({
+            ret += {
                 "team": team.to_json(),
                 "prev_hp": prev_duel_hp,
-                "hp": DuelHp.query.filter_by(state_id=state.id, team_id=team.id).first().hp
+                "hp": DuelHp.query.filter_by(state_id=state.id, team_id=team.id).first().hp,
                 "guesses": [
                     {
                         "user": guess.user.username,
@@ -155,8 +155,8 @@ class DuelsGame(PartyGame):
                         "lng": guess.longitude,
                         "score": guess.score,
                     } for guess in Guess.query.join(User).join(TeamPlayer, User.id == TeamPlayer.user_id).filter(team.id == TeamPlayer.team_id).order_by(Guess.score.desc())
-                ],
-            })
+                ]
+            }
             duel_hp = DuelHp.query.filter_by(state_id=state.id, team_id=team.id).first()
         
         return ret
