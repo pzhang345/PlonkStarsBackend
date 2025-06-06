@@ -59,7 +59,6 @@ class LiveGame(PartyGame):
         round = self.get_round_(session,player.current_round)
         socketio.emit("guess",user.to_json(),namespace="/socket/party",room=session.uuid)
         if Player.query.filter_by(session_id=session.id).count() <= Guess.query.filter_by(round_id=round.id).count():
-            print("pinging",Player.query.filter_by(session_id=session.id).count(),Guess.query.filter_by(round_id=round.id).count())
             socketio.emit("next",self.get_state(data,user,session),namespace="/socket/party",room=session.uuid)
             
         return {"message":"guess submitted"}

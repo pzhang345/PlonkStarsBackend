@@ -4,7 +4,7 @@ import pytz
 
 from api.game.games.basegame import BaseGame
 from api.game.games.party_game import PartyGame
-from api.game.gameutils import assign_teams, create_guess, create_round
+from api.game.gameutils import assign_teams, create_guess, create_round, timed_out
 from fsocket import socketio
 from models.configs import Configs
 from models.db import db
@@ -62,8 +62,10 @@ class DuelsGame(PartyGame):
         }
         
         if round.base_rules.time_limit != -1:
-            ret["time"] = pytz.utc.localize(round.duels_state.start_time) + timedelta(seconds=round.base_rules.time_limit)
-            ret["time_limit"] = round.base_rules.time_limit
+            first_guess = Guess.query.filter_by(round_id=round.id).order_by(Guess.time).first()
+            time_limit = min(round.base_rules.time_limit, first_guess.time + round.session.duel_rules.rules.guess_time_limit) if first_guess else round.base_rules.time_limit
+            ret["time"] = pytz.utc.localize(round.duels_state.start_time) + timedelta(seconds=time_limit)
+            ret["time_limit"] = time_limit if time_limit == round.base_rules.time_limit else round.session.duel_rules.rules.guess_time_limit
         
         return ret
         
@@ -89,9 +91,13 @@ class DuelsGame(PartyGame):
         
         now = datetime.now(tz=pytz.utc)
         time = (now - pytz.utc.localize(player.start_time)).total_seconds()
+        
         create_guess(lat, lng, user, round, time)
+        socketio.emit("guess", {"user": user.to_json(), "lat": lat, "lng": lng}, namespace="/socket/party", room=f"team_{game_team.uuid}")
+        socketio.emit("guess", {"user": user.to_json()}, namespace="/socket/party", room=session.uuid)
         
-        
+        if Guess.query.filter_by(round_id=round.id).count() >= TeamPlayer.query.join(GameTeam).filter(GameTeam.session_id == session.id).count():
+            socketio.emit("next", self.get_state(data, user, session), namespace="/socket/party", room=session.uuid)
         
     def results(self,data,user,session):
         pass
@@ -106,7 +112,8 @@ class DuelsGame(PartyGame):
         
         state = DuelState.query.filter_by(round_id=round.id).first()
         
-        if DuelHp.query.filter_by(state_id=state.id).count() == 0:
+        first_guess = Guess.query.filter_by(round_id=round.id).order_by(Guess.time).first()
+        if DuelHp.query.filter_by(state_id=state.id).count() == 0 and not timed_out(round.duels_state.start_time,min(round.base_rules.time_limit, first_guess.time + round.session.duel_rules.rules.guess_time_limit) if first_guess else round.base_rules.time_limit):
             game_team = GameTeam.query.filter_by(session_id=session.id).join(TeamPlayer).filter(TeamPlayer.user_id == user.id).first()
             if not game_team:
                 return {"state":"spectating"}
