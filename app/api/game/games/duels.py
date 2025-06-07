@@ -101,9 +101,12 @@ class DuelsGame(PartyGame):
             socketio.emit("next", self.get_state(data, user, session), namespace="/socket/party", room=session.uuid)
         
     def results(self,data,user,session):
+        state = self.get_state(data,user,session,only_state=True)
+        if state["state"] != "results" and state["state"] != "finished":
+            raise Exception("Game is in the wrong state")
         round = self.get_round_(session,session.current_round)
-        state = DuelState.query.filter_by(round_id=round.id).first()
-        if DuelHp.query.filter_by(state_id=state.id).count() < GameTeam.query.filter_by(session_id=session.id).count():
+        duels_state = DuelState.query.filter_by(round_id=round.id).first()
+        if DuelHp.query.filter_by(state_id=duels_state.id).count() < GameTeam.query.filter_by(session_id=session.id).count():
             high_team_scores = (db.session.query(
                 GameTeam,
                 func.coalesce(func.max(Guess.score), 0).label("max_score")
@@ -117,6 +120,7 @@ class DuelsGame(PartyGame):
             high_score = Guess.query.join(Round).filter(Round.session_id == session.id).order_by(Guess.score.desc()).first()
             
             for team, score in high_team_scores:
+                prev_round = self.get_round_(session, session.current_round - 1) if session.current_round > 1 else None
                 prev_duel_hp = DuelHp.query.filter_by(state_id=state.id, team_id=team.id).first()
                 if not prev_duel_hp:
                     prev_duel_hp = session.duel_rules.rules.start_hp
@@ -129,10 +133,10 @@ class DuelsGame(PartyGame):
                 
                 duel_hp = DuelHp.query.filter_by(state_id=state.id, team_id=team.id).first()
                 if not duel_hp:
-                    duel_hp = DuelHp(state_id=state.id, team_id=team.id, hp=prev_duel_hp + score - high_score.score)
+                    duel_hp = DuelHp(state_id=state.id, team_id=team.id, hp=max(0,prev_duel_hp + score - high_score.score))
                     db.session.add(duel_hp)
                 else:
-                    duel_hp.hp = prev_duel_hp + score - high_score.score
+                    duel_hp.hp = max(0,prev_duel_hp + score - high_score.score)
                 
                 db.session.commit()
 
@@ -143,6 +147,9 @@ class DuelsGame(PartyGame):
                 prev_duel_hp = session.duel_rules.rules.start_hp
             else:
                 prev_duel_hp = prev_duel_hp.hp
+                
+            if prev_duel_hp == 0:
+                continue
             
             ret.append({
                 "team": team.to_json(),
@@ -188,7 +195,9 @@ class DuelsGame(PartyGame):
                         "round": round.round_number
                         }
             
-            if not game_team:
+            low_hp = DuelHp.query.filter_by(team_id=game_team.id).order_by(DuelHp.hp).first()
+            low_hp = low_hp.hp if low_hp else session.duel_rules.rules.start_hp
+            if not game_team or low_hp <= 0:
                 return {
                     "state":"spectating",
                     "round": round.round_number,
@@ -229,7 +238,7 @@ class DuelsGame(PartyGame):
             }
             
         
-        if DuelHp.query.filter_by(state_id=state.id, hp=0).count() == 0 or session.current_round == session.base_rules.max_rounds:
+        if DuelHp.query.filter_by(state_id=state.id).filter(DuelHp.hp != 0).count() < 1 or session.current_round == session.base_rules.max_rounds:
             return {"state":"finished"}
     
         return {"state":"results","round":round.round_number}
@@ -262,7 +271,13 @@ class DuelsGame(PartyGame):
             
             db.session.commit()
             socketio.emit("plonk", {"user": user.to_json(), "lat": lat, "lng":lng}, namespace="/socket/party", room=f"team_{game_team.uuid}")
-    
+
+        if data.get("type") == "ping":
+            state = self.get_state(data,user,session,only_state=True)
+            duel_state = DuelState.query.filter_by(round_id=round.id).first()
+            if (state["state"] == "results" or state["state"] == "finished") and DuelHp.query.filter_by(state_id=duel_state.id).count() == 0:
+                socketio.emit("next", self.get_state(data, user, session), namespace="/socket/party", room=session.uuid)
+                
     def rules_config(self):
         base = super().rules_config()
         

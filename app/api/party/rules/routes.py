@@ -2,6 +2,7 @@ from flask import Blueprint, jsonify, request
 
 from api.account.auth import login_required
 from api.game.gametype import game_type
+from api.game.gameutils import delete_orphaned_rules
 from fsocket import socketio
 from models.party import Party
 from models.session import GameType
@@ -46,6 +47,8 @@ def set_rules(user):
     
     if ret[1] != 200:
         return ret
+    
+    delete_orphaned_rules()
     rules = game_type[type].get_rules(party,data)
     socketio.emit("update_rules", rules, namespace="/socket/party", room=party.code)
     

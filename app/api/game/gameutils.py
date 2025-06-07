@@ -1,11 +1,12 @@
 import math
 from datetime import datetime, timedelta
 import pytz
+from sqlalchemy import exists, not_
 
 from models.db import db
-from models.duels import GameTeam, TeamPlayer
-from models.party import PartyMember
-from models.session import Guess,Round
+from models.duels import DuelRules, DuelRulesLinker, GameTeam, TeamPlayer
+from models.party import PartyMember, PartyRules
+from models.session import BaseRules, Guess,Round, Session
 from models.map import GenerationTime
 from models.stats import MapStats, RoundStats,UserMapStats
 from api.location.generate import generate_location,get_random_bounds,db_location
@@ -198,3 +199,24 @@ def assign_teams(teams,session,party):
             db.session.commit()
         
     
+def delete_orphaned_rules():
+    orphan_base_rules = (
+        BaseRules.query
+        .filter(
+            not_(exists().where(PartyRules.base_rule_id == BaseRules.id)),
+            not_(exists().where(Session.base_rule_id == BaseRules.id)),
+            not_(exists().where(Round.base_rule_id == BaseRules.id)),
+        )
+    )
+    
+    orphan_duel_rules = (
+        DuelRules.query
+        .filter(
+            not_(exists().where(DuelRulesLinker.rules_id == DuelRules.id)),
+            not_(exists().where(PartyRules.duel_rules_id == DuelRules.id))
+        )
+    )
+
+    orphan_base_rules.delete(synchronize_session=False)
+    orphan_duel_rules.delete(synchronize_session=False)
+    db.session.commit()

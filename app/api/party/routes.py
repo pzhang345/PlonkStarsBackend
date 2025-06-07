@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify
 
 from api.account.auth import login_required
+from api.game.gameutils import delete_orphaned_rules
 from api.party.game.routes import party_game_bp
 from api.party.rules.routes import party_rules_bp
 from models.db import db
@@ -183,6 +184,7 @@ def delete_party(user):
         return jsonify({"error": "You are not the host of this party"}), 403
     
     db.session.delete(party)
+    delete_orphaned_rules()
     db.session.commit()
     
     socketio.emit("leave", {"reason": "Party disbanded"}, namespace="/socket/party", room=code)

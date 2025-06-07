@@ -1,5 +1,5 @@
 import pytz
-from api.game.gameutils import create_round
+from api.game.gameutils import create_round, delete_orphaned_rules
 from models.party import Party
 from models.session import BaseRules, DailyChallenge, GameType, Session
 from datetime import datetime, timedelta
@@ -58,6 +58,7 @@ def register_commands(app):
         for party in Party.query.filter(Party.last_activity < cutoff):
             socketio.emit("leave", {"reason": "Party expired"}, namespace="/socket/party", room=party.code)
             db.session.delete(party)
+        delete_orphaned_rules()
         db.session.commit()
         print(f"{parties_count} parties deleted")
 
