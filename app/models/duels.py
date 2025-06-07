@@ -32,10 +32,7 @@ class DuelRulesLinker(db.Model):
     id = Column(Integer, primary_key=True, autoincrement=True)
     session_id = Column(Integer, ForeignKey("sessions.id", ondelete="CASCADE"), nullable=False, unique=True)
     rules_id = Column(Integer, ForeignKey("duel_rules.id", ondelete="CASCADE"), nullable=False)
-    
-    __table_args__ = (
-        UniqueConstraint('session_id', 'rules_id'),
-    )
+
 class DuelState(db.Model):
     __tablename__ = "duel_state"
     

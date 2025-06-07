@@ -34,7 +34,7 @@ class DuelsGame(PartyGame):
             raise Exception("Game is in the wrong state")
         
         round = create_round(session,session.base_rules)
-        duel_rules = session.duel_rules.rules
+        duel_rules = session.duel_rules
         prev_round = self.get_round_(session,session.current_round - 1) if session.current_round > 1 else None
         prev_multi = prev_round.duels_state.multi if prev_round else 1
         new_multi = (duel_rules.damage_mutli_mult * prev_multi) + duel_rules.damage_multi_add
@@ -64,9 +64,9 @@ class DuelsGame(PartyGame):
         
         if round.base_rules.time_limit != -1:
             first_guess = Guess.query.filter_by(round_id=round.id).order_by(Guess.time).first()
-            time_limit = min(round.base_rules.time_limit, first_guess.time + round.session.duel_rules.rules.guess_time_limit) if first_guess else round.base_rules.time_limit
+            time_limit = min(round.base_rules.time_limit, first_guess.time + round.session.duel_rules.guess_time_limit) if first_guess else round.base_rules.time_limit
             ret["time"] = pytz.utc.localize(round.duels_state.start_time) + timedelta(seconds=time_limit)
-            ret["time_limit"] = time_limit if time_limit == round.base_rules.time_limit else round.session.duel_rules.rules.guess_time_limit
+            ret["time_limit"] = time_limit if time_limit == round.base_rules.time_limit else round.session.duel_rules.guess_time_limit
         
         return ret
         
@@ -123,7 +123,7 @@ class DuelsGame(PartyGame):
                 prev_round = self.get_round_(session, session.current_round - 1) if session.current_round > 1 else None
                 prev_duel_hp = DuelHp.query.filter_by(state_id=state.id, team_id=team.id).first()
                 if not prev_duel_hp:
-                    prev_duel_hp = session.duel_rules.rules.start_hp
+                    prev_duel_hp = session.duel_rules.start_hp
                 else:
                     prev_duel_hp = prev_duel_hp.hp
                 
@@ -144,7 +144,7 @@ class DuelsGame(PartyGame):
         for team in GameTeam.query.filter_by(session_id=session.id):
             prev_duel_hp = DuelHp.query.filter_by(state_id=state.id, team_id=team.id).first()
             if not prev_duel_hp:
-                prev_duel_hp = session.duel_rules.rules.start_hp
+                prev_duel_hp = session.duel_rules.start_hp
             else:
                 prev_duel_hp = prev_duel_hp.hp
                 
@@ -180,7 +180,7 @@ class DuelsGame(PartyGame):
         
         first_guess = Guess.query.filter_by(round_id=round.id).order_by(Guess.time).first()
         if (DuelHp.query.filter_by(state_id=state.id).count() == 0
-            and not timed_out(round.duels_state.start_time,min(round.base_rules.time_limit, first_guess.time + round.session.duel_rules.rules.guess_time_limit) if first_guess else round.base_rules.time_limit)
+            and not timed_out(round.duels_state.start_time,min(round.base_rules.time_limit, first_guess.time + round.session.duel_rules.guess_time_limit) if first_guess else round.base_rules.time_limit)
             and Guess.query.filter_by(round_id=round.id).count() < TeamPlayer.query.join(GameTeam).filter(GameTeam.session_id == session.id).count()):
             
             game_team = GameTeam.query.filter_by(session_id=session.id).join(TeamPlayer).filter(TeamPlayer.user_id == user.id).first()
@@ -196,7 +196,7 @@ class DuelsGame(PartyGame):
                         }
             
             low_hp = DuelHp.query.filter_by(team_id=game_team.id).order_by(DuelHp.hp).first()
-            low_hp = low_hp.hp if low_hp else session.duel_rules.rules.start_hp
+            low_hp = low_hp.hp if low_hp else session.duel_rules.start_hp
             if not game_team or low_hp <= 0:
                 return {
                     "state":"spectating",
@@ -204,7 +204,7 @@ class DuelsGame(PartyGame):
                     "teams": [
                         {
                             **team.to_json(),
-                            "hp": session.duel_rules.rules.start_hp if DuelHp.query.filter_by(state_id=state.id, team_id=team.id).count() == 0 else DuelHp.query.filter_by(state_id=state.id, team_id=team.id).first().hp
+                            "hp": session.duel_rules.start_hp if DuelHp.query.filter_by(state_id=state.id, team_id=team.id).count() == 0 else DuelHp.query.filter_by(state_id=state.id, team_id=team.id).first().hp
                         } for team in GameTeam.query.filter_by(session_id=session.id)
                     ]
                 }
@@ -232,7 +232,7 @@ class DuelsGame(PartyGame):
                 "teams": [
                     {
                         **team.to_json(),
-                        "hp": session.duel_rules.rules.start_hp if last_round == None else DuelHp.query.filter_by(state_id=state.id, team_id=team.id).first().hp
+                        "hp": session.duel_rules.start_hp if last_round == None else DuelHp.query.filter_by(state_id=state.id, team_id=team.id).first().hp
                     } for team in GameTeam.query.filter_by(session_id=session.id)
                 ]
             }

@@ -29,7 +29,8 @@ class Session(db.Model):
     daily_challenge = db.relationship("DailyChallenge",backref="session",cascade="all,delete", passive_deletes=True, uselist=False)
     party = db.relationship("Party", backref="session", passive_deletes=True, uselist=False)
     teams = db.relationship("GameTeam", backref="session", cascade="all,delete", passive_deletes=True)
-    duel_rules = db.relationship("DuelRulesLinker", backref="session", cascade="all,delete", passive_deletes=True, uselist=False)
+    duel_rules_link = db.relationship("DuelRulesLinker", backref="session", uselist=False, cascade="all, delete-orphan")
+    duel_rules = db.relationship("DuelRules", secondary="duel_rules_linker", uselist=False, viewonly=True)
     
     def __str__(self):
         return self.uuid
