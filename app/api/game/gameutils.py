@@ -4,8 +4,8 @@ import pytz
 from sqlalchemy import exists, not_
 
 from models.db import db
-from models.duels import DuelRules, DuelRulesLinker, GameTeam, TeamPlayer
-from models.party import PartyMember, PartyRules
+from models.duels import DuelRules, DuelRulesLinker
+from models.party import PartyRules
 from models.session import BaseRules, Guess,Round, Session
 from models.map import GenerationTime
 from models.stats import MapStats, RoundStats,UserMapStats
@@ -161,43 +161,6 @@ def create_round_stats(user,session,round_num = None,guess=None):
 
 def timed_out(start_time,time_limit):
     return time_limit != -1 and pytz.utc.localize(start_time) + timedelta(seconds=time_limit) < datetime.now(tz=pytz.utc)
-
-
-def assign_teams(teams,session,party):
-    if teams == None:
-        raise Exception("No teams provided")
-    
-    if len(teams) < 2:
-        raise Exception("Not enough teams")
-    
-    for json in teams:
-        team_color = json.get("color")
-        if not team_color:
-            raise Exception("No team color provided")
-        
-        team = GameTeam(session_id=session.id,color=team_color)
-        db.session.add(GameTeam(session_id=session.id,color=team_color))
-        db.session.flush()
-        
-        for user in json.get("users"):
-            user = User.query.filter_by(username=user).first()
-            if not user:
-                raise Exception(f"{user.username} not found")
-            
-            party_member = PartyMember.query.filter_by(user_id=user.id,party_id=party.id).first()
-            if not party_member:
-                raise Exception(f"{user.username} not in party")          
-            
-            if not party_member.in_lobby:
-                raise Exception(f"{user.username} not in lobby")
-            
-            db.session.add(TeamPlayer(user_id=user.id,team_id=team.id))
-            socketio.emit("team",{
-                "team":team.id,
-            },room=f"{user.id}_{party.code}",namespace="/socket/party")
-            
-            db.session.commit()
-        
     
 def delete_orphaned_rules():
     orphan_base_rules = (

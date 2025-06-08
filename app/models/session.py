@@ -28,7 +28,7 @@ class Session(db.Model):
     high_scores = db.relationship("UserMapStats",backref="high_session",cascade="all,delete", passive_deletes=True)
     daily_challenge = db.relationship("DailyChallenge",backref="session",cascade="all,delete", passive_deletes=True, uselist=False)
     party = db.relationship("Party", backref="session", passive_deletes=True, uselist=False)
-    teams = db.relationship("GameTeam", backref="session", cascade="all,delete", passive_deletes=True)
+    teams_linker = db.relationship("GameTeamLinker", backref="session", cascade="all,delete", passive_deletes=True)
     duel_rules_link = db.relationship("DuelRulesLinker", backref="session", uselist=False, cascade="all, delete-orphan")
     duel_rules = db.relationship("DuelRules", secondary="duel_rules_linker", uselist=False, viewonly=True)
     

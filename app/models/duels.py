@@ -43,21 +43,34 @@ class DuelState(db.Model):
     
     team_hps = db.relationship("DuelHp", backref="state", cascade="all,delete", passive_deletes=True)
 
+class GameTeamLinker(db.Model):
+    __tablename__ = "game_team_linker"
+    
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    session_id = Column(Integer, ForeignKey("sessions.id", ondelete="CASCADE"), nullable=False, unique=True)
+    team_id = Column(Integer, ForeignKey("game_teams.id", ondelete="CASCADE"), nullable=False)
+    color = Column(Integer, nullable=False, default=0)
+    
+    def to_json(self):
+        return {
+            **self.team.to_json(),
+            "color": self.color,
+        }
+    
+
 class GameTeam(db.Model):
     __tablename__ = "game_teams"
     
     id = Column(Integer, primary_key=True, autoincrement=True)
-    uuid = Column(String(36), default=lambda: str(uuid.uuid4()), unique=True)
-    
-    color = Column(Integer, nullable=False, default=0)
-    session_id = Column(Integer, ForeignKey("sessions.id", ondelete="CASCADE"), nullable=False)
-    
+    hash = Column(String(50), nullable=False, unique=True)
+        
+    session_team = db.relationship("GameTeamLinker", backref="team", cascade="all,delete", passive_deletes=True)
+    party_team = db.relationship("PartyTeams", backref="team", cascade="all,delete", passive_deletes=True)
     team_players = db.relationship("TeamPlayer", backref="team", cascade="all,delete", passive_deletes=True)
     round_hps = db.relationship("DuelHp", backref="team", cascade="all,delete", passive_deletes=True)
     
     def to_json(self):
         return {
-            "color": self.color,
             "players": [player.user.to_json() for player in self.team_players],
         }
     
