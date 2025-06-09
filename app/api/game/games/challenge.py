@@ -146,7 +146,8 @@ class ChallengeGame(BaseGame):
         if Guess.query.filter_by(user_id=user.id,round_id=round.id).count() == 0:
             player_plonk = PlayerPlonk.query.filter_by(player_id=player.id).first()
             if player_plonk:
-                create_guess(player_plonk.latitude, player_plonk.longitude, user, round, round.base_rules.time_limit)
+                guess = create_guess(player_plonk.latitude, player_plonk.longitude, user, round, round.base_rules.time_limit)
+                create_round_stats(user,session,guess=guess)
             
         PlayerPlonk.query.filter_by(player_id=player.id).delete()
             
