@@ -11,8 +11,6 @@ from models.map import GenerationTime
 from models.stats import MapStats, RoundStats,UserMapStats
 from api.location.generate import generate_location,get_random_bounds,db_location
 from api.map.map import haversine
-from models.user import User
-from fsocket import socketio
 
 def caculate_score(distance, max_distance, max_score):
     return max_score * math.e ** (-10*distance/max_distance)

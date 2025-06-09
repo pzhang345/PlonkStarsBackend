@@ -1,6 +1,6 @@
 from api.game.games.challenge import ChallengeGame
 from api.game.games.party_game import PartyGame
-from api.game.gameutils import timed_out, create_round_stats
+from api.game.gameutils import create_guess, timed_out, create_round_stats
 from models.db import db
 from models.party import PartyMember
 from models.session import Player,GameType, Guess, PlayerPlonk, Session
@@ -149,7 +149,15 @@ class LiveGame(PartyGame):
         if state["state"] == "results" or state["state"] == "finished":
             for player in Player.query.filter_by(session_id=session.id):
                 if RoundStats.query.filter_by(user_id=player.user_id,session_id=session.id,round=player.current_round).count() == 0:
-                    create_round_stats(player.user,session,player.current_round)
+                    if PlayerPlonk.query.filter_by(player_id=player.id).count() > 0:
+                        plonk = PlayerPlonk.query.filter_by(player_id=player.id).first()
+                        round = self.get_round_(session, player.current_round)
+                        guess = create_guess(plonk.latitude, plonk.longitude, player.user, round, round.base_rules.time_limit)
+                        create_round_stats(player.user,session,player.current_round,guess=guess)
+                        db.session.delete(plonk)
+                        db.session.commit()
+                    else:
+                        create_round_stats(player.user,session,player.current_round)
             socketio.emit("next",self.get_state(data,user,session),namespace="/socket/party",room=session.uuid)
             
         

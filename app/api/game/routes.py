@@ -2,7 +2,7 @@ from flask import Blueprint,jsonify,request
 
 from utils import return_400_on_error
 from api.account.auth import login_required
-from api.game.gametype import game_type,str_to_type
+from api.game.gametype import game_type
 from models.session import GameType, Session,Player
 
 
