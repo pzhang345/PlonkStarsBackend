@@ -75,6 +75,9 @@ class BaseGame(ABC):
     def get_state(self,data,user,session):
         pass
     
+    def ping(self,data,user,session):
+        pass
+    
     def rules_config(self):
         return {
             "time": {

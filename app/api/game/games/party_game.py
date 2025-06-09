@@ -10,9 +10,6 @@ from models.stats import MapStats
 
 
 class PartyGame(BaseGame):
-    def ping(self,data,user,session):
-        pass
-    
     def set_default_rules(self, party, data=None):
         type = party.rules.type
         prefix = type.name.upper() if Configs.in_(f"{type.name.upper()}_DEFAULT_ROUNDS") else "GAME"

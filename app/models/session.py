@@ -125,3 +125,11 @@ class DailyChallenge(db.Model):
 
     def __str__(self):
         return f"{self.date} {self.map.name}"
+    
+class PlayerPlonk(db.Model):
+    __tablename__ = "player_plonk"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    player_id = Column(Integer, ForeignKey("players.id", ondelete="CASCADE"), nullable=False,unique=False)
+    latitude = Column(Double, nullable=False)
+    longitude = Column(Double, nullable=False)

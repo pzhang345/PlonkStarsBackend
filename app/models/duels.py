@@ -2,7 +2,7 @@ from datetime import datetime
 import uuid
 
 import pytz
-from sqlalchemy import Column, DateTime, Float, ForeignKey, Integer, String, UniqueConstraint
+from sqlalchemy import Column, DateTime, Double, Float, ForeignKey, Integer, String, UniqueConstraint
 from models.db import db
 
 class DuelRules(db.Model):
@@ -105,5 +105,5 @@ class MarkerPosition(db.Model):
     
     id = Column(Integer, primary_key=True, autoincrement=True)
     player_id = Column(Integer, ForeignKey("team_players.id", ondelete="CASCADE"), nullable=False, unique=True)
-    latitude = Column(Float, nullable=False)
-    longitude = Column(Float, nullable=False)
+    latitude = Column(Double, nullable=False)
+    longitude = Column(Double, nullable=False)

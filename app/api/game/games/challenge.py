@@ -6,7 +6,7 @@ from api.game.games.basegame import BaseGame
 from api.game.gameutils import guess_to_json,create_round,create_guess,create_round_stats,timed_out
 from models.db import db
 from models.user import User
-from models.session import Round,GameType,Player, Guess
+from models.session import PlayerPlonk, Round,GameType,Player, Guess
 from models.stats import RoundStats,UserMapStats
 
 class ChallengeGame(BaseGame):
@@ -33,7 +33,9 @@ class ChallengeGame(BaseGame):
         if state["state"] == "playing":
             raise Exception("Player has not finished the current round")
         
+        
         player = self.get_player(user,session)
+        PlayerPlonk.query.filter_by(player_id=player.id).delete()
         if player.current_round + 1 > session.current_round:
             create_round(session,session.base_rules)
         
@@ -94,7 +96,8 @@ class ChallengeGame(BaseGame):
 
         guess = create_guess(lat,lng,user,round,time)
         create_round_stats(user,session,guess=guess)
-       
+
+        PlayerPlonk.query.filter_by(player_id=player.id).delete()
         return {"message":"guess added"}
     
     def get_state(self,data,user,session):
@@ -107,8 +110,14 @@ class ChallengeGame(BaseGame):
         if not player or player.current_round == 0:
             return {"state":"not_playing"}
         round = self.get_round_(session,player.current_round)
+        
         if not timed_out(player.start_time,round.base_rules.time_limit) and Guess.query.filter_by(user_id=user.id,round_id=round.id).count() == 0:
-            return {"state":"playing","round":player.current_round}
+            ret = {"state":"playing","round":player.current_round}
+            player_plonk = PlayerPlonk.query.filter_by(player_id=player.id).first()
+            if player_plonk:    
+                ret["lat"] = player_plonk.latitude
+                ret["lng"] = player_plonk.longitude
+            return ret
         else:
             next_round = player.current_round + 1
             if next_round > session.base_rules.max_rounds:
@@ -134,6 +143,13 @@ class ChallengeGame(BaseGame):
         if not round:
             raise Exception("No round found")
         
+        if Guess.query.filter_by(user_id=user.id,round_id=round.id).count() == 0:
+            player_plonk = PlayerPlonk.query.filter_by(player_id=player.id).first()
+            if player_plonk:
+                create_guess(player_plonk.latitude, player_plonk.longitude, user, round, round.base_rules.time_limit)
+            
+        PlayerPlonk.query.filter_by(player_id=player.id).delete()
+            
         state = self.get_state(data,user,session)
         if player.current_round < round_num or (player.current_round == round_num and state["state"] == "playing"):
             raise Exception("Round not finished yet")
@@ -291,3 +307,25 @@ class ChallengeGame(BaseGame):
 
     def rules_config(self):
         return super().rules_config()
+    
+    def ping(self, data, user, session):
+        state = self.get_state(data, user, session)
+        if state["state"] != "playing":
+            raise Exception("Player is not in a playing state")
+        
+        lat = data.get("lat")
+        lng = data.get("lng")
+        if  lat == None or lng == None:
+            raise Exception("Please provide lat and lng")
+        
+        player = self.get_player(user, session)
+        player_plonk = PlayerPlonk.query.filter_by(player_id=player.id).first()
+        if not player_plonk:
+            player_plonk = PlayerPlonk(player_id=player.id,latitude=lat,longitude=lng)
+            db.session.add(player_plonk)
+        else:
+            player_plonk.latitude = lat
+            player_plonk.longitude = lng
+        db.session.commit()
+        
+        

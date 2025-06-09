@@ -3,7 +3,7 @@ from api.game.games.party_game import PartyGame
 from api.game.gameutils import timed_out, create_round_stats
 from models.db import db
 from models.party import PartyMember
-from models.session import Player,GameType, Guess, Session
+from models.session import Player,GameType, Guess, PlayerPlonk, Session
 from models.stats import RoundStats, UserMapStats
 from fsocket import socketio
 
@@ -84,12 +84,17 @@ class LiveGame(PartyGame):
                     "player":player_count
                 }
             else:
-                return {
+                ret = {
                     "state":"playing",
                     "round":player.current_round,
                     "guess":guess_count,
                     "player":player_count
                 }
+                player_plonk = PlayerPlonk.query.filter_by(player_id=player.id).first()
+                if player_plonk:
+                    ret["lat"] = player_plonk.latitude
+                    ret["lng"] = player_plonk.longitude
+                return ret
         else:
             next_round = player.current_round + 1
             if next_round > session.base_rules.max_rounds:
@@ -135,13 +140,19 @@ class LiveGame(PartyGame):
         return ret
     
     def ping(self,data,user,session):
+        if data.get("type") == "plonk":
+            ChallengeGame().ping(data, user, session)
+            return
+        
         state = self.get_state(data, user, session)
         
         if state["state"] == "results" or state["state"] == "finished":
             for player in Player.query.filter_by(session_id=session.id):
                 if RoundStats.query.filter_by(user_id=player.user_id,session_id=session.id,round=player.current_round).count() == 0:
                     create_round_stats(player.user,session,player.current_round)
-            socketio.emit("next",self.get_state(data,user,session),namespace="/socket/party",room=session.uuid)        
+            socketio.emit("next",self.get_state(data,user,session),namespace="/socket/party",room=session.uuid)
+            
+        
             
     def rules_config(self):
         return ChallengeGame().rules_config()
