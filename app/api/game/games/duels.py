@@ -5,7 +5,7 @@ from sqlalchemy import func
 
 from api.game.games.basegame import BaseGame
 from api.game.games.party_game import PartyGame
-from api.game.gameutils import assign_teams, create_guess, create_round, timed_out
+from api.game.gameutils import create_guess, create_round, timed_out
 from fsocket import socketio
 from models.configs import Configs
 from models.db import db
