@@ -222,7 +222,6 @@ class ChallengeGame(BaseGame):
         if per_page < 1:
             raise Exception("Please provide valid inputs")
         
-        round = Round.query.filter_by(session_id=session.id,round_number=session.base_rules.max_rounds).first()
         state = self.get_state(data,user,session)
         if state["state"] != "finished":
             raise Exception("The game is not finished first")
