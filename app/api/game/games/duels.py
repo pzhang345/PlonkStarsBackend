@@ -52,7 +52,7 @@ class DuelsGame(PartyGame):
         db.session.add(duel_state)
         db.session.commit()
         
-        socketio.emit("next", self.get_state(data, user, session), namespace="/socket/party", room=session.uuid)
+        socketio.emit("next", self.get_state(data, user, session, only_state=True), namespace="/socket/party", room=session.uuid)
             
     def get_round(self,data,user,session):
         state = self.get_state(data,user,session,only_state=True)
@@ -104,7 +104,7 @@ class DuelsGame(PartyGame):
         socketio.emit("guess", {"user": user.to_json()}, namespace="/socket/party", room=session.uuid)
         
         if Guess.query.filter_by(round_id=round.id).count() >= TeamPlayer.query.join(GameTeam).join(GameTeamLinker).filter(GameTeamLinker.session_id == session.id).count():
-            socketio.emit("next", self.get_state(data, user, session), namespace="/socket/party", room=session.uuid)
+            socketio.emit("next", self.get_state(data, user, session, only_state=True), namespace="/socket/party", room=session.uuid)
         
     def results(self,data,user,session):
         state = self.get_state(data,user,session,only_state=True)
@@ -290,7 +290,7 @@ class DuelsGame(PartyGame):
             
         
         if DuelHp.query.filter_by(state_id=state.id).filter(DuelHp.hp != 0).count() < 1 or session.current_round == session.base_rules.max_rounds:
-            return {"state":"finished"}
+            return {"state":"finished", "round": round.round_number}
     
         return {"state":"results","round":round.round_number}
         
@@ -327,7 +327,7 @@ class DuelsGame(PartyGame):
             state = self.get_state(data,user,session,only_state=True)
             duel_state = DuelState.query.filter_by(round_id=round.id).first()
             if (state["state"] == "results" or state["state"] == "finished") and DuelHp.query.filter_by(state_id=duel_state.id).count() == 0:
-                socketio.emit("next", self.get_state(data, user, session), namespace="/socket/party", room=session.uuid)
+                socketio.emit("next", self.get_state(data, user, session, only_state=True), namespace="/socket/party", room=session.uuid)
                 
     def rules_config(self):
         base = super().rules_config()
