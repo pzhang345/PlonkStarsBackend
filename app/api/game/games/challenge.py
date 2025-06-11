@@ -129,7 +129,7 @@ class ChallengeGame(BaseGame):
     def results(self,data,user,session):
         round_num = data.get("round")
         state = self.get_state(data,user,session)
-        if state["state"] != "results" or state["state"] != "finished":
+        if state["state"] != "results" and state["state"] != "finished":
             raise Exception("Player is not in results state")
         
         if not data.get("round"):
