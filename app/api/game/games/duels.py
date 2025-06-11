@@ -162,7 +162,7 @@ class DuelsGame(PartyGame):
             "lng": round.location.longitude,
             "teams":[]
         }
-        for hp in DuelHp.query.filter_by(state_id=duels_state.id):
+        for hp in DuelHp.query.filter_by(state_id=duels_state.id).order_by(DuelHp.hp.desc()):
             team = hp.team
             prev_round_hp = DuelHp.query.filter_by(state_id=prev_round.duels_state.id, team_id=team.id).first()
             if not prev_round_hp:
@@ -200,7 +200,15 @@ class DuelsGame(PartyGame):
             } for round in rounds],
         }
         
-        teams = GameTeamLinker.query.filter_by(session_id=session.id).join(GameTeam).all()
+        teams = (
+            GameTeamLinker.query.
+            filter_by(session_id=session.id)
+            .join(GameTeam)
+            .join(DuelHp)
+            .join(DuelState)
+            .join(Round)
+            .order_by(func.max(Round.round_number).desc(), func.min(DuelHp.hp).desc())
+        )
         for team in teams:
             team_data = {
                 "team": team.team.to_json(),
@@ -234,11 +242,12 @@ class DuelsGame(PartyGame):
             and not timed_out(round.duels_state.start_time,min(round.base_rules.time_limit, first_guess.time + round.session.duel_rules.guess_time_limit) if first_guess else round.base_rules.time_limit)
             and Guess.query.filter_by(round_id=round.id).count() < TeamPlayer.query.join(GameTeam).join(GameTeamLinker).filter(GameTeamLinker.session_id == session.id).count()):
             
-            game_team = GameTeam.query.join(GameTeamLinker).filter(GameTeamLinker.session_id==session.id).join(TeamPlayer).filter(TeamPlayer.user_id == user.id).first()
-            
+            game_team = GameTeamLinker.query.filter(GameTeamLinker.session_id==session.id).join(GameTeam).join(TeamPlayer).filter(TeamPlayer.user_id == user.id).first()
+            prev_round = self.get_round_(session, session.current_round - 1) if session.current_round > 1 else None
+            hp = session.duel_rules.start_hp if prev_round == None else DuelHp.query.filter_by(state_id=prev_round.duels_state.id, team_id=game_team.team.id).first() if game_team else None
             
             if only_state:
-                if not game_team:
+                if hp == None or hp.hp <= 0:
                     return {"state":"spectating", "round": round.round_number}
                 else:
                     return {
@@ -246,18 +255,22 @@ class DuelsGame(PartyGame):
                         "round": round.round_number
                         }
             
-            low_hp = DuelHp.query.filter_by(team_id=game_team.id).order_by(DuelHp.hp).first()
-            low_hp = low_hp.hp if low_hp else session.duel_rules.start_hp
-            if not game_team or low_hp <= 0:
+            if hp == None or hp.hp <= 0:
                 return {
                     "state":"spectating",
                     "round": round.round_number,
                     "teams": [
                         {
                             **team.to_json(),
-                            "hp": session.duel_rules.start_hp if DuelHp.query.filter_by(state_id=state.id, team_id=team.team.id).count() == 0 else DuelHp.query.filter_by(state_id=state.id, team_id=team.id).first().hp
+                            "hp": session.duel_rules.start_hp
                         } for team in GameTeamLinker.query.filter_by(session_id=session.id)
-                    ]
+                    ] if session.current_round == 1 else [
+                        {
+                            **hp.team.to_json(),
+                            "hp": hp.hp
+                        }
+                        for hp in DuelHp.query.filter_by(state_id=prev_round.state.id).filter(DuelHp.hp > 0).order_by(DuelHp.hp.desc())
+                    ] 
                 }
             
             last_round = self.get_round_(session,session.current_round - 1) if session.current_round > 1 else None
@@ -283,9 +296,14 @@ class DuelsGame(PartyGame):
                 "teams": [
                     {
                         **team.to_json(),
-                        "hp": session.duel_rules.start_hp if last_round == None else DuelHp.query.filter_by(state_id=state.id, team_id=team.team.id).first().hp
+                        "hp": session.duel_rules.start_hp
                     } for team in GameTeamLinker.query.filter_by(session_id=session.id)
-                ]
+                ] if session.current_round == 1 else [
+                    {
+                        **hp.team.to_json(),
+                        "hp": hp.hp
+                    } for hp in DuelHp.query.filter_by(state_id=prev_round.state.id).filter(DuelHp.hp > 0).order_by(DuelHp.hp.desc())
+                ] 
             }
             
         
