@@ -72,7 +72,7 @@ class LiveGame(PartyGame):
         player_count = Player.query.filter_by(session_id=session.id).count()
         guess_count = Guess.query.filter_by(round_id=round.id).count()
         
-        if guess_count < player_count and not timed_out(player.start_time,round.base_rules.time_limit + 1 if round.base_rules.time_limit != -1 else -1):
+        if guess_count < player_count and not timed_out(player.start_time,round.base_rules.time_limit):
             guess = Guess.query.filter_by(user_id=user.id,round_id=round.id).first()
             if guess:
                 return {

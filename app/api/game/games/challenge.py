@@ -81,6 +81,10 @@ class ChallengeGame(BaseGame):
         return ret
     
     def guess(self,data,user,session):
+        state = self.get_state(data,user,session)
+        if state["state"] != "playing":
+            raise Exception("Player is not in a playing state")
+        
         now = datetime.now(tz=pytz.utc)
         lat,lng = data.get("lat"),data.get("lng")
         if lat == None or lng == None:
@@ -90,9 +94,6 @@ class ChallengeGame(BaseGame):
         round = self.get_round_(session,player.current_round)
         
         time = (now - pytz.utc.localize(player.start_time)).total_seconds()
-        
-        if timed_out(player.start_time,round.base_rules.time_limit + 1 if round.base_rules.time_limit != -1 else -1):
-            raise Exception("timed out")
 
         guess = create_guess(lat,lng,user,round,time)
         create_round_stats(user,session,guess=guess)
@@ -127,6 +128,9 @@ class ChallengeGame(BaseGame):
     
     def results(self,data,user,session):
         round_num = data.get("round")
+        state = self.get_state(data,user,session)
+        if state["state"] != "results" or state["state"] != "finished":
+            raise Exception("Player is not in results state")
         
         if not data.get("round"):
             raise Exception("provided round number")
