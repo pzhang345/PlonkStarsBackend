@@ -143,17 +143,24 @@ def create_round_stats(user,session,round_num = None,guess=None):
             total_score=guess.score,
             total_distance=guess.distance
         )
+        db.session.add(round_stats)
     else:
-        round_stats = RoundStats(
-            user_id=user.id,
-            session_id=session.id,
-            round=round_num,
-            total_time=prev_round_stats.total_time + guess.time,
-            total_score=prev_round_stats.total_score + guess.score,
-            total_distance=prev_round_stats.total_distance + guess.distance
-        )
-    
-    db.session.add(round_stats)
+        round_stats = RoundStats.query.filter_by(user_id=user.id,session_id=session.id,round=round_num).first()
+        if not round_stats:
+            round_stats = RoundStats(
+                user_id=user.id,
+                session_id=session.id,
+                round=round_num,
+                total_time=prev_round_stats.total_time + guess.time,
+                total_score=prev_round_stats.total_score + guess.score,
+                total_distance=prev_round_stats.total_distance + guess.distance
+            )
+            db.session.add(round_stats)
+        else:
+            round_stats.total_time = prev_round_stats.total_time + guess.time
+            round_stats.total_score = prev_round_stats.total_score + guess.score
+            round_stats.total_distance = prev_round_stats.total_distance + guess.distance
+
     db.session.commit()
     return round_stats
 
