@@ -78,6 +78,7 @@ class ChallengeGame(BaseGame):
         if round.base_rules.time_limit != -1:
             ret["time"] = pytz.utc.localize(player.start_time) + timedelta(seconds=round.base_rules.time_limit)
             ret["time_limit"] = round.base_rules.time_limit
+            ret["now"] = datetime.now(tz=pytz.utc)
         return ret
     
     def guess(self,data,user,session):

@@ -73,6 +73,7 @@ class DuelsGame(PartyGame):
             time_limit = min(round.base_rules.time_limit, first_guess.time + round.session.duel_rules.guess_time_limit) if first_guess else round.base_rules.time_limit
             ret["time"] = pytz.utc.localize(round.duels_state.start_time) + timedelta(seconds=time_limit)
             ret["time_limit"] = time_limit if time_limit == round.base_rules.time_limit else round.session.duel_rules.guess_time_limit
+            ret["now"] = datetime.now(tz=pytz.utc)
         
         return ret
         

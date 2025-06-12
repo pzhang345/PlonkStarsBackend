@@ -58,6 +58,7 @@ def get_daily(user):
     
     tomorrow = datetime.combine(now.date() + timedelta(days=1), datetime.min.time(),tzinfo=now.tzinfo)
     info["next"] = tomorrow
+    info["now"] = now
     
     info["id"] = daily.session.uuid
     return jsonify(info), 200
