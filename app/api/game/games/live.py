@@ -149,15 +149,16 @@ class LiveGame(PartyGame):
         if state["state"] == "results" or state["state"] == "finished":
             for player in Player.query.filter_by(session_id=session.id):
                 if RoundStats.query.filter_by(user_id=player.user_id,session_id=session.id,round=player.current_round).count() == 0:
-                    if PlayerPlonk.query.filter_by(player_id=player.id).count() > 0:
-                        plonk = PlayerPlonk.query.filter_by(player_id=player.id).first()
+                    plonk = PlayerPlonk.query.filter_by(player_id=player.id).first()
+                    if plonk != None:
                         round = self.get_round_(session, player.current_round)
                         guess = create_guess(plonk.latitude, plonk.longitude, player.user, round, round.base_rules.time_limit)
                         create_round_stats(player.user,session,player.current_round,guess=guess)
-                        db.session.delete(plonk)
-                        db.session.commit()
                     else:
                         create_round_stats(player.user,session,player.current_round)
+                    
+                    db.session.delete(plonk)
+                    db.session.commit()
             socketio.emit("next",self.get_state(data,user,session),namespace="/socket/party",room=session.uuid)
             
         

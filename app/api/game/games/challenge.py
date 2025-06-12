@@ -100,6 +100,7 @@ class ChallengeGame(BaseGame):
         create_round_stats(user,session,guess=guess)
 
         PlayerPlonk.query.filter_by(player_id=player.id).delete()
+        db.session.commit()
         return {"message":"guess added"}
     
     def get_state(self,data,user,session):
@@ -155,6 +156,7 @@ class ChallengeGame(BaseGame):
                 create_round_stats(user,session,guess=guess)
             
         PlayerPlonk.query.filter_by(player_id=player.id).delete()
+        db.session.commit()
             
         state = self.get_state(data,user,session)
         if player.current_round < round_num or (player.current_round == round_num and state["state"] == "playing"):
