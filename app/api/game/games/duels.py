@@ -161,6 +161,8 @@ class DuelsGame(PartyGame):
         ret = {
             "lat": round.location.latitude,
             "lng": round.location.longitude,
+            "max_hp": session.duel_rules.start_hp,
+            "multi": duels_state.multi,
             "teams":[]
         }
         for hp in DuelHp.query.filter_by(state_id=duels_state.id).order_by(DuelHp.hp.desc()):
@@ -198,6 +200,7 @@ class DuelsGame(PartyGame):
             "rounds": [{
                 "lat": round.location.latitude,
                 "lng": round.location.longitude,
+                "multi": round.duels_state.multi,
             } for round in rounds],
         }
         
@@ -260,6 +263,7 @@ class DuelsGame(PartyGame):
                 return {
                     "state":"spectating",
                     "round": round.round_number,
+                    "max_hp": session.duel_rules.start_hp,
                     "teams": [
                         {
                             **team.to_json(),
@@ -280,6 +284,7 @@ class DuelsGame(PartyGame):
                 "state":"playing" if Guess.query.filter_by(round_id=round.id,user_id=user.id).count() == 0 else "waiting",
                 "round": round.round_number, 
                 "team": game_team.to_json(),
+                "max_hp": session.duel_rules.start_hp,
                 "markers": [
                     {
                         "user": marker.player.user.to_json(),
