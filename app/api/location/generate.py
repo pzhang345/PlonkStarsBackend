@@ -28,12 +28,17 @@ async def check_multiple_street_views(bound,num_checks=100):
         tasks = [call_api(session,bound) for _ in range(num_checks)]
         results = await asyncio.gather(*tasks)
     
+        location = None
+        count = 0
         for d in results:
             if d["status"] == "OK":
-                return {"lat":d["location"]["lat"],"lng":d["location"]["lng"],"status":"OK"}
+                location = add_coord(d["location"]["lat"],d["location"]["lng"])
+                count += 1
+                if count >= 3:
+                    break
 
-        return {"status":"None"}
-
+        return location
+    
 def get_random_bounds(map):
     num = random.uniform(0,map.total_weight)
     bounds = MapBound.query.filter_by(map_id=map.id).all()
@@ -44,21 +49,22 @@ def get_random_bounds(map):
     raise Exception("total weight incorrect")
         
     
-def generate_location(map):    
+def generate_location(map): 
+    gen = None   
     for _ in range(10):
         bound = get_random_bounds(map)
         if (bound.start_latitude == bound.end_latitude and bound.start_longitude == bound.end_longitude):
             gen = asyncio.run(check_multiple_street_views(bound,1))
         else:
             gen = asyncio.run(check_multiple_street_views(bound))
-        if gen["status"] == "OK":
+        if gen != None:
             break
     
-    if gen["status"] == "None":
+    if gen == None:
         bound = get_random_bounds(map)
         return db_location(bound)
     
-    return add_coord(gen["lat"],gen["lng"])
+    return gen
 
 def add_coord(lat,lng):
     coord = SVLocation.query.filter(and_(coord_at(SVLocation.latitude,lat),coord_at(SVLocation.longitude,lng))).first()

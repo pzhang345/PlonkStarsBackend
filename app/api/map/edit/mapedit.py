@@ -1,5 +1,5 @@
 import asyncio
-from api.location.generate import add_coord, check_multiple_street_views
+from api.location.generate import check_multiple_street_views
 from api.map.map import haversine
 from models.db import db
 from models.map import MapBound, Bound, MapEditor
@@ -110,17 +110,15 @@ def map_add_bound(map,s_lat,s_lng,e_lat,e_lng,weight):
         if SVLocation.query.filter(s_lat <= SVLocation.latitude,SVLocation.latitude <= e_lat,
                                    s_lng <= SVLocation.longitude,SVLocation.longitude <= e_lng).count() == 0:
             if float_equals(s_lat,e_lat) and float_equals(s_lng,e_lng):
-                status = asyncio.run(check_multiple_street_views(bound,1))
+                gen = asyncio.run(check_multiple_street_views(bound,1))
             else:
-                status = asyncio.run(check_multiple_street_views(bound,300))
+                gen = asyncio.run(check_multiple_street_views(bound,300))
             
-            if status["status"] == "None":
+            if gen == None:
                 return {"error":"No street views found"},400
-        
-            add_coord(status["lat"],status["lng"])
             
-            if float_equals(s_lat,e_lat) and float_equals(s_lng,e_lng) and (s_lng != status["lng"] or s_lat != status["lat"]):
-                return map_add_bound(map,status["lat"],status["lng"],status["lat"],status["lng"],weight)
+            if float_equals(s_lat,e_lat) and float_equals(s_lng,e_lng) and (s_lng != gen.latitude or s_lat != gen.longitude):
+                return map_add_bound(map,gen.latitude,gen.longitude,gen.latitude,gen.longitude,weight)
         
         db.session.add(bound)
         db.session.commit()
