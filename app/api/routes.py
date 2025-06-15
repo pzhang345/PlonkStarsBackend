@@ -7,7 +7,6 @@ from api.session.routes import session_bp
 from api.admin.routes import admin_bp
 from api.party.routes import party_bp
 from api.cosmetics.routes import cosmetics_bp
-from api.time.routes import time_bp
 
 api_bp = Blueprint("api", __name__)
 
@@ -18,4 +17,3 @@ api_bp.register_blueprint(session_bp, url_prefix="/session")
 api_bp.register_blueprint(admin_bp, url_prefix="/admin")
 api_bp.register_blueprint(party_bp, url_prefix="/party")
 api_bp.register_blueprint(cosmetics_bp, url_prefix="/cosmetics")
-api_bp.register_blueprint(time_bp, url_prefix="/time")
