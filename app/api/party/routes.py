@@ -3,6 +3,7 @@ from flask import Blueprint, request, jsonify
 from api.account.auth import login_required
 from api.game.gameutils import delete_orphaned_rules
 from api.party.game.routes import party_game_bp
+from api.party.party import get_users
 from api.party.rules.routes import party_rules_bp
 from models.db import db
 from models.duels import DuelRules
@@ -118,7 +119,7 @@ def is_host(user):
     
 @party_bp.route("/users", methods=["GET"])
 @login_required
-def get_users(user):
+def get_users_(user):
     data = request.args
     code = data.get("code")
     
@@ -127,7 +128,7 @@ def get_users(user):
     if not party:
         return jsonify({"error": "No session yet"}), 404
     
-    members = [member.user.to_json() for member in party.members]
+    members = get_users(party)
     
     return jsonify({"members": members,"host":party.host.username,"this":user.username}), 200
 

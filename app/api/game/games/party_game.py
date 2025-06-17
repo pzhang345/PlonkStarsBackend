@@ -92,6 +92,7 @@ class PartyGame(BaseGame):
             "time": rules.time_limit,
             "type": party.rules.type.name,
             "nmpz": rules.nmpz,
+            "team": False
         }
         
     def join_socket(self,session,user):

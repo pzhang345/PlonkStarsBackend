@@ -451,6 +451,7 @@ class DuelsGame(PartyGame):
         
         return {
             **rules,
+            "team": True,
             "hp": duel_rules.start_hp,
             "multi_start": duel_rules.damage_multi_start_round,
             "multi_mult": duel_rules.damage_multi_mult,

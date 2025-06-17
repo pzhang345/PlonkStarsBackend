@@ -161,7 +161,5 @@ class LiveGame(PartyGame):
                     db.session.commit()
             socketio.emit("next",self.get_state(data,user,session),namespace="/socket/party",room=session.uuid)
             
-        
-            
     def rules_config(self):
         return ChallengeGame().rules_config()

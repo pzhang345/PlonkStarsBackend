@@ -18,7 +18,7 @@ class Party(db.Model):
     
     members = db.relationship("PartyMember", backref="party", cascade="all,delete", passive_deletes=True)
     rules = db.relationship("PartyRules", backref="party", cascade="all,delete", passive_deletes=True, uselist=False)
-    teams = db.relationship("PartyTeams", backref="party", cascade="all,delete", passive_deletes=True, uselist=False)
+    teams = db.relationship("PartyTeams", backref="party", cascade="all,delete", passive_deletes=True)
 
     def __str__(self):
         return f"{self.host}'s party ({self.code})"
@@ -53,4 +53,5 @@ class PartyTeams(db.Model):
     id = Column(Integer, primary_key=True)
     party_id = Column(Integer, ForeignKey("party.id", ondelete="CASCADE"), nullable=False)
     team_id = Column(Integer, ForeignKey("game_teams.id", ondelete="CASCADE"), nullable=False)
+    leader_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     color = Column(Integer, nullable=False)
