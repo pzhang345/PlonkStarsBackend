@@ -1,7 +1,7 @@
 from sqlalchemy import exists, not_
 from models.db import db
 from models.duels import GameTeam, GameTeamLinker, TeamPlayer
-from models.party import PartyTeams
+from models.party import PartyMember, PartyTeams
 
 
 def get_team(users):
@@ -32,3 +32,26 @@ def delete_orphaned_teams():
     
     orphaned_teams.delete(synchronize_session=False)
     db.session.commit()
+    
+
+def teams_to_json(party):
+    party_teams = {"teams": []}
+    teams = party.teams
+    for team in teams:
+        party_teams["teams"] += [
+            {
+                "team_leader": team.leader.username,
+                "color": team.color,
+                "members": [member.user.username for member in TeamPlayer.query.filter_by(team_id=team.team_id).all()]
+            } for team in teams
+        ]
+    
+    spectators = (PartyMember.query
+        .outerjoin(TeamPlayer, TeamPlayer.user_id == PartyMember.user_id)
+        .filter(
+            PartyMember.party_id == party.id,
+            TeamPlayer.user_id == None
+        )
+    )
+    party_teams["spectators"] = [member.user.username for member in spectators]
+    return party_teams
