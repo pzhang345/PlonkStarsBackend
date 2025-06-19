@@ -1,4 +1,5 @@
 from datetime import datetime
+import uuid
 
 import pytz
 from sqlalchemy import Boolean, Column, DateTime, Enum, ForeignKey, Integer, String, UniqueConstraint
@@ -51,6 +52,7 @@ class PartyTeams(db.Model):
     __tablename__ = "party_teams"
     
     id = Column(Integer, primary_key=True)
+    uuid = Column(String(36), default=lambda: str(uuid.uuid4()), unique=True)
     party_id = Column(Integer, ForeignKey("party.id", ondelete="CASCADE"), nullable=False)
     team_id = Column(Integer, ForeignKey("game_teams.id", ondelete="CASCADE"), nullable=False)
     leader_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)

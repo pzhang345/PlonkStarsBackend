@@ -5,6 +5,7 @@ from api.game.gameutils import delete_orphaned_rules
 from api.party.game.routes import party_game_bp
 from api.party.party import get_users
 from api.party.rules.routes import party_rules_bp
+from api.party.teams.routes import party_teams_bp
 from models.db import db
 from models.duels import DuelRules
 from models.party import Party, PartyMember, PartyRules
@@ -17,6 +18,7 @@ from fsocket import socketio
 party_bp = Blueprint("party_bp", __name__)
 party_bp.register_blueprint(party_game_bp, url_prefix="/game")
 party_bp.register_blueprint(party_rules_bp, url_prefix="/rules")
+party_bp.register_blueprint(party_teams_bp, url_prefix="/teams")
 
 @party_bp.route("/create", methods=["POST"])
 @login_required

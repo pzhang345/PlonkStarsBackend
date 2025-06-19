@@ -1,7 +1,6 @@
 from flask import Blueprint, jsonify, request
 
 from api.account.auth import login_required
-from api.party.party import get_teams
 from api.party.teams.teams import teams_to_json
 from models.party import Party
 party_teams_bp =  Blueprint("party_teams_bp", __name__, url_prefix="/party/teams")
