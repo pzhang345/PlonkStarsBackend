@@ -3,7 +3,6 @@ from flask import Blueprint, request, jsonify
 from api.account.auth import login_required
 from api.game.gameutils import delete_orphaned_rules
 from api.party.game.routes import party_game_bp
-from api.party.party import get_users
 from api.party.rules.routes import party_rules_bp
 from api.party.teams.routes import party_teams_bp
 from models.db import db
@@ -130,7 +129,7 @@ def get_users_(user):
     if not party:
         return jsonify({"error": "No session yet"}), 404
     
-    members = get_users(party)
+    members = [member.user.to_json() for member in party.members]
     
     return jsonify({"members": members,"host":party.host.username,"this":user.username}), 200
 

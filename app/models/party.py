@@ -1,4 +1,5 @@
 from datetime import datetime
+import random
 import uuid
 
 import pytz
@@ -19,7 +20,7 @@ class Party(db.Model):
     
     members = db.relationship("PartyMember", backref="party", cascade="all,delete", passive_deletes=True)
     rules = db.relationship("PartyRules", backref="party", cascade="all,delete", passive_deletes=True, uselist=False)
-    teams = db.relationship("PartyTeams", backref="party", cascade="all,delete", passive_deletes=True)
+    teams = db.relationship("PartyTeam", backref="party", cascade="all,delete", passive_deletes=True)
 
     def __str__(self):
         return f"{self.host}'s party ({self.code})"
@@ -48,7 +49,7 @@ class PartyRules(db.Model):
     base_rule_id = Column(Integer, ForeignKey("base_rules.id", ondelete="CASCADE"),nullable=False)
     duel_rules_id = Column(Integer, ForeignKey("duel_rules.id", ondelete="CASCADE"),nullable=False)
     
-class PartyTeams(db.Model):
+class PartyTeam(db.Model):
     __tablename__ = "party_teams"
     
     id = Column(Integer, primary_key=True)
@@ -56,4 +57,18 @@ class PartyTeams(db.Model):
     party_id = Column(Integer, ForeignKey("party.id", ondelete="CASCADE"), nullable=False)
     team_id = Column(Integer, ForeignKey("game_teams.id", ondelete="CASCADE"), nullable=False)
     leader_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    color = Column(Integer, nullable=False)
+    color = Column(Integer, nullable=False, default=lambda: random.randint(0,255 * 255 * 255))
+
+    __table_args__ = (
+        UniqueConstraint('party_id', 'color'),
+        UniqueConstraint('party_id', 'team_id'),
+        UniqueConstraint('party_id', 'leader_id')
+    )
+    
+    def to_json(self):
+        return {
+            "team_leader": self.leader.username,
+            "color": self.color,
+            "uuid": self.team_id,
+            "members": [member.user.username for member in self.team.players]
+        }

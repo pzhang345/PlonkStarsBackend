@@ -65,8 +65,8 @@ class GameTeam(db.Model):
     hash = Column(String(50), nullable=False, unique=True)
         
     session_team = db.relationship("GameTeamLinker", backref="team", cascade="all,delete", passive_deletes=True)
-    party_team = db.relationship("PartyTeams", backref="team", cascade="all,delete", passive_deletes=True)
-    team_players = db.relationship("TeamPlayer", backref="team", cascade="all,delete", passive_deletes=True)
+    party_team = db.relationship("PartyTeam", backref="team", cascade="all,delete", passive_deletes=True)
+    players = db.relationship("TeamPlayer", backref="team", cascade="all,delete", passive_deletes=True)
     round_hps = db.relationship("DuelHp", backref="team", cascade="all,delete", passive_deletes=True)
     
     def to_json(self):
