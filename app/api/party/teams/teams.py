@@ -32,6 +32,7 @@ def add_to_team(party ,user, party_team):
     party_team.team_id = team.id
     delete_orphaned_teams()
     db.session.commit()
+    socketio.emit("add_team_user", {"id":party_team.uuid, "user": user.username}, namespace="/socket/party", room=party.code)
     
     
 def remove_from_team(party,user):
