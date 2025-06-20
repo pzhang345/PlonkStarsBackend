@@ -7,7 +7,7 @@ from models.duels import GameTeam, TeamPlayer
 from models.party import Party, PartyMember, PartyTeam
 from models.user import User
 
-party_teams_bp =  Blueprint("party_teams_bp", __name__, url_prefix="/party/teams")
+party_teams_bp =  Blueprint("party_teams_bp", __name__)
 
 @party_teams_bp.route("", methods=["GET"])
 @login_required
@@ -29,13 +29,13 @@ def create_team(user):
     if PartyMember.query.filter_by(user_id=user.id, party_id=party.id).count() == 0:
         return jsonify({"error":"not in party"})
     
-    
+    remove_from_team(party, user)
     team = get_teams([user.id])
     party_team = PartyTeam(team_id=team.id,party_id=party.id,leader_id=user.id)
     socketio.emit("new_team", party_team.to_json() ,namespace="/socket/party",room=code)
     return jsonify({"message":"team created"}),200
 
-@party_teams_bp.route("/leave",method=["POST"])
+@party_teams_bp.route("/leave",methods=["POST"])
 @login_required
 def leave_team(user):
     data = request.get_json()
@@ -46,7 +46,7 @@ def leave_team(user):
 
     return jsonify({"message":"team left"}),200
 
-@party_teams_bp.route("/join", method=["POST"])
+@party_teams_bp.route("/join", methods=["POST"])
 @login_required
 def join_team(user):
     data = request.get_json()
@@ -61,9 +61,9 @@ def join_team(user):
     
     add_to_team(party,user,party_team)
     
-    return({"message":"team joined"}),200
+    return jsonify({"message":"team joined"}),200
 
-@party_teams_bp.route("/kick", method=["POST"])
+@party_teams_bp.route("/kick", methods=["POST"])
 @login_required
 def kick_player(user):
     data = request.get_json()

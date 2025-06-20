@@ -65,7 +65,6 @@ def delete_orphaned_teams():
     orphaned_teams.delete(synchronize_session=False)
     db.session.commit()
     
-
 def teams_to_json(party):
     party_teams = {"teams": []}
     teams = party.teams
