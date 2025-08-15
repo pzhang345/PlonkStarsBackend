@@ -1,1 +1,1 @@
-web: cd app && sh -c "cd app && celery -A celery_worker.celery worker --loglevel=info --pool=solo & gunicorn --worker-class eventlet -w 1 --bind 0.0.0.0:$PORT app:app"
+web: cd app && sh -c "celery -A celery_worker.celery worker --loglevel=info --pool=threads & gunicorn --worker-class eventlet -w 1 --bind 0.0.0.0:$PORT app:app"
