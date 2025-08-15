@@ -71,7 +71,7 @@ class GameTeam(db.Model):
     
     def to_json(self):
         return {
-            "players": [player.user.to_json() for player in self.team_players],
+            "players": [player.user.username for player in self.team_players],
         }
     
 class TeamPlayer(db.Model):

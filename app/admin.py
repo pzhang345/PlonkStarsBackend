@@ -1,8 +1,10 @@
+import warnings
+warnings.filterwarnings("ignore", category=UserWarning, module="flask_admin")
+
 from flask import request, redirect, url_for, flash, session
 from sqlalchemy import inspect
 from flask_admin.contrib.sqla import ModelView
 from flask_admin import Admin, AdminIndexView, expose
-from api.account.auth import login_required
 from api.account.routes import bcrypt
 
 from models.db import db

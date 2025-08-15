@@ -39,6 +39,8 @@ class LiveGame(PartyGame):
         return {"id":session.uuid}
     
     def next(self,data,user,session):
+        from api.game.tasks import update_game_state
+        
         if user.id != session.host_id:
             raise Exception("You are not the host")
         ret = ChallengeGame().next(data, user, session)
@@ -47,18 +49,27 @@ class LiveGame(PartyGame):
             player.current_round = host_player.current_round
             player.start_time = host_player.start_time
         db.session.commit()
+        
         socketio.emit("next",self.get_state(data,user,session),namespace="/socket/party",room=session.uuid)
+        
+        round = self.get_round_(session, host_player.current_round)
+        if round.base_rules.time_limit > 0:
+            update_game_state({"type":"ping"}, user, session, round.base_rules.time_limit + 1)
+        
         return ret
         
     def get_round(self, data, user, session):
         return ChallengeGame().get_round(data, user, session)
         
     def guess(self, data, user, session):
+        from api.game.tasks import stop_current_task
+        
         ChallengeGame().guess(data, user, session)
         player = Player.query.filter_by(user_id=user.id,session_id=session.id).first()
         round = self.get_round_(session,player.current_round)
         socketio.emit("guess",user.to_json(),namespace="/socket/party",room=session.uuid)
         if Player.query.filter_by(session_id=session.id).count() <= Guess.query.filter_by(round_id=round.id).count():
+            stop_current_task(session)
             socketio.emit("next",self.get_state(data,user,session),namespace="/socket/party",room=session.uuid)
             
         return {"message":"guess submitted"}
@@ -144,22 +155,28 @@ class LiveGame(PartyGame):
             ChallengeGame().ping(data, user, session)
             return
         
-        state = self.get_state(data, user, session)
-        
-        if state["state"] == "results" or state["state"] == "finished":
-            for player in Player.query.filter_by(session_id=session.id):
-                if RoundStats.query.filter_by(user_id=player.user_id,session_id=session.id,round=player.current_round).count() == 0:
-                    plonk = PlayerPlonk.query.filter_by(player_id=player.id).first()
-                    if plonk != None:
-                        round = self.get_round_(session, player.current_round)
-                        guess = create_guess(plonk.latitude, plonk.longitude, player.user, round, round.base_rules.time_limit)
-                        create_round_stats(player.user,session,player.current_round,guess=guess)
-                    else:
-                        create_round_stats(player.user,session,player.current_round)
-                    
-                    db.session.delete(plonk)
-                    db.session.commit()
-            socketio.emit("next",self.get_state(data,user,session),namespace="/socket/party",room=session.uuid)
+        elif data.get("type") == "ping":
+            state = self.get_state(data, user, session)
+            if state["state"] == "results" or state["state"] == "finished":
+                for player in Player.query.filter_by(session_id=session.id):
+                    if RoundStats.query.filter_by(user_id=player.user_id,session_id=session.id,round=player.current_round).count() == 0:
+                        plonk = PlayerPlonk.query.filter_by(player_id=player.id).first()
+                        if plonk != None:
+                            round = self.get_round_(session, player.current_round)
+                            guess = create_guess(plonk.latitude, plonk.longitude, player.user, round, round.base_rules.time_limit)
+                            create_round_stats(player.user,session,player.current_round,guess=guess)
+                        else:
+                            create_round_stats(player.user,session,player.current_round)
+                        
+                        db.session.delete(plonk)
+                        db.session.commit()
+                socketio.emit("next",self.get_state(data,user,session),namespace="/socket/party",room=session.uuid)
             
     def rules_config(self):
         return ChallengeGame().rules_config()
+    
+    def get_rules(self,party,data):
+        rules = super().get_rules(party,data)
+        rules["team_type"] = "solo"
+        return rules
+        

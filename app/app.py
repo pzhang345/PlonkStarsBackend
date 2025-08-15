@@ -1,3 +1,6 @@
+import eventlet
+eventlet.monkey_patch(socket=True)
+
 from flask import Flask
 from flask_migrate import Migrate
 from flask_cors import CORS

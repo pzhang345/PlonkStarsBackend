@@ -347,7 +347,7 @@ class DuelsGame(PartyGame):
             db.session.commit()
             socketio.emit("plonk", {"user": user.to_json(), "lat": lat, "lng":lng}, namespace="/socket/party", room=f"team_{game_team.hash}")
 
-        if data.get("type") == "ping":
+        elif data.get("type") == "ping":
             state = self.get_state(data,user,session,only_state=True)
             duel_state = DuelState.query.filter_by(round_id=round.id).first()
             if (state["state"] == "results" or state["state"] == "finished") and DuelHp.query.filter_by(state_id=duel_state.id).count() == 0:
@@ -451,7 +451,7 @@ class DuelsGame(PartyGame):
         
         return {
             **rules,
-            "team": True,
+            "team_type": "team",
             "hp": duel_rules.start_hp,
             "multi_start": duel_rules.damage_multi_start_round,
             "multi_mult": duel_rules.damage_multi_mult,

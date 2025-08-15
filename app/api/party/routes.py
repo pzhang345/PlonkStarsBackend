@@ -5,19 +5,22 @@ from api.game.gameutils import delete_orphaned_rules
 from api.party.game.routes import party_game_bp
 from api.party.rules.routes import party_rules_bp
 from api.party.teams.routes import party_teams_bp
+from api.party.users.routes  import party_users_bp
+from api.party.users.users import remove_user_from_party
 from models.db import db
 from models.duels import DuelRules
 from models.party import Party, PartyMember, PartyRules
 from models.session import BaseRules
-from models.user import User
 from models.configs import Configs
 
 from fsocket import socketio
+from utils import return_400_on_error
 
 party_bp = Blueprint("party_bp", __name__)
 party_bp.register_blueprint(party_game_bp, url_prefix="/game")
 party_bp.register_blueprint(party_rules_bp, url_prefix="/rules")
 party_bp.register_blueprint(party_teams_bp, url_prefix="/teams")
+party_bp.register_blueprint(party_users_bp, url_prefix="/users")
 
 @party_bp.route("/create", methods=["POST"])
 @login_required
@@ -117,46 +120,6 @@ def is_host(user):
     
     party = Party.query.filter_by(code=code).first_or_404("Cannot find party")
     return jsonify({"is_host":party.host_id==user.id}), 200
-    
-@party_bp.route("/users", methods=["GET"])
-@login_required
-def get_users_(user):
-    data = request.args
-    code = data.get("code")
-    
-    party = Party.query.filter_by(code=code).first_or_404("Cannot find party")
-    
-    if not party:
-        return jsonify({"error": "No session yet"}), 404
-    
-    members = [member.user.to_json() for member in party.members]
-    
-    return jsonify({"members": members,"host":party.host.username,"this":user.username}), 200
-
-@party_bp.route("/users/remove", methods=["POST"])
-@login_required
-def remove_user(user):
-    data = request.get_json()
-    code = data.get("code")
-    username = data.get("username")
-    
-    remove_user = User.query.filter_by(username=username).first_or_404("Cannot find user")
-    party = Party.query.filter_by(code=code).first_or_404("Cannot find party")
-    
-    if party.host_id != user.id:
-        return jsonify({"error": "You are not the host of this party"}), 403
-    
-    if remove_user.id == party.host_id:
-        return jsonify({"error": "You cannot remove the host"}), 403
-    
-    member = PartyMember.query.filter_by(party_id=party.id, user_id=remove_user.id).first_or_404("Cannot find member")
-    db.session.delete(member)
-    db.session.commit()
-    
-    socketio.emit("leave",{"reason":"Kicked from party"},namespace="/socket/party", room=f"{member.user_id}_{code}")
-    socketio.emit("remove_user", {"username": member.user.username}, namespace="/socket/party", room=code)
-    
-    return jsonify({"message": "removed user"}), 200
 
 @party_bp.route("/leave", methods=["POST"])
 @login_required
@@ -165,14 +128,8 @@ def leave_party(user):
     code = data.get("code")
     
     party = Party.query.filter_by(code=code).first_or_404("Cannot find party")
-    member = PartyMember.query.filter_by(party_id=party.id,user_id=user.id).first_or_404("Cannot find member")
-    db.session.delete(member)
-    db.session.commit()
     
-    socketio.emit("leave",namespace="/socket/party", room=f"{member.user_id}_{code}")
-    socketio.emit("remove_user", {"username": user.username}, namespace="/socket/party", room=code)
-    
-    return jsonify({"message": "left party"}), 200
+    return return_400_on_error(remove_user_from_party, party, user, reason="Party left")
 
 @party_bp.route("/delete", methods=["POST"])
 @login_required

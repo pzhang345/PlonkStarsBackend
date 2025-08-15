@@ -316,23 +316,24 @@ class ChallengeGame(BaseGame):
         return super().rules_config()
     
     def ping(self, data, user, session):
-        state = self.get_state(data, user, session)
-        if state["state"] != "playing":
-            raise Exception("Player is not in a playing state")
-        
-        lat = data.get("lat")
-        lng = data.get("lng")
-        if  lat == None or lng == None:
-            raise Exception("Please provide lat and lng")
-        
-        player = self.get_player(user, session)
-        player_plonk = PlayerPlonk.query.filter_by(player_id=player.id).first()
-        if not player_plonk:
-            player_plonk = PlayerPlonk(player_id=player.id,latitude=lat,longitude=lng)
-            db.session.add(player_plonk)
-        else:
-            player_plonk.latitude = lat
-            player_plonk.longitude = lng
-        db.session.commit()
+        if data.get("type") == "plonk":
+            state = self.get_state(data, user, session)
+            if state["state"] != "playing":
+                raise Exception("Player is not in a playing state")
+            
+            lat = data.get("lat")
+            lng = data.get("lng")
+            if  lat == None or lng == None:
+                raise Exception("Please provide lat and lng")
+            
+            player = self.get_player(user, session)
+            player_plonk = PlayerPlonk.query.filter_by(player_id=player.id).first()
+            if not player_plonk:
+                player_plonk = PlayerPlonk(player_id=player.id,latitude=lat,longitude=lng)
+                db.session.add(player_plonk)
+            else:
+                player_plonk.latitude = lat
+                player_plonk.longitude = lng
+            db.session.commit()
         
         

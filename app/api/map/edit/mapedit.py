@@ -1,4 +1,3 @@
-import asyncio
 from api.location.generate import check_multiple_street_views
 from api.map.map import haversine
 from models.db import db
@@ -110,9 +109,9 @@ def map_add_bound(map,s_lat,s_lng,e_lat,e_lng,weight):
         if SVLocation.query.filter(s_lat <= SVLocation.latitude,SVLocation.latitude <= e_lat,
                                    s_lng <= SVLocation.longitude,SVLocation.longitude <= e_lng).count() == 0:
             if float_equals(s_lat,e_lat) and float_equals(s_lng,e_lng):
-                gen = asyncio.run(check_multiple_street_views(bound,1))
+                gen = check_multiple_street_views(bound,1)
             else:
-                gen = asyncio.run(check_multiple_street_views(bound,300))
+                gen = check_multiple_street_views(bound, 300)
             
             if gen == None:
                 return {"error":"No street views found"},400

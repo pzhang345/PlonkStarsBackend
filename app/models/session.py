@@ -31,6 +31,7 @@ class Session(db.Model):
     teams_linker = db.relationship("GameTeamLinker", backref="session", cascade="all,delete", passive_deletes=True)
     duel_rules_link = db.relationship("DuelRulesLinker", backref="session", uselist=False, cascade="all, delete-orphan")
     duel_rules = db.relationship("DuelRules", secondary="duel_rules_linker", uselist=False, viewonly=True)
+    celery_task = db.relationship("CeleryTaskTracker", backref="session", cascade="all,delete", passive_deletes=True, uselist=False)
     
     def __str__(self):
         return self.uuid
@@ -133,3 +134,14 @@ class PlayerPlonk(db.Model):
     player_id = Column(Integer, ForeignKey("players.id", ondelete="CASCADE"), nullable=False,unique=False)
     latitude = Column(Double, nullable=False)
     longitude = Column(Double, nullable=False)
+    
+class CeleryTaskTracker(db.Model):
+    __tablename__ = "celery_task_tracker"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    session_id = Column(Integer, ForeignKey("sessions.id", ondelete="CASCADE"), nullable=False)
+    task_id = Column(String(36), nullable=False)
+    
+    __table_args__ = (
+        UniqueConstraint('session_id'),
+    )
