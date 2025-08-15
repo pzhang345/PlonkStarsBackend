@@ -8,6 +8,7 @@ from flask_cors import CORS
 from fsocket import socketio
 from api.routes import api_bp
 from api.socket import register_sockets
+from base_celery import init_celery
 
 from cli.cli import register_commands
 
@@ -26,6 +27,7 @@ with app.app_context():
 migrate = Migrate(app, db,directory=app.config["MIGRATION_DIR"])
 
 
+init_celery(app)
 admin.init_app(app)
 socketio.init_app(app)
 app.register_blueprint(api_bp, url_prefix="/api")

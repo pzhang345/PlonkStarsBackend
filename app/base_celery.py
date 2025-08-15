@@ -11,13 +11,13 @@ def init_celery(app):
                 return self.run(*args, **kwargs)
 
     celery.Task = ContextTask
-    celery.conf.update(
-        result_expires=3600,
-    )
     
+    celery.conf.update(result_expires=3600,)
+
     if Config.REDIS_URL.startswith("rediss://"):
         celery.conf.broker_use_ssl = {
-            "ssl_cert_reqs": ssl.CERT_NONE  # or 'required' if you have certs
+            "ssl_cert_reqs": ssl.CERT_NONE
         }
+    
     celery.autodiscover_tasks(['api.game.tasks'])
     return celery
