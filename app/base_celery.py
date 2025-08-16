@@ -2,7 +2,7 @@ from celery import Celery
 from config import Config
 import ssl
 
-celery = Celery(__name__, broker=Config.REDIS_URL_WITH_EXTENSION, backend=Config.REDIS_URL_WITH_EXTENSION)
+celery = Celery(__name__, broker=Config.REDIS_URL, backend=Config.REDIS_URL)
 
 def init_celery(app):
     class ContextTask(celery.Task):
