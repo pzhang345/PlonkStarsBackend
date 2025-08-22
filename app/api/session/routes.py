@@ -16,7 +16,9 @@ session_bp = Blueprint("session_bp", __name__)
 @login_required
 def get_session(user):
     data = request.args
-    session = Session.query.filter_by(uuid=data.get("id")).first_or_404("Session not found")
+    session = Session.query.filter_by(uuid=data.get("id")).first()
+    if not session:
+        return jsonify({"error":"Session not found"}),404
     return return_400_on_error(get_session_info, session, user)
 
 @session_bp.route("/daily", methods=["GET"])

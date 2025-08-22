@@ -77,7 +77,7 @@ def get_state(user):
         return jsonify({"error":"provided session id"}),400
     
     session = Session.query.filter_by(uuid=session_id).first_or_404("Session not found")
-    return return_400_on_error(game_type[session.type].get_state,data,user,session)[0:2]
+    return return_400_on_error(game_type[session.type].get_state_,data,user,session)[0:2]
     
 @game_bp.route("/results",methods=["GET"])
 @login_required
@@ -111,6 +111,17 @@ def ping(user):
         return jsonify({"error":"provided bad session id"}), 400
     session = Session.query.filter_by(uuid=session_id).first_or_404("Session not found")
     return return_400_on_error(game_type[session.type].ping,data,user,session)[0:2]
+
+@game_bp.route("/plonk",methods=["POST"])
+@login_required
+def plonk(user):
+    data = request.get_json()
+    session_id = data.get("id")
+    
+    if not session_id:
+        return jsonify({"error":"provided bad session id"}), 400
+    session = Session.query.filter_by(uuid=session_id).first_or_404("Session not found")
+    return return_400_on_error(game_type[session.type].plonk,data,user,session)[0:2]
 
 @game_bp.route("/rules/config",methods=["GET"])
 @login_required

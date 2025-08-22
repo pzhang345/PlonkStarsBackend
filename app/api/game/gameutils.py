@@ -6,7 +6,7 @@ from sqlalchemy import exists, not_
 from models.db import db
 from models.duels import DuelRules, DuelRulesLinker
 from models.party import PartyRules
-from models.session import BaseRules, Guess,Round, Session
+from models.session import BaseRules, Guess, PlayerPlonk,Round, Session
 from models.map import GenerationTime
 from models.stats import MapStats, RoundStats,UserMapStats
 from api.location.generate import generate_location,get_random_bounds,db_location
@@ -119,6 +119,16 @@ def create_guess(lat,lng,user,round,time):
     
     return guess
 
+def create_guess_on_timeout(user,round):
+        player_plonk = PlayerPlonk.query.filter_by(user_id=user.id, round_id=round.id).first()
+        if player_plonk:
+            guess = create_guess(player_plonk.latitude, player_plonk.longitude, user, round, round.base_rules.time_limit)
+            db.session.delete(player_plonk)
+            db.session.commit()
+            return guess
+        else:
+            return None
+
 def create_round_stats(user,session,round_num = None,guess=None):
     if round_num == None:
         round_num = guess.round.round_number
@@ -188,3 +198,15 @@ def delete_orphaned_rules():
     orphan_base_rules.delete(synchronize_session=False)
     orphan_duel_rules.delete(synchronize_session=False)
     db.session.commit()
+    
+def create_plonk(user, round, lat, lng):
+    player_plonk = PlayerPlonk.query.filter_by(user_id=user.id,round_id=round.id).first()
+    if not player_plonk:
+        player_plonk = PlayerPlonk(user_id=user.id,round_id=round.id,latitude=lat,longitude=lng)
+        db.session.add(player_plonk)
+    else:
+        player_plonk.latitude = lat
+        player_plonk.longitude = lng
+    db.session.commit()
+    
+    return player_plonk

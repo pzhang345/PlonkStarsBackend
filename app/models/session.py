@@ -11,6 +11,21 @@ class GameType(enum.Enum):
     LIVE = 1
     DUELS = 2
     
+class GameState(enum.Enum):
+    RESTRICTED = -1
+    NOT_STARTED = 0
+    GUESSING = 1
+    RESULTS = 2
+    FINISHED = 3
+    
+class GameStateTracker(db.Model):
+    __tablename__ = "game_state_tracker"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    session_id = Column(Integer, ForeignKey("sessions.id", ondelete="CASCADE"), nullable=False, unique=True)
+    state = Column(Enum(GameState), nullable=False, default=GameState.NOT_STARTED)
+    time = Column(DateTime, nullable=False, default=lambda: datetime.now(tz=pytz.utc))
+
 class Session(db.Model):
     __tablename__ = "sessions"
 
@@ -32,6 +47,7 @@ class Session(db.Model):
     duel_rules_link = db.relationship("DuelRulesLinker", backref="session", uselist=False, cascade="all, delete-orphan")
     duel_rules = db.relationship("DuelRules", secondary="duel_rules_linker", uselist=False, viewonly=True)
     celery_task = db.relationship("CeleryTaskTracker", backref="session", cascade="all,delete", passive_deletes=True, uselist=False)
+    state = db.relationship("GameStateTracker", backref="session", cascade="all,delete", passive_deletes=True, uselist=False)
     
     def __str__(self):
         return self.uuid
@@ -69,6 +85,7 @@ class Round(db.Model):
 
     guesses = db.relationship("Guess", backref="round", cascade="all,delete", passive_deletes=True)
     duel_state = db.relationship("DuelState", backref="round", cascade="all,delete", passive_deletes=True, uselist=False)
+    plonks = db.relationship("PlayerPlonk", backref="round", cascade="all,delete", passive_deletes=True)
     
     __table_args__ = (
         UniqueConstraint('session_id', 'round_number'),
@@ -131,9 +148,14 @@ class PlayerPlonk(db.Model):
     __tablename__ = "player_plonk"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    player_id = Column(Integer, ForeignKey("players.id", ondelete="CASCADE"), nullable=False,unique=False)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    round_id = Column(Integer,ForeignKey("rounds.id", ondelete="CASCADE"), nullable=False)
     latitude = Column(Double, nullable=False)
     longitude = Column(Double, nullable=False)
+    
+    __table_args__ = (
+        UniqueConstraint('user_id', 'round_id'),
+    )
     
 class CeleryTaskTracker(db.Model):
     __tablename__ = "celery_task_tracker"

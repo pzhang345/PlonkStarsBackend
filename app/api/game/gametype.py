@@ -18,5 +18,3 @@ str_to_type_socket = {
     "live": GameType.LIVE,
     "duels": GameType.DUELS
 }
-
-

@@ -1,7 +1,7 @@
 import pytz
 from api.game.gameutils import create_round, delete_orphaned_rules
 from models.party import Party
-from models.session import BaseRules, DailyChallenge, GameType, Session
+from models.session import BaseRules, CeleryTaskTracker, DailyChallenge, GameType, PlayerPlonk, Session
 from datetime import datetime, timedelta
 from models.db import db
 from models.configs import Configs
@@ -9,13 +9,13 @@ from fsocket import socketio
 from sqlalchemy import desc, func
 from models.stats import RoundStats
 from models.cosmetics import UserCoins
+from api.game.gametype import game_type
 
 def register_commands(app):
     @app.cli.command("create-daily")
     def create_daily():
-        today = datetime.now(tz=pytz.utc).date()
-
         """Create a new daily challenge"""
+        today = datetime.now(tz=pytz.utc).date()
         tomorrow = today + timedelta(days=1)
         if DailyChallenge.query.filter_by(date=tomorrow).first():
             print("Daily challenge already exists for tomorrow.")
@@ -112,14 +112,11 @@ def register_commands(app):
 
         print("Coins awarded successfully")
     
-# New CLI command to test awarding coins manually
-    # @app.cli.command("test-award-coins")
-    # def test_award_coins():
-    #     today = datetime.now(tz=pytz.utc).date()
-    #     daily = DailyChallenge.query.filter_by(date=today).first()
-    #     if not daily:
-    #         print("No daily challenge found for today.")
-    #         return
-    #     print(f"Awarding coins for session_id {daily.session_id} (daily challenge for {today})")
-    #     result, status = award_daily_challenge_coins(daily.session_id)
-    #     print(result["message"])
+    @app.cli.command("clean-db")
+    def clean_db():
+        """Cleans up the database"""
+        delete_orphaned_rules()
+        for plonk in PlayerPlonk.query.all():
+            session = plonk.round.session
+            game_type[session.type].ping(plonk.user,session)
+        print("Database cleaned successfully")

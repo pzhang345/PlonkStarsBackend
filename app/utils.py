@@ -28,6 +28,6 @@ def return_400_on_error(method, *args, json=False, **kwargs):
                 return ret
             return jsonify(ret),200
     except Exception as e:
-        raise Exception()
+        print(e)
         return jsonify({"error":str(e)}),400
     return jsonify(ret[0]),*ret[1:]

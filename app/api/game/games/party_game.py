@@ -1,15 +1,41 @@
+from datetime import datetime
 from flask_socketio import join_room
+import pytz
 from sqlalchemy import func
 
 from api.game.games.basegame import BaseGame
+from fsocket import socketio
 from models.db import db
 from models.configs import Configs
 from models.map import GameMap
-from models.session import BaseRules
+from models.session import Session, BaseRules, GameStateTracker
 from models.stats import MapStats
 
 
 class PartyGame(BaseGame):
+    def create(self, host, type, base_rules):
+        session = Session(host_id=host.id, type=type, base_rule_id=base_rules.id)
+        db.session.add(session)
+        db.session.flush()
+        db.session.add(GameStateTracker(session_id=session.id))
+        db.session.commit()
+        return session
+    
+    def change_state(self, session, state, time=None):
+        game_state_tracker = GameStateTracker.query.filter_by(session_id=session.id).first()
+        if not game_state_tracker:
+            game_state_tracker = GameStateTracker(session_id=session.id)
+            db.session.add(game_state_tracker)
+        
+        game_state_tracker.state = state
+        game_state_tracker.time = time if time else datetime.now(tz=pytz.utc)
+        
+        db.session.commit()
+        socketio.emit("next", {"state":state.name}, namespace="/socket/party", room=session.uuid)
+        
+    def update_state(self, data, session):
+        pass
+        
     def set_default_rules(self, party, data=None):
         type = party.rules.type
         prefix = type.name.upper() if Configs.in_(f"{type.name.upper()}_DEFAULT_ROUNDS") else "GAME"

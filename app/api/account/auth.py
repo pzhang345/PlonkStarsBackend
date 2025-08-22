@@ -46,6 +46,6 @@ def login_required(f):
         token = request.args.get('token') or request.headers.get("Authorization")
         user = get_user_from_token(token)
         if not user:
-            jsonify({"error": "login required"}), 403
+            return jsonify({"error": "login required"}), 403
         return f(user, *args, **kwargs)
     return decorated_function

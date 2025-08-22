@@ -75,7 +75,15 @@ class BaseGame(ABC):
     def get_state(self,data,user,session):
         pass
     
-    def ping(self,data,user,session):
+    def get_state_(self, data, user, session):
+        state = self.get_state(data, user, session)
+        state["state"] = state["state"].name
+        return state
+    
+    def plonk(self, data, user, session):
+        pass
+    
+    def ping(self, user, session):
         pass
     
     def rules_config(self):

@@ -8,16 +8,14 @@ from api.game.gameutils import create_guess, create_round, timed_out
 from fsocket import socketio
 from models.configs import Configs
 from models.db import db
-from models.session import GameType, Guess, Round, Session
+from models.session import GameType, Guess, Round
 from models.duels import DuelRules, DuelState, GameTeam, GameTeamLinker, TeamPlayer, DuelHp, DuelRulesLinker, MarkerPosition
 from models.user import User
 class DuelsGame(PartyGame):
     def create(self,data,user,party):
-        rules = party.rules
-        session = Session(host_id=user.id,type=GameType.DUELS,base_rule_id=rules.base_rule_id)
-        db.session.add(session)
-        db.session.flush()
+        session = super().create(user,GameType.DUELS,party.rules)
         
+        rules = party.rules
         db.session.add(DuelRulesLinker(session_id=session.id,rules_id=rules.duel_rules.id))
         for teams in party.teams:
             team = GameTeam(
@@ -246,7 +244,7 @@ class DuelsGame(PartyGame):
             and not timed_out(round.duels_state.start_time,min(round.base_rules.time_limit, first_guess.time + round.session.duel_rules.guess_time_limit) if first_guess else round.base_rules.time_limit)
             and Guess.query.filter_by(round_id=round.id).count() < TeamPlayer.query.join(GameTeam).join(GameTeamLinker).filter(GameTeamLinker.session_id == session.id).count()):
             
-            game_team = GameTeamLinker.query.filter(GameTeamLinker.session_id==session.id).join(GameTeam).join(TeamPlayer).filter(TeamPlayer.user_id == user.id).first()
+            game_team = GameTeamLinker.query.filter(GameTeamLinker.session_id==session.id).join(GameTeam).join(TeamPlayer).filter(TeamPlayer.user_id == user.id).first() if user else None
             prev_round = self.get_round_(session, session.current_round - 1) if session.current_round > 1 else None
             hp = session.duel_rules.start_hp if prev_round == None else DuelHp.query.filter_by(state_id=prev_round.duels_state.id, team_id=game_team.team.id).first() if game_team else None
             
@@ -467,4 +465,3 @@ class DuelsGame(PartyGame):
             join_room(f"team_{team.hash}")
         else: 
             join_room(f"spectator_{session.uuid}")
-        
