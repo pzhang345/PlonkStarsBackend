@@ -1,12 +1,14 @@
 from base_celery import celery
 from models.db import db
-from models.session import CeleryTaskTracker, Session
-from models.user import User
+from models.session import CeleryTaskTracker, GameState, Session
 
 @celery.task(ignore_result=True)
 def __update_game_state__(data, session_id):
     from api.game.gametype import game_type
     
+    if "state" in data:
+        data["state"] == GameState(data["state"])
+        
     session = Session.query.filter_by(id=session_id).first()
     game_type[session.type].update_state(data, session)
     CeleryTaskTracker.query.filter_by(session_id=session.id).delete()
@@ -14,6 +16,10 @@ def __update_game_state__(data, session_id):
 
 def update_game_state(data, session, time):
     stop_current_task(session)
+    
+    if "state" in data:
+        data["state"] == data["state"].value
+    
     task = __update_game_state__.apply_async(args=[data, session.id], countdown=time)
     
     task_tracker = CeleryTaskTracker(session_id=session.id, task_id=task.id)

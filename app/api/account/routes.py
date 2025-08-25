@@ -68,6 +68,12 @@ def delete_account(user):
 @account_bp.route("/profile",methods=["GET"])
 @login_required
 def get_profile(user):
+    # add some more functionality later
+    # ideas:
+    # * maps created
+    # * stats
+    # * leaderboard positions
+    # * cosmetic collection
     data = request.args
     username = data.get("username")
     if username:
@@ -75,6 +81,18 @@ def get_profile(user):
         if not user:
             return jsonify({"error": "User not found"}), 404
     return jsonify(user.to_json()),200
+
+@account_bp.route("/avatar", methods=["GET"])
+@login_required
+def get_avatar(user):
+    data = request.args
+    usernames = data.getlist("username")
+    if len(usernames) == 0:
+        return jsonify(user.to_json()),200
+    else:
+        users = User.query.filter(User.username.in_(usernames))
+        ret = [user.to_json() for user in users]
+        return jsonify(ret),200
 
 @account_bp.route("/coins", methods=["GET"])
 @login_required

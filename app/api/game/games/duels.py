@@ -4,16 +4,17 @@ import pytz
 from sqlalchemy import func
 
 from api.game.games.party_game import PartyGame
-from api.game.gameutils import create_guess, create_round, timed_out
+from api.game.gameutils import create_guess, create_plonk, create_round, timed_out
+from api.game.tasks import stop_current_task, update_game_state
 from fsocket import socketio
 from models.configs import Configs
 from models.db import db
-from models.session import GameType, Guess, Round
-from models.duels import DuelRules, DuelState, GameTeam, GameTeamLinker, TeamPlayer, DuelHp, DuelRulesLinker, MarkerPosition
+from models.session import GameState, GameStateTracker, GameType, Guess, PlayerPlonk, Round
+from models.duels import DuelRules, DuelState, GameTeam, GameTeamLinker, TeamPlayer, DuelHp, DuelRulesLinker
 from models.user import User
 class DuelsGame(PartyGame):
     def create(self,data,user,party):
-        session = super().create(user,GameType.DUELS,party.rules)
+        session = super().create(user,GameType.DUELS,party.rules.base_rules)
         
         rules = party.rules
         db.session.add(DuelRulesLinker(session_id=session.id,rules_id=rules.duel_rules.id))
@@ -21,7 +22,9 @@ class DuelsGame(PartyGame):
             team = GameTeam(
                 session_id=session.id,
                 team_id=teams.team.id,
-                color=teams.color
+                color=teams.color,
+                name=teams.name,
+                uuid=teams.uuid
             )
             db.session.add(team)
             db.session.flush()
@@ -33,41 +36,69 @@ class DuelsGame(PartyGame):
         pass
     
     def next(self,data,user,session):
-        state = self.get_state(data,user,session,only_state=True)
-        if state["state"] != "results" and state["state"] != "not started":
+        if user != None:
+            raise Exception("Cannot be called by a user")
+        
+        state = GameStateTracker.query.filter_by(session_id=session.id).first()
+        if state.state == GameState.GUESSING or state.state == GameState.FINISHED:
             raise Exception("Game is in the wrong state")
         
-        round = create_round(session,session.base_rules)
-        duel_rules = session.duel_rules
-        prev_round = self.get_round_(session,session.current_round - 1) if session.current_round > 1 else None
-        prev_multi = prev_round.duels_state.multi if prev_round else 1
-        new_multi = (duel_rules.damage_mutli_mult * prev_multi) + duel_rules.damage_multi_add
         
+        
+        duel_rules = session.duel_rules
+        prev_round = self.get_round_(session,session.current_round) if session.current_round != 0 else None
+        prev_multi = prev_round.duels_state.multi if prev_round else 1
+        
+        if prev_round and DuelHp.query.filter_by(state_id=prev_round.duels_state.id).filter(DuelHp.hp > 0).count() < 2 or session.current_round >= session.base_rules.max_rounds:
+            self.change_state(session, GameState.FINISHED)
+            return
+        
+        if (session.current_round - duel_rules.damage_multi_start_round) % duel_rules.damage_multi_freq == 0:
+            new_multi = (duel_rules.damage_mutli_mult * prev_multi) + duel_rules.damage_multi_add
+        else:
+            new_multi = prev_multi
+        
+        round = create_round(session,session.base_rules)
         duel_state = DuelState(
             round_id=round.id,
             multi=new_multi
         )
         db.session.add(duel_state)
+        db.session.flush()
+        
+        
+        if round.round_number  == 1:        
+            for team in GameTeam.query.join(GameTeamLinker).filter(GameTeamLinker.session_id==session.id).all():
+                db.session.add(DuelHp(team_id=team.id,state_id=duel_state.id,hp=duel_rules.start_hp))
+        else:
+            for prev_hp in DuelHp.query.filter_by(state_id=prev_round.duels_state.id).filter(DuelHp.hp > 0).all():
+                db.session.add(DuelHp(team_id=prev_hp.team_id,state_id=duel_state.id,hp=prev_hp.hp))
+                
         db.session.commit()
         
-        socketio.emit("next", self.get_state(data, user, session, only_state=True), namespace="/socket/party", room=session.uuid)
+        self.change_state(session, GameState.GUESSING)
+        
+        if round.base_rules.time_limit != -1:
+            update_game_state({"state":GameState.RESULTS}, session, round.base_rules.time_limit + 1)
             
     def get_round(self,data,user,session):
-        state = self.get_state(data,user,session,only_state=True)
-        if state["state"] != "playing" and state["state"] != "waiting" and state["state"] != "spectating":
+        state = GameStateTracker.query.filter_by(session_id=session.id).first()
+        if state.state != GameState.GUESSING:
             raise Exception("Game is in the wrong state")
         
         round = self.get_round_(session,session.current_round)
         
         location = round.location
+        map = round.base_rules.map
         ret = {
+            "round": round.round_number,
             "lat": location.latitude,
             "lng": location.longitude,   
-            "multi": round.duels_state.multi
+            "nmpz": session.base_rules.nmpz,
+            "map_bounds": map.get_bounds(),
         }
-        
-        if round.base_rules.time_limit != -1:
-            first_guess = Guess.query.filter_by(round_id=round.id).order_by(Guess.time).first()
+        first_guess = Guess.query.filter_by(round_id=round.id).order_by(Guess.time).first()
+        if round.base_rules.time_limit != -1 or first_guess:
             time_limit = min(round.base_rules.time_limit, first_guess.time + round.session.duel_rules.guess_time_limit) if first_guess else round.base_rules.time_limit
             ret["time"] = pytz.utc.localize(round.duels_state.start_time) + timedelta(seconds=time_limit)
             ret["time_limit"] = time_limit if time_limit == round.base_rules.time_limit else round.session.duel_rules.guess_time_limit
@@ -76,90 +107,72 @@ class DuelsGame(PartyGame):
         return ret
         
     def guess(self,data,user,session):
-        state = self.get_state(data,user,session,only_state=True)
-        if state["state"] != "playing":
+        state = GameStateTracker.query.filter_by(session_id=session.id).first()
+        if state["state"] != GameState.GUESSING:
             raise Exception("Game is in the wrong state")
         
         player = TeamPlayer.query.filter_by(user_id=user.id).join(GameTeam).filter(GameTeam.session_id == session.id).first()
         if not player:
             raise Exception("You are not in a team")
         
-        game_team = player.team
+        round = self.get_round_(session,session.current_round)
+        if Guess.query.filter_by(round_id=round.id,user_id=user.id).count() > 0:
+            raise Exception("You have already guessed this round")
+        
+        can_guess = self.can_guess(session)
+        if can_guess.filter(TeamPlayer.id == player.id).count() == 0:
+            raise Exception("You cannot guess")
         
         lat = data.get("lat")
         lng = data.get("lng")
         if lat == None or lng == None:
             raise Exception("You must provide a latitude and longitude")
-            
-        round = self.get_round_(session,session.current_round)
-        if Guess.query.filter_by(round_id=round.id,user_id=user.id).count() > 0:
-            raise Exception("You have already guessed this round")
         
+        game_team = player.team
+
         now = datetime.now(tz=pytz.utc)
         time = (now - pytz.utc.localize(player.start_time)).total_seconds()
         
-        create_guess(lat, lng, user, round, time)
-        socketio.emit("guess", {"user": user.to_json(), "lat": lat, "lng": lng}, namespace="/socket/party", room=f"team_{game_team.hash}")
-        socketio.emit("guess", {"user": user.to_json()}, namespace="/socket/party", room=session.uuid)
+        guess = create_guess(lat, lng, user, round, time)
         
-        if Guess.query.filter_by(round_id=round.id).count() >= TeamPlayer.query.join(GameTeam).join(GameTeamLinker).filter(GameTeamLinker.session_id == session.id).count():
-            socketio.emit("next", self.get_state(data, user, session, only_state=True), namespace="/socket/party", room=session.uuid)
+        team_state = DuelHp.query.filter_by(state_id=round.duels_state.id, team_id=game_team.id).first()
+        if team_state.guess_id == None or guess.distance < team_state.guess.distance:
+            team_state.guess_id = guess.id
+            db.session.commit()
+        
+        socketio.emit("guess", {"user": user.username, "lat": lat, "lng": lng}, namespace="/socket/party", room=f"team_{game_team.hash}")
+        socketio.emit("guess", {"user": user.username}, namespace="/socket/party", room=session.uuid)
+        
+        if Guess.query.filter_by(round_id=round.id).count() == 1 and guess.time + session.duel_rules.guess_time_limit < round.base_rules.time_limit:
+            update_game_state({"state": GameState.RESULTS}, session, guess.time + session.duel_rules.guess_time_limit + 1)
+            socketio.emit("time", {
+                "time": now + timedelta(seconds=session.duel_rules.guess_time_limit),
+                "time_limit": session.duel_rules.guess_time_limit,
+                "now": now
+            }, namespace="/socket/party", room=session.uuid)
+            
+        
+        if Guess.query.filter_by(round_id=round.id).count() >= can_guess.count():
+            stop_current_task(session)
+            self.update_state({"state":GameState.RESULTS}, session)
+            
+    def can_guess(self,session):
+        round = self.get_round_(session,session.current_round)
+        return TeamPlayer.query.join(DuelHp, DuelHp.team_id == TeamPlayer.team_id).join(DuelState).filter(DuelState.round_id == round.id)
         
     def results(self,data,user,session):
-        state = self.get_state(data,user,session,only_state=True)
-        if state["state"] != "results" and state["state"] != "finished":
+        state = GameStateTracker.query.filter_by(session_id=session.id).first()
+        if state.state != GameState.RESULTS:
             raise Exception("Game is in the wrong state")
         
         round = self.get_round_(session,session.current_round)
         prev_round = self.get_round_(session, session.current_round - 1) if session.current_round > 1 else None
         duels_state = round.duels_state
-        
-        if DuelHp.query.filter_by(state_id=duels_state.id).count() < GameTeam.query.filter_by(session_id=session.id).count():
-            high_team_scores = (db.session.query(
-                GameTeam.id,
-                func.coalesce(func.max(Guess.score), 0).label("max_score")
-            )
-            .join(GameTeamLinker, GameTeamLinker.team_id == GameTeam.id)
-            .join(DuelHp, DuelHp.team_id == GameTeam.id)
-            .filter(GameTeamLinker.session_id == session.id)
-            )
-            
-            if prev_round:
-                high_team_scores = high_team_scores.filter(DuelHp.state_id == prev_round.duels_state.id, DuelHp.hp != 0)
-            
-            high_team_scores = (high_team_scores
-            .join(TeamPlayer, TeamPlayer.team_id == GameTeam.id)
-            .join(User, User.id == TeamPlayer.user_id)
-            .outerjoin(Guess, Guess.user_id == User.id)
-            .group_by(GameTeam.id)
-            )
-            
-            high_score = Guess.query.join(Round).filter(Round.session_id == session.id).order_by(Guess.score.desc()).first()
-            
-            for team_id, score in high_team_scores:
-                prev_duel_hp = DuelHp.query.filter_by(state_id=state.id, team_id=team_id).first()
-                if not prev_duel_hp:
-                    prev_duel_hp = session.duel_rules.start_hp
-                else:
-                    prev_duel_hp = prev_duel_hp.hp
-                
-
-                if high_score and score < high_score.score:
-                    score = high_score.score
-                
-                duel_hp = DuelHp.query.filter_by(state_id=state.id, team_id=team_id).first()
-                if not duel_hp:
-                    duel_hp = DuelHp(state_id=state.id, team_id=team_id, hp=max(0,prev_duel_hp + score - high_score.score))
-                    db.session.add(duel_hp)
-                else:
-                    duel_hp.hp = max(0,prev_duel_hp + (score - high_score.score) * duels_state.multi)
-                
-                db.session.commit()
 
         ret = {
             "lat": round.location.latitude,
             "lng": round.location.longitude,
-            "max_hp": session.duel_rules.start_hp,
+            "start_hp": session.duel_rules.start_hp,
             "multi": duels_state.multi,
             "teams":[]
         }
@@ -180,21 +193,24 @@ class DuelsGame(PartyGame):
                         "lat": guess.latitude,
                         "lng": guess.longitude,
                         "score": guess.score,
-                    } for guess in Guess.query.join(User).join(TeamPlayer, User.id == TeamPlayer.user_id).join(Round).filter(team.id == TeamPlayer.team_id, Round.id==round.id).order_by(Guess.score.desc())
+                        "distance": guess.distance,
+                        "time": guess.time,
+                    } for guess in Guess.query.join(User).join(TeamPlayer, User.id == TeamPlayer.user_id).join(Round).filter(team.id == TeamPlayer.team_id, Round.id==round.id).order_by(Guess.distance)
                 ]
             })        
         
         return ret
             
     def summary(self,data,user,session):
-        state = self.get_state(data,user,session,only_state=True)
-        if state["state"] != "finished":
+        state = GameStateTracker.query.filter_by(session_id=session.id).first()
+        if state.state != GameState.FINISHED:
             raise Exception("Game is in the wrong state")
         
         rounds = Round.query.filter_by(session_id=session.id).order_by(Round.round_number).all()
         
         ret = {
             "teams": [],
+            "start_hp": session.duel_rules.start_hp,
             "rounds": [{
                 "lat": round.location.latitude,
                 "lng": round.location.longitude,
@@ -213,7 +229,7 @@ class DuelsGame(PartyGame):
         )
         for team in teams:
             team_data = {
-                "team": team.team.to_json(),
+                "team": team.to_json(),
                 "rounds": [],
             }
             for hp in DuelHp.query.filter_by(team_id=team.id).join(DuelState).join(Round).filter(Round.session_id==session.id).order_by(Round.round_number):
@@ -226,130 +242,142 @@ class DuelsGame(PartyGame):
                             "lat": guess.latitude,
                             "lng": guess.longitude,
                             "score": guess.score,
-                        } for guess in Guess.query.join(User).join(TeamPlayer, User.id == TeamPlayer.user_id).join(Round).filter(team.id == TeamPlayer.team_id,Round.id==round.id).order_by(Guess.score.desc())
+                            "distance": guess.distance,
+                            "time": guess.time,
+                        } for guess in Guess.query.join(User).join(TeamPlayer, User.id == TeamPlayer.user_id).join(Round).filter(team.id == TeamPlayer.team_id,Round.id==round.id).order_by(Guess.distance)
                     ]
                 })
             ret["teams"].append(team_data)
         return ret
     
-    def get_state(self,data,user,session, only_state=False):
-        if session.current_round == 0:
-            return {"state":"not started"}
-        round = self.get_round_(session,session.current_round)
-        
-        state = DuelState.query.filter_by(round_id=round.id).first()
-        
-        first_guess = Guess.query.filter_by(round_id=round.id).order_by(Guess.time).first()
-        if (DuelHp.query.filter_by(state_id=state.id).count() == 0
-            and not timed_out(round.duels_state.start_time,min(round.base_rules.time_limit, first_guess.time + round.session.duel_rules.guess_time_limit) if first_guess else round.base_rules.time_limit)
-            and Guess.query.filter_by(round_id=round.id).count() < TeamPlayer.query.join(GameTeam).join(GameTeamLinker).filter(GameTeamLinker.session_id == session.id).count()):
+    def get_state(self,data,user,session,called=False):
+        state = GameStateTracker.query.filter_by(session_id=session.id).first()
+        ret = {"state":state.state}
+
+        if state.state == GameState.GUESSING:
+            round = self.get_round_(session,session.current_round)
+            if timed_out(state.time,round.base_rules.time_limit) and not called:
+                stop_current_task(session)
+                self.update_state({"state":GameState.RESULTS}, session)
+                return self.get_state(data,user,session,called=True)
             
             game_team = GameTeamLinker.query.filter(GameTeamLinker.session_id==session.id).join(GameTeam).join(TeamPlayer).filter(TeamPlayer.user_id == user.id).first() if user else None
-            prev_round = self.get_round_(session, session.current_round - 1) if session.current_round > 1 else None
-            hp = session.duel_rules.start_hp if prev_round == None else DuelHp.query.filter_by(state_id=prev_round.duels_state.id, team_id=game_team.team.id).first() if game_team else None
             
-            if only_state:
-                if hp == None or hp.hp <= 0:
-                    return {"state":"spectating", "round": round.round_number}
-                else:
-                    return {
-                        "state":"playing" if Guess.query.filter_by(round_id=round.id,user_id=user.id).count() == 0 else "waiting",
-                        "round": round.round_number
-                        }
-            
-            if hp == None or hp.hp <= 0:
-                return {
-                    "state":"spectating",
-                    "round": round.round_number,
-                    "max_hp": session.duel_rules.start_hp,
-                    "teams": [
-                        {
-                            **team.to_json(),
-                            "hp": session.duel_rules.start_hp
-                        } for team in GameTeamLinker.query.filter_by(session_id=session.id)
-                    ] if session.current_round == 1 else [
-                        {
-                            **hp.team.to_json(),
-                            "hp": hp.hp
-                        }
-                        for hp in DuelHp.query.filter_by(state_id=prev_round.state.id).filter(DuelHp.hp > 0).order_by(DuelHp.hp.desc())
-                    ] 
-                }
-            
-            last_round = self.get_round_(session,session.current_round - 1) if session.current_round > 1 else None
-            round = self.get_round_(session,session.current_round)
-            return {
-                "state":"playing" if Guess.query.filter_by(round_id=round.id,user_id=user.id).count() == 0 else "waiting",
-                "round": round.round_number, 
-                "team": game_team.to_json(),
-                "max_hp": session.duel_rules.start_hp,
-                "markers": [
-                    {
-                        "user": marker.player.user.to_json(),
-                        "lat": marker.latitude,
-                        "lng": marker.longitude,
-                    } for marker in MarkerPosition.query.join(TeamPlayer).filter(game_team.id == TeamPlayer.team_id)
-                ],
-                "guesses": [
-                    {
-                        "user": guess.user.to_json(),
-                        "lat": guess.latitude,
-                        "lng": guess.longitude,
-                    } for guess in Guess.query.join(User).join(TeamPlayer,User.id == TeamPlayer.user_id).join(GameTeam).join(GameTeamLinker).filter(game_team.id == TeamPlayer.team_id,Guess.round_id == round.id)
-                ],
+            ret = {
+                **ret,
+                "round": round.round_number,
+                "multi": round.duels_state.multi,
+                "start_hp": session.duel_rules.start_hp,
                 "teams": [
                     {
                         **team.to_json(),
-                        "hp": session.duel_rules.start_hp
-                    } for team in GameTeamLinker.query.filter_by(session_id=session.id)
-                ] if session.current_round == 1 else [
-                    {
-                        **hp.team.to_json(),
-                        "hp": hp.hp
-                    } for hp in DuelHp.query.filter_by(state_id=prev_round.state.id).filter(DuelHp.hp > 0).order_by(DuelHp.hp.desc())
-                ] 
+                        "hp": hp.hp if hp else 0
+                     } for team,hp in db.session.query(GameTeamLinker,DuelHp).filter_by(session_id=session.id).outerjoin(DuelHp, DuelHp.team_id == GameTeamLinker.team_id).filter(DuelHp.state_id == round.duels_state.id).order_by(DuelHp.hp.desc().nullslast())
+                ],
             }
             
-        
-        if DuelHp.query.filter_by(state_id=state.id).filter(DuelHp.hp != 0).count() < 1 or session.current_round == session.base_rules.max_rounds:
-            return {"state":"finished", "round": round.round_number}
-    
-        return {"state":"results","round":round.round_number}
-        
-    
-    def ping(self,data,user,session):
-        if data.get("type") == "plonk":
-            state = self.get_state(data,user,session,only_state=True)
-            if state["state"] != "playing" and state["state"] != "waiting":
-                raise Exception("Game is in the wrong state")
-            
-            player = TeamPlayer.query.filter_by(user_id=user.id).join(GameTeam).join(GameTeamLinker).filter(GameTeamLinker.session_id == session.id).first()
-            if not player:
-                raise Exception("You are not in a team")
-            
-            game_team = player.team
-            
-            lat = data.get("lat")
-            lng = data.get("lng")
-            if lat == None or lng == None:
-                raise Exception("You must provide a latitude and longitude")
-            
-            marker = MarkerPosition.query.filter_by(player_id=player.id).first()
-            if not marker:
-                marker = MarkerPosition(player_id=player.id, latitude=lat, longitude=lng)
-                db.session.add(marker)
+            if game_team:
+                hp = DuelHp.query.filter_by(state_id=round.duels_state.id, team_id=game_team.team.id).first()
+                ret = {
+                    **ret,
+                    "spectating": hp == None,
+                    "can_guess": Guess.query.filter_by(round_id=round.id,user_id=user.id).count() == 0 and hp,
+                    "team": game_team.team.uuid,
+                }
+                if hp:
+                    ret = {
+                        **ret,
+                        "markers": [
+                            {
+                                "user": marker.user.username,
+                                "lat": marker.latitude,
+                                "lng": marker.longitude,
+                            } for marker in PlayerPlonk.query.join(TeamPlayer, PlayerPlonk.user_id == TeamPlayer.user_id).filter(game_team.team.id == TeamPlayer.team_id, PlayerPlonk.round_id == round.id)
+                        ],
+                        "guesses": [
+                            {
+                                "user": guess.user.username,
+                                "lat": guess.latitude,
+                                "lng": guess.longitude,
+                            } for guess in Guess.query.join(TeamPlayer,Guess.user_id == TeamPlayer.user_id).filter(game_team.team.id == TeamPlayer.team_id,Guess.round_id == round.id)
+                        ],
+                    }
             else:
-                marker.latitude = lat
-                marker.longitude = lng
-            
-            db.session.commit()
-            socketio.emit("plonk", {"user": user.to_json(), "lat": lat, "lng":lng}, namespace="/socket/party", room=f"team_{game_team.hash}")
+                ret = {
+                    **ret,
+                    "spectating": True,
+                    "can_guess": False,
+                    "team": None,
+                }
+        
+        elif state.state == GameState.RESULTS:
+            if timed_out(state.time,5) and not called:
+                stop_current_task(session)
+                self.update_state({"state":GameState.GUESSING}, session)
+                return self.get_state(data,user,session,called=True)
+        
+        return ret
+    
+    def plonk(self,data,user,session):
+        state = GameStateTracker.query.filter_by(session_id=session.id).first()
+        if state["state"] != GameState.GUESSING:
+            raise Exception("Game is in the wrong state")
+        
+        player = self.can_guess(session).filter(TeamPlayer.user_id == user.id).first()
+        if not player:
+            raise Exception("You are cannot guess")
+        
+        game_team = player.team
+        
+        lat = data.get("lat")
+        lng = data.get("lng")
+        if lat == None or lng == None:
+            raise Exception("You must provide a latitude and longitude")
+        
+        round = self.get_round_(session,session.current_round)
+        create_plonk(user, round, lat, lng)
+        socketio.emit("plonk", {"user": user.username, "lat": lat, "lng":lng}, namespace="/socket/party", room=f"team_{game_team.hash}")
 
-        elif data.get("type") == "ping":
-            state = self.get_state(data,user,session,only_state=True)
-            duel_state = DuelState.query.filter_by(round_id=round.id).first()
-            if (state["state"] == "results" or state["state"] == "finished") and DuelHp.query.filter_by(state_id=duel_state.id).count() == 0:
-                socketio.emit("next", self.get_state(data, user, session, only_state=True), namespace="/socket/party", room=session.uuid)
+    def update_state(self, data, session):
+        state = GameStateTracker.query.filter_by(session_id=session.id).first()
+        if data.get("state") == GameState.RESULTS:
+            if state.state == GameState.GUESSING:
+                round = self.get_round_(session,session.current_round)
+                first_guess = Guess.query.filter_by(round_id=round.id).order_by(Guess.time).first()
+                time_limit = min(round.base_rules.time_limit, first_guess.time + session.duel_rules.guess_time_limit) if first_guess else round.base_rules.time_limit
+                all_guessed = self.can_guess(session).count() >= Guess.query.filter_by(round_id=round.id).count()
+                
+                if timed_out(state.time, time_limit) or all_guessed:
+                    if not all_guessed:
+                        not_guessed = (db.session.query(PlayerPlonk, DuelHp)
+                            .filter(PlayerPlonk.round_id == round.id)
+                            .join(TeamPlayer, PlayerPlonk.user_id == TeamPlayer.user_id)
+                            .join(DuelHp, DuelHp.team_id == TeamPlayer.team_id)
+                            .filter(DuelHp.state_id == round.duels_state.id)
+                            .outerjoin(Guess, Guess.user_id == PlayerPlonk.user_id)
+                            .filter(Guess.id == None)
+                        ).all()
+                        
+                        for plonk, team_state in not_guessed:
+                            guess = create_guess(plonk.latitude, plonk.longitude, plonk.player.user, round, time_limit)
+                            if team_state.guess_id == None or guess.distance < team_state.guess.distance:
+                                team_state.guess_id = guess.id
+                                            
+                    highest_guess = Guess.query.filter_by(round_id=round.id).order_by(Guess.score.desc()).first()
+                    highest_score = highest_guess.score if highest_guess else 0
+                    multi = round.duels_state.multi
+                    for hp in DuelHp.query.filter_by(state_id=round.duels_state.id).filter(DuelHp.hp > 0):
+                        if hp.guess and hp.guess.score < highest_score:
+                            guess_score = hp.guess.score if hp.guess else 0
+                            hp.hp = max(0, hp.hp - ((highest_score - guess_score) * multi)//1)
+                    db.session.commit()
+                    self.change_state(session, GameState.RESULTS)
+                    update_game_state({"state": GameState.GUESSING}, session, 5)
+        elif data.get("state") == GameState.GUESSING:
+            if state.state == GameState.RESULTS:
+                self.next({}, None, session)
+        
+        
                 
     def rules_config(self):
         base = super().rules_config()
@@ -374,7 +402,7 @@ class DuelsGame(PartyGame):
                 "name": "Time After Guess",
                 "type": "integer",
                 "display":"input",
-                "min": 5,
+                "min": 0,
                 "default": Configs.get("DUELS_DEFAULT_GUESS_TIME_LIMIT"),
             },
             "multi_start":{
@@ -407,35 +435,24 @@ class DuelsGame(PartyGame):
             }
         }
         
-    def set_rules(self, party, data):
+    def set_rules(self, party, data, configs=None):
+        if not configs:
+            configs = self.rules_config()
         super().set_rules(party, data)
-        
         duel_rules = party.rules.duel_rules
-        start_hp = data.get("hp", duel_rules.start_hp)
-        damage_multi_start_round = data.get("multi_start", duel_rules.damage_multi_start_round)
-        damage_multi_mult = data.get("multi_mult", duel_rules.damage_multi_mult)
-        damage_multi_add = data.get("multi_add", duel_rules.damage_multi_add)
-        damage_multi_freq = data.get("mult_freq", duel_rules.damage_multi_freq)
-        guess_time_limit = data.get("guess_time", duel_rules.guess_time_limit)
         
-        duel_rules = DuelRules.query.filter_by(
-            start_hp=start_hp,
-            damage_multi_start_round=damage_multi_start_round,
-            damage_multi_mult=damage_multi_mult,
-            damage_multi_add=damage_multi_add,
-            damage_multi_freq=damage_multi_freq,
-            guess_time_limit=guess_time_limit
-        ).first()
+        rule_names = ["hp","multi_start","multi_mult","multi_add","mult_freq","guess_time"]
+        db_names = ["start_hp","damage_multi_start_round","damage_multi_mult","damage_multi_add","damage_multi_freq","guess_time_limit"]
+        rules_default = [duel_rules.start_hp, duel_rules.damage_multi_start_round, duel_rules.damage_multi_mult, duel_rules.damage_multi_add, duel_rules.damage_multi_freq, duel_rules.guess_time_limit]
+        values = {}
+        for name,db_name,default in zip(rule_names, db_names, rules_default):
+            values[db_name] = data.get(name, default)
+            self.check_rule(configs[name], values[db_name])
+        
+        duel_rules = DuelRules.query.filter_by(**values).first()
         
         if not duel_rules:
-            duel_rules = DuelRules(
-                start_hp=start_hp,
-                damage_multi_start_round=damage_multi_start_round,
-                damage_multi_mult=damage_multi_mult,
-                damage_multi_add=damage_multi_add,
-                damage_multi_freq=damage_multi_freq,
-                guess_time_limit=guess_time_limit
-            )
+            duel_rules = DuelRules(**values)
             db.session.add(duel_rules)
             db.session.flush()
         

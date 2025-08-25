@@ -35,7 +35,7 @@ def start_party(user):
     party.session_id = session.id
     db.session.commit()
     
-    return_400_on_error(game_type[type].next, data, user, session)
+    return_400_on_error(game_type[type].next, data, None, session)
     
     socketio.emit("start", {"id": session.uuid,"type":session.type.name}, namespace="/socket/party", room=party.code)
 

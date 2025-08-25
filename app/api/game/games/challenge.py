@@ -33,11 +33,10 @@ class ChallengeGame(BaseGame):
         if state["state"] == GameState.GUESSING:
             raise Exception("Player has not finished the current round")
         
+        if state["state"] == GameState.RESULTS:
+            self.ping(user,session)
         
         player = self.get_player(user,session)
-        if player.current_round != 0:
-            round = self.get_round_(session,player.current_round)
-            PlayerPlonk.query.filter_by(user_id=user.id,round_id=round.id).delete()
         
         if player.current_round + 1 > session.current_round:
             create_round(session,session.base_rules)
@@ -52,31 +51,19 @@ class ChallengeGame(BaseGame):
     def get_round(self,data,user,session):
         player = self.get_player(user,session)
         round = self.get_round_(session,player.current_round)
-        prev_round_stats = RoundStats.query.filter_by(user_id=user.id,session_id=session.id,round=player.current_round).first()
         
         state = self.get_state(data,user,session)
         if state["state"] != GameState.GUESSING and session.type == GameType.CHALLENGE:
             raise Exception("Call the 'next' endpoint first")
       
-        prev_round_stats = RoundStats.query.filter_by(user_id=user.id,session_id=session.id,round=player.current_round-1).first()
         location = round.location
-        map = session.base_rules.map
+        map = round.base_rules.map
         ret = {
             "round":player.current_round,
             "lat":location.latitude,
             "lng":location.longitude,
-            "total":prev_round_stats.total_score if prev_round_stats else 0,
             "nmpz": round.base_rules.nmpz,
-            "map_bounds":{
-                "start":{
-                    "lat":map.start_latitude,
-                    "lng":map.start_longitude,
-                },
-                "end":{
-                    "lat":map.end_latitude,
-                    "lng":map.end_longitude,
-                },
-            },
+            "map_bounds":map.get_bounds()
         }
         if round.base_rules.time_limit != -1:
             ret["time"] = pytz.utc.localize(player.start_time) + timedelta(seconds=round.base_rules.time_limit)
@@ -118,7 +105,12 @@ class ChallengeGame(BaseGame):
         round = self.get_round_(session,player.current_round)
         
         if not timed_out(player.start_time,round.base_rules.time_limit) and Guess.query.filter_by(user_id=user.id,round_id=round.id).count() == 0:
-            ret = {"state":GameState.GUESSING,"round":player.current_round}
+            prev_round_stats = RoundStats.query.filter_by(user_id=user.id,session_id=session.id,round=player.current_round-1).first()
+            ret = {
+                "state":GameState.GUESSING,
+                "round":player.current_round, 
+                "score":prev_round_stats.total_score if prev_round_stats else 0
+            }
             player_plonk = PlayerPlonk.query.filter_by(user_id=user.id,round_id=round.id).first()
             if player_plonk:    
                 ret["lat"] = player_plonk.latitude
@@ -318,7 +310,7 @@ class ChallengeGame(BaseGame):
         
         player = self.get_player(user, session)
         round = self.get_round_(session, player.current_round)
-        create_plonk(player.user, round, lat, lng)
+        create_plonk(user, round, lat, lng)
     
     def ping(self, user, session):
         player = self.get_player(user, session)

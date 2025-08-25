@@ -39,6 +39,18 @@ class GameMap(db.Model):
             "creator_id":self.creator_id,
         }
     
+    def get_bounds(self):
+        return {
+            "start":{
+                "lat":self.start_latitude,
+                "lng":self.start_longitude,
+            },
+            "end":{
+                "lat":self.end_latitude,
+                "lng":self.end_longitude,
+            },
+        }
+    
 class Bound(db.Model):
     __tablename__="bounds"
     

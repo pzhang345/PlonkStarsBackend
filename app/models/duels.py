@@ -38,7 +38,6 @@ class DuelState(db.Model):
     
     id = Column(Integer, primary_key=True, autoincrement=True)
     round_id = Column(Integer, ForeignKey("rounds.id", ondelete="CASCADE"), nullable=False, unique=True)
-    start_time = Column(DateTime, nullable=False,default=lambda: datetime.now(tz=pytz.utc))
     multi = Column(Float, nullable=False, default=1)
     
     team_hps = db.relationship("DuelHp", backref="state", cascade="all,delete", passive_deletes=True)
@@ -49,11 +48,14 @@ class GameTeamLinker(db.Model):
     id = Column(Integer, primary_key=True, autoincrement=True)
     session_id = Column(Integer, ForeignKey("sessions.id", ondelete="CASCADE"), nullable=False, unique=True)
     team_id = Column(Integer, ForeignKey("game_teams.id", ondelete="CASCADE"), nullable=False)
+    name = Column(String(64), nullable=False, default="")
+    uuid = Column(String(36), nullable=False, default=lambda: str(uuid.uuid4()))
     color = Column(Integer, nullable=False, default=0)
     
     def to_json(self):
         return {
             **self.team.to_json(),
+            "id": self.uuid,
             "color": self.color,
         }
     
@@ -71,7 +73,7 @@ class GameTeam(db.Model):
     
     def to_json(self):
         return {
-            "players": [player.user.username for player in self.team_players],
+            "members": [player.user.username for player in self.team_players],
         }
     
 class TeamPlayer(db.Model):
@@ -85,13 +87,11 @@ class TeamPlayer(db.Model):
         UniqueConstraint('team_id', 'user_id'),
     )
     
-    marker_position = db.relationship("MarkerPosition", backref="player", cascade="all,delete", passive_deletes=True)
-    
 class DuelHp(db.Model):
     __tablename__ = "duel_hp"
     
     id = Column(Integer, primary_key=True, autoincrement=True)
-    guess_id = Column(Integer, ForeignKey("guesses.id", ondelete="CASCADE"), nullable=False)
+    guess_id = Column(Integer, ForeignKey("guesses.id", ondelete="CASCADE"))
     state_id = Column(Integer, ForeignKey("duel_state.id", ondelete="CASCADE"), nullable=False)
     team_id = Column(Integer, ForeignKey("game_teams.id", ondelete="CASCADE"), nullable=False)
     hp = Column(Integer, nullable=False)
@@ -99,11 +99,3 @@ class DuelHp(db.Model):
     __table_args__ = (
         UniqueConstraint('state_id', 'team_id'),
     )
-
-class MarkerPosition(db.Model):
-    __tablename__ = "marker_positions"
-    
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    player_id = Column(Integer, ForeignKey("team_players.id", ondelete="CASCADE"), nullable=False, unique=True)
-    latitude = Column(Double, nullable=False)
-    longitude = Column(Double, nullable=False)

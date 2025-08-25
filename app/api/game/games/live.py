@@ -4,7 +4,7 @@ from api.game.gameutils import create_guess_on_timeout, timed_out, create_round_
 from api.game.tasks import stop_current_task, update_game_state
 from models.db import db
 from models.party import PartyMember
-from models.session import GameState, GameStateTracker, Player,GameType, Guess, PlayerPlonk, Session
+from models.session import GameState, GameStateTracker, Player,GameType, Guess, PlayerPlonk
 from models.stats import RoundStats, UserMapStats
 from fsocket import socketio
 
@@ -40,6 +40,9 @@ class LiveGame(PartyGame):
         return {"id":session.uuid}
     
     def next(self,data,user,session):
+        if not user:
+            user = session.host
+            
         if user.id != session.host_id:
             raise Exception("You are not the host")
         
@@ -58,7 +61,7 @@ class LiveGame(PartyGame):
         
         round = self.get_round_(session, host_player.current_round)
         if round.base_rules.time_limit > 0:
-            update_game_state({}, session, round.base_rules.time_limit + 1)
+            update_game_state({"state": GameState.RESULTS}, session, round.base_rules.time_limit + 1)
         
         return ret
         
@@ -79,15 +82,15 @@ class LiveGame(PartyGame):
             
         return {"message":"guess submitted"}
     
-    def get_state(self, data, user, session, only_state=False, called=False):
+    def get_state(self, data, user, session, called=False):
         game_state_tracker = GameStateTracker.query.filter_by(session_id=session.id).first()
         state = game_state_tracker.state if game_state_tracker else GameState.NOT_STARTED
         ret = {"state": state}
-        if not only_state and state == GameState.GUESSING: 
+        if state == GameState.GUESSING: 
             round = self.get_round_(session,session.current_round)
             if timed_out(game_state_tracker.time, round.base_rules.time_limit) and not called:
-                self.update_state(data,session)
-                return ret
+                self.update_state({"state":GameState.RESULTS},session)
+                return self.get_state(data,user,session,called=True)
               
             ret = {
                 **ret,
@@ -99,6 +102,13 @@ class LiveGame(PartyGame):
             player = Player.query.filter_by(user_id=user.id,session_id=session.id).first()
             if not player:
                 return ret
+            
+            prev_round_stats = RoundStats.query.filter_by(user_id=user.id,session_id=session.id,round=player.current_round-1).first()
+            ret = {
+                **ret,
+                "score":prev_round_stats.total_score if prev_round_stats else 0,
+            }
+            
             
             guess = Guess.query.filter_by(user_id=user.id,round_id=round.id).first()
             if guess:
@@ -134,38 +144,38 @@ class LiveGame(PartyGame):
     def update_state(self,data,session):
         state = GameStateTracker.query.filter_by(session_id=session.id).first()
         current_round = self.get_round_(session, session.current_round)
-        if state.state == GameState.GUESSING and timed_out(state.time, current_round.base_rules.time_limit):
-            for player in Player.query.filter_by(session_id=session.id):
-                if RoundStats.query.filter_by(user_id=player.user_id,session_id=session.id,round=session.current_round).count() == 0:
-                    guess = create_guess_on_timeout(player.user, current_round)
-                    create_round_stats(player.user, session, round_num=session.current_round, guess=guess)
-            self.change_state(session, GameState.RESULTS)
-            
-        elif state.state == GameState.RESULTS and session.current_round == session.base_rules.max_rounds \
-            and data.get("state") == GameState.FINISHED:
-                
-            max_rounds = session.base_rules.max_rounds
-            for round_stat in RoundStats.query.filter_by(session_id=session.id,round=max_rounds):
-                user_map_stat = UserMapStats.query.filter_by(user_id=round_stat.user_id,map_id=session.base_rules.map_id, nmpz=session.base_rules.nmpz).first()
-                if not user_map_stat:
-                    user_map_stat = UserMapStats(user_id=round_stat.user_id,map_id=session.map_id, nmpz=session.base_rules.nmpz)
-                    db.session.add(user_map_stat)
-                    db.session.commit()
-                
-                if (user_map_stat.high_average_score,user_map_stat.high_round_number,-user_map_stat.high_average_time) < (round_stat.total_score/max_rounds,max_rounds,-round_stat.total_time/max_rounds):
-                    user_map_stat.high_round_number = max_rounds
-                    user_map_stat.high_average_score = round_stat.total_score/max_rounds
-                    user_map_stat.high_average_distance = round_stat.total_distance/max_rounds
-                    user_map_stat.high_average_time = round_stat.total_time/max_rounds
-                    user_map_stat.high_session_id = session.id
-                    db.session.commit()
-            self.change_state(session, GameState.FINISHED)
-            party = session.party
+        if data.get("state") == GameState.RESULTS:
+            if state.state == GameState.GUESSING and timed_out(state.time, current_round.base_rules.time_limit):
+                for player in Player.query.filter_by(session_id=session.id):
+                    if RoundStats.query.filter_by(user_id=player.user_id,session_id=session.id,round=session.current_round).count() == 0:
+                        guess = create_guess_on_timeout(player.user, current_round)
+                        create_round_stats(player.user, session, round_num=session.current_round, guess=guess)
+                self.change_state(session, GameState.RESULTS)
         
-            GameStateTracker.query.filter_by(session_id=session.id).delete()
-            party.session_id = None
-            session.type = GameType.CHALLENGE
-            db.session.commit()
+        elif data.get("state") == GameState.FINISHED:
+            if state.state == GameState.RESULTS and session.current_round == session.base_rules.max_rounds:
+                max_rounds = session.base_rules.max_rounds
+                for round_stat in RoundStats.query.filter_by(session_id=session.id,round=max_rounds):
+                    user_map_stat = UserMapStats.query.filter_by(user_id=round_stat.user_id,map_id=session.base_rules.map_id, nmpz=session.base_rules.nmpz).first()
+                    if not user_map_stat:
+                        user_map_stat = UserMapStats(user_id=round_stat.user_id,map_id=session.map_id, nmpz=session.base_rules.nmpz)
+                        db.session.add(user_map_stat)
+                        db.session.commit()
+                    
+                    if (user_map_stat.high_average_score,user_map_stat.high_round_number,-user_map_stat.high_average_time) < (round_stat.total_score/max_rounds,max_rounds,-round_stat.total_time/max_rounds):
+                        user_map_stat.high_round_number = max_rounds
+                        user_map_stat.high_average_score = round_stat.total_score/max_rounds
+                        user_map_stat.high_average_distance = round_stat.total_distance/max_rounds
+                        user_map_stat.high_average_time = round_stat.total_time/max_rounds
+                        user_map_stat.high_session_id = session.id
+                        db.session.commit()
+                self.change_state(session, GameState.FINISHED)
+                party = session.party
+        
+                GameStateTracker.query.filter_by(session_id=session.id).delete()
+                party.session_id = None
+                session.type = GameType.CHALLENGE
+                db.session.commit()
             
     def plonk(self, data, user, session):
         return ChallengeGame().plonk(data, user, session)

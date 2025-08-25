@@ -53,9 +53,9 @@ class PartyTeam(db.Model):
     __tablename__ = "party_teams"
     
     id = Column(Integer, primary_key=True)
-    uuid = Column(String(36), default=lambda: str(uuid.uuid4()), unique=True)
     name = Column(String(64), nullable=False, default="")
     party_id = Column(Integer, ForeignKey("party.id", ondelete="CASCADE"), nullable=False)
+    uuid = Column(String(36), default=lambda: str(uuid.uuid4()), unique=True)
     team_id = Column(Integer, ForeignKey("game_teams.id", ondelete="CASCADE"), nullable=False)
     leader_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     color = Column(Integer, nullable=False, default=lambda: random.randint(0,255 * 255 * 255))
@@ -68,9 +68,9 @@ class PartyTeam(db.Model):
     
     def to_json(self):
         return {
+            **self.team.to_json(),
             "id": self.uuid,
             "name": self.name,
             "color": self.color,
             "leader": self.leader.username,
-            "members": [member.user.username for member in self.team.players]
         }

@@ -42,8 +42,8 @@ class PartyGame(BaseGame):
         print(prefix)
         rounds = int(Configs.get(f"{prefix}_DEFAULT_ROUNDS"))
         time = int(Configs.get(f"{prefix}_DEFAULT_TIME_LIMIT"))
-        nmpz = Configs.get(f"{prefix}_DEFAULT_NMPZ").lower() == "true"
-        map_id = int(Configs.get(f"{prefix}_DEFAULT_MAP_ID"))
+        nmpz = party.rules.base_rules.nmpz
+        map_id = party.rules.base_rules.map_id
         
         base_rules = BaseRules.query.filter_by(
             map_id=map_id,
@@ -65,31 +65,27 @@ class PartyGame(BaseGame):
         party.rules.base_rule_id = base_rules.id
         db.session.commit()
         
-    def set_rules(self, party, data):
+    def set_rules(self, party, data, configs=None):
         map = GameMap.query.filter_by(uuid=data.get("map_id")).first()        
         base_rules = party.rules.base_rules
         map_id = map.id if map else base_rules.map_id
-        time_limit = data.get("time",base_rules.time_limit)
-        max_rounds = data.get("rounds",base_rules.max_rounds)
-        nmpz = data.get("nmpz",base_rules.nmpz)
-        
-        if max_rounds <= 0 and max_rounds != -1:
-            raise Exception("Invalid number of rounds")
-        
-        if time_limit <= 0 and time_limit != -1:
-            raise Exception("Invalid time limit")
-        
         if map and map.total_weight <= 0:
             raise Exception("Map has no locations")
         
-        base_rule = BaseRules.query.filter_by(map_id=map_id, time_limit=time_limit, max_rounds=max_rounds, nmpz=nmpz).first()
+        if not configs:
+            configs = self.rules_config()
+        
+        rule_names = ["time","rounds","nmpz"]
+        db_names = ["time_limit","max_rounds","nmpz"]
+        rules_default = [base_rules.time_limit, base_rules.max_rounds, base_rules.nmpz]
+        values = {}
+        for name,db_name,default in zip(rule_names,db_names,rules_default):
+            values[db_name] = data.get(name, default)
+            self.check_rule(configs[name], values[db_name])
+        
+        base_rule = BaseRules.query.filter_by(map_id=map_id, **values).first()
         if not base_rule:
-            base_rule = BaseRules(
-                map_id=map_id,
-                time_limit=time_limit,
-                max_rounds=max_rounds,
-                nmpz=nmpz
-            )
+            base_rule = BaseRules(map_id=map_id, **values)
             db.session.add(base_rule)
             db.session.flush()
         
@@ -123,3 +119,18 @@ class PartyGame(BaseGame):
         
     def join_socket(self,session,user):
         join_room(session.uuid)
+        
+    def check_rule(self,rule,value):
+        if (rule["type"] == "integer" and not isinstance(value,int)) or \
+            (rule["type"] == "number" and not isinstance(value,(int,float))) or \
+            (rule["type"] == "boolean" and not isinstance(value,bool)):
+            raise Exception(f"Invalid value for {rule['name']}")
+        
+        if "min" in rule and value < rule["min"] and value != -1:
+            raise Exception(f"Value for {rule['name']} too low")
+        
+        if "max" in rule and value > rule["max"]:
+            raise Exception(f"Value for {rule['name']} too high")
+        
+        if (not "infinity" in rule or not rule["infinity"]) and value == -1:
+            raise Exception(f"Invalid value for {rule['name']}")
