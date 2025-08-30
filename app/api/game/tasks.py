@@ -7,7 +7,7 @@ def __update_game_state__(data, session_id):
     from api.game.gametype import game_type
     
     if "state" in data:
-        data["state"] == GameState(data["state"])
+        data["state"] = GameState(data["state"])
         
     session = Session.query.filter_by(id=session_id).first()
     game_type[session.type].update_state(data, session)
@@ -18,7 +18,7 @@ def update_game_state(data, session, time):
     stop_current_task(session)
     
     if "state" in data:
-        data["state"] == data["state"].value
+        data["state"] = data["state"].value
     
     task = __update_game_state__.apply_async(args=[data, session.id], countdown=time)
     

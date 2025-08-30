@@ -123,11 +123,14 @@ class DuelsGame(PartyGame):
         if can_guess.filter(TeamPlayer.id == player.id).count() == 0:
             raise Exception("You cannot guess")
         
-        lat = data.get("lat")
-        lng = data.get("lng")
-        if lat == None or lng == None:
-            raise Exception("You must provide a latitude and longitude")
-        
+        plonk = PlayerPlonk.query.filter_by(round_id=round.id,user_id=user.id).first()
+        lat = data.get("lat",plonk.latitude if plonk else None)
+        lng = data.get("lng", plonk.longitude if plonk else None)
+            
+        if plonk and plonk.latitude == lat and plonk.longitude == lng:
+            PlayerPlonk.query.filter_by(round_id=round.id,user_id=user.id).delete()
+            db.session.commit()
+            
         game_team = player.team
 
         now = datetime.now(tz=pytz.utc)
@@ -274,6 +277,7 @@ class DuelsGame(PartyGame):
                         "hp": hp.hp if hp else 0
                      } for team,hp in db.session.query(GameTeamLinker,DuelHp).filter_by(session_id=session.id).outerjoin(DuelHp, DuelHp.team_id == GameTeamLinker.team_id).filter(DuelHp.state_id == round.duels_state.id).order_by(DuelHp.hp.desc().nullslast())
                 ],
+                "user": user.username
             }
             
             if game_team:
@@ -362,6 +366,8 @@ class DuelsGame(PartyGame):
                             guess = create_guess(plonk.latitude, plonk.longitude, plonk.player.user, round, time_limit)
                             if team_state.guess_id == None or guess.distance < team_state.guess.distance:
                                 team_state.guess_id = guess.id
+                        
+                        PlayerPlonk.query.filter_by(round_id=round.id).delete()
                                             
                     highest_guess = Guess.query.filter_by(round_id=round.id).order_by(Guess.score.desc()).first()
                     highest_score = highest_guess.score if highest_guess else 0
