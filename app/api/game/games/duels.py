@@ -187,8 +187,9 @@ class DuelsGame(PartyGame):
             "multi": duels_state.multi,
             "teams":[]
         }
-        for team,hp in db.session.query(GameTeamLinker,DuelHp).filter(GameTeamLinker.session_id==session.id).join(DuelHp, DuelHp.team_id == GameTeamLinker.team_id).filter(DuelHp.state_id == round.duels_state.id).order_by(DuelHp.hp.desc()):
-            prev_round_hp = DuelHp.query.filter_by(state_id=prev_round.duels_state.id, team_id=team.team.id).first()
+        for team,hp in db.session.query(GameTeamLinker,DuelHp).filter(GameTeamLinker.session_id==session.id).join(DuelHp, DuelHp.team_id == GameTeamLinker.team_id).filter(DuelHp.state_id == duels_state.id).order_by(DuelHp.hp.desc()):
+            if prev_round:
+                prev_round_hp = DuelHp.query.filter_by(state_id=prev_round.duels_state.id, team_id=team.team.id).first()
             if not prev_round_hp:
                 prev_round_hp = session.duel_rules.start_hp
             else:
