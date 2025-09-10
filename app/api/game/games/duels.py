@@ -329,11 +329,10 @@ class DuelsGame(PartyGame):
                 }
         
         elif state.state == GameState.RESULTS:
-            # if timed_out(state.time,5) and not called:
-            #     stop_current_task(session)
-            #     self.update_state({"state":GameState.GUESSING}, session)
-            #     return self.get_state(data,user,session,called=True)
-            pass
+            if timed_out(state.time,5) and not called:
+                stop_current_task(session)
+                self.update_state({"state":GameState.GUESSING}, session)
+                return self.get_state(data,user,session,called=True)
         
         return ret
     
@@ -401,8 +400,8 @@ class DuelsGame(PartyGame):
                     
                     # if no one guesses game does not progress
                     if highest_guess:
-                        # update_game_state({"state": GameState.GUESSING}, session, 5)
-                        pass
+                        update_game_state({"state": GameState.GUESSING}, session, 5)
+                    
         elif data.get("state") == GameState.GUESSING:
             if state.state == GameState.RESULTS:
                 self.next({}, None, session)
