@@ -65,6 +65,11 @@ def delete_account(user):
     return jsonify({"message": "Account deleted successfully"}), 200
 
 
+@account_bp.route("/user", methods=["GET"])
+@login_required
+def get_user(user):
+    return jsonify({"user":user.username}), 200
+
 @account_bp.route("/profile",methods=["GET"])
 @login_required
 def get_profile(user):

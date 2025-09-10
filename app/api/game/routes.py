@@ -94,7 +94,7 @@ def get_result(user):
 @login_required
 def get_summary(user):
     data = request.args
-    session_id = data.get("session")
+    session_id = data.get("id")
     
     if not session_id:
         return jsonify({"error":"provided bad session id"}), 400

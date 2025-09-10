@@ -46,7 +46,7 @@ class GameTeamLinker(db.Model):
     __tablename__ = "game_team_linker"
     
     id = Column(Integer, primary_key=True, autoincrement=True)
-    session_id = Column(Integer, ForeignKey("sessions.id", ondelete="CASCADE"), nullable=False, unique=True)
+    session_id = Column(Integer, ForeignKey("sessions.id", ondelete="CASCADE"), nullable=False)
     team_id = Column(Integer, ForeignKey("game_teams.id", ondelete="CASCADE"), nullable=False)
     name = Column(String(64), nullable=False, default="")
     uuid = Column(String(36), nullable=False, default=lambda: str(uuid.uuid4()))
@@ -57,6 +57,7 @@ class GameTeamLinker(db.Model):
             **self.team.to_json(),
             "id": self.uuid,
             "color": self.color,
+            "name": self.name,
         }
     
 
@@ -73,7 +74,7 @@ class GameTeam(db.Model):
     
     def to_json(self):
         return {
-            "members": [player.user.username for player in self.team_players],
+            "members": [player.user.username for player in self.players],
         }
     
 class TeamPlayer(db.Model):

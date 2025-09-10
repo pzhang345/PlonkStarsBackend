@@ -29,7 +29,6 @@ class PartyGame(BaseGame):
         
         game_state_tracker.state = state
         game_state_tracker.time = time if time else datetime.now(tz=pytz.utc)
-        
         db.session.commit()
         socketio.emit("next", {"state":state.name}, namespace="/socket/party", room=session.uuid)
         

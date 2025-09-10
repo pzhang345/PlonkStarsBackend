@@ -40,3 +40,9 @@ def register_party_socket(socketio,namespace):
             game_type[session.type].join_socket(session,user)
         
         emit("message",{"message":"joined party"})
+        
+def get_inactivity(session):
+    party = session.party
+    if not party:
+        raise Exception("Session is not linked to a party")
+    return (datetime.now(tz=pytz.utc) - party.last_activity).total_seconds()
