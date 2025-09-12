@@ -13,10 +13,10 @@ crates_bp = Blueprint("crates_bp", __name__)
 
 dupe_refund = {
     Tier.COMMON: 100,
-    Tier.UNCOMMON: 250,
-    Tier.RARE: 500,
-    Tier.EPIC: 1000,
-    Tier.LEGENDARY: 2000,
+    Tier.UNCOMMON: 300,
+    Tier.RARE: 750,
+    Tier.EPIC: 1500,
+    Tier.LEGENDARY: 4000,
 }
 
 @crates_bp.route("/buy", methods=["POST"])

@@ -55,7 +55,7 @@ class DuelsGame(PartyGame):
             self.update_state({"state":GameState.FINISHED}, session)
             return
         
-        if (session.current_round - duel_rules.damage_multi_start_round) % duel_rules.damage_multi_freq == 0:
+        if (session.current_round - duel_rules.damage_multi_start_round) % duel_rules.damage_multi_freq == 0 and duel_rules.damage_multi_start_round >= session.current_round:
             new_multi = (duel_rules.damage_multi_mult * prev_multi) + duel_rules.damage_multi_add
         else:
             new_multi = prev_multi
