@@ -12,6 +12,7 @@ from models.db import db
 from models.session import GameState, GameStateTracker, GameType, Guess, PlayerPlonk, Round
 from models.duels import DuelRules, DuelState, GameTeam, GameTeamLinker, TeamPlayer, DuelHp, DuelRulesLinker
 from models.user import User
+
 class DuelsGame(PartyGame):
     def create(self,data,user,party):
         if len(party.teams) < 2: 
@@ -210,7 +211,6 @@ class DuelsGame(PartyGame):
                 ]
             })        
         
-        print(ret)
         return ret
             
     def summary(self,data,user,session):
@@ -397,8 +397,6 @@ class DuelsGame(PartyGame):
                         print(f"{hp.team.hash}:{hp.hp}, {guess_score}")
                     db.session.commit()
                     self.change_state(session, GameState.RESULTS)
-                    
-                    # if no one guesses game does not progress
                     if highest_guess:
                         update_game_state({"state": GameState.GUESSING}, session, 5)
                     

@@ -1,6 +1,7 @@
 from base_celery import celery
 from models.db import db
 from models.session import CeleryTaskTracker, GameState, Session
+from db_sync import redis_instance
 
 @celery.task(ignore_result=True)
 def __update_game_state__(data, session_id):
@@ -11,6 +12,8 @@ def __update_game_state__(data, session_id):
         
     session = Session.query.filter_by(id=session_id).first()
     game_type[session.type].update_state(data, session)
+    
+    redis_instance.publish("db_changes", "game state updated")
     CeleryTaskTracker.query.filter_by(session_id=session.id).delete()
     db.session.commit()
 

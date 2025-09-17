@@ -1,6 +1,7 @@
-from celery import Celery
+from celery import Celery, signals
 from config import Config
 import ssl
+from models.db import db
 
 redis_ssl_url = Config.REDIS_URL + "/0?ssl_cert_reqs=CERT_NONE" if Config.REDIS_URL.startswith("rediss://") else Config.REDIS_URL
 
@@ -21,5 +22,13 @@ def init_celery(app):
             broker_use_ssl = {"ssl_cert_reqs": ssl.CERT_NONE}
         )
     
+    @signals.task_postrun.connect
+    def cleanup_sessions(*args, **kwargs):
+        with app.app_context():
+            db.session.remove()
+    
     celery.autodiscover_tasks(['api.game.tasks'])
     return celery
+
+
+    

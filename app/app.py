@@ -13,6 +13,7 @@ from base_celery import init_celery
 from cli.cli import register_commands
 
 from admin import admin
+from db_sync import start_sync_db
 from models.db import db
 from config import Config
 
@@ -35,4 +36,5 @@ register_sockets(socketio)
 register_commands(app)
 
 if __name__ == "__main__":
+    start_sync_db(app)
     socketio.run(app, debug=True, host='0.0.0.0', port=5000)
