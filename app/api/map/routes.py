@@ -73,7 +73,7 @@ def get_all_maps(user):
         ret.append({
             "name":map.name,
             "id":map.uuid,
-            "creator":map.creator.to_json(),
+            "creator":map.creator.username,
             "average_score":score/guess if guess != 0 else 0,
             "average_generation_time": map.generation.total_generation_time/map.generation.total_loads if map.generation != None and map.generation.total_loads != 0 else 0,
             "total_guesses": guess,
@@ -99,7 +99,7 @@ def get_map_info(user):
     ret = {
         "name":map.name,
         "id":map.uuid, 
-        "creator":map.creator.to_json(),
+        "creator":map.creator.username,
         "map_stats":{
             "average_generation_time": generation.total_generation_time/generation.total_loads if generation != None and generation.total_loads != 0 else 0,
             "average_score": stats.total_score/stats.total_guesses if stats.total_guesses != None and stats.total_guesses != 0 else 0,
@@ -160,7 +160,7 @@ def get_map_info(user):
     
     if top_guesses_stats:
         ret["other"]["top_guesses"] = {
-            "user":top_guesses_stats[0].to_json(),
+            "user":top_guesses_stats[0].username,
             "stat":top_guesses_stats[4]
         }
     
@@ -180,12 +180,12 @@ def get_map_info(user):
         )
         
         ret["other"]["most_5ks"] = {
-            "user": User.query.filter_by(id=most_5ks_entry.user_id).first().to_json(),
+            "user": User.query.filter_by(id=most_5ks_entry.user_id).first().username,
             "stat": most_5ks_entry.count
         }
         fastest_5k = five_ks.order_by(Guess.time).first()
         ret["other"]["fastest_5k"] = {
-            "user":fastest_5k.user.to_json(),
+            "user":fastest_5k.user.username,
             "stat":fastest_5k.time,
         }
     else:
@@ -196,7 +196,7 @@ def get_map_info(user):
         
         if highest_score:
             ret["other"]["highest_score"] = {
-                "user":highest_score.user.to_json(),
+                "user":highest_score.user.username,
                 "stat":highest_score.score,
             }
         
@@ -207,7 +207,7 @@ def get_map_info(user):
             fastest_nk = fastest_nk.first()
             if fastest_nk:
                 ret["other"]["fastest_nk"] = {
-                    "user":fastest_nk.user.to_json(),
+                    "user":fastest_nk.user.username,
                     "stat":fastest_nk.time,
                 }
     print(ret)
