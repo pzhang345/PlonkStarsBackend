@@ -104,7 +104,7 @@ class PartyGame(BaseGame):
             "map": {
                 "name": map.name,
                 "id": map.uuid,
-                "creator": map.creator,
+                "creator": map.creator.username,
                 "average_score": float(score / guess) if guess != None or guess == 0 else 0,
                 "average_generation_time": float(map.generation.total_generation_time / map.generation.total_loads) if map.generation != None and map.generation.total_loads != 0 else 0,
                 "total_guesses": float(guess) if guess != None else 0,
