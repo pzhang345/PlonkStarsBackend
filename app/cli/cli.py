@@ -67,49 +67,46 @@ def register_commands(app):
         """Award coins to users based on their performance in the daily challenge"""
         today = datetime.now(tz=pytz.utc).date()
 
-        daily = DailyChallenge.query.filter_by(date=today - timedelta(days=1)).first()
-        if daily.coins_added:
-            print("Coins already awarded for this daily challenge.")
-            return
-        
-        session = daily.session
-        stats = RoundStats.query.filter_by(session_id=session.id,round=session.base_rules.max_rounds).subquery()
-        ranked_users = db.session.query(
-            func.rank().over(order_by=(desc(stats.c.total_score),stats.c.total_time)).label("rank"),
-            UserCoins,
-            stats.c.total_score,
-        ).join(UserCoins,UserCoins.user_id == stats.c.user_id).order_by("rank")
-        
-        # Step 4: Award top prizes starting from the lowest prize for the number of participants (max 5)
-        total_participants = ranked_users.count()
-        
-        # going to have to balance this later
-        placement_rewards = {1:500, 2:450, 3:400}
-        score_per_coin = 50 # every 50pts = 1 coins
-        percentile_rewards = {0.01:350, 0.1:250, 0.25:100, 0.5:50}
-        percentages = sorted(list(percentile_rewards.keys()))
-        current_percentile = 0
-        
-        for rank,coins, total_score in ranked_users:
-            if rank in placement_rewards:
-                coins.coins += placement_rewards[rank]
-            elif current_percentile < len(percentages):
-                percent = percentages[current_percentile]
-                
-                while rank/total_participants > percent:
-                    current_percentile += 1
-                    if current_percentile >= len(percentages):
-                        break
+        yesterday = today - timedelta(days=1)
+        for daily in DailyChallenge.query.filter(DailyChallenge.date < yesterday, DailyChallenge.coins_added == False):
+            session = daily.session
+            stats = RoundStats.query.filter_by(session_id=session.id,round=session.base_rules.max_rounds).subquery()
+            ranked_users = db.session.query(
+                func.rank().over(order_by=(desc(stats.c.total_score),stats.c.total_time)).label("rank"),
+                UserCoins,
+                stats.c.total_score,
+            ).join(UserCoins,UserCoins.user_id == stats.c.user_id).order_by("rank")
+            
+            # Step 4: Award top prizes starting from the lowest prize for the number of participants (max 5)
+            total_participants = ranked_users.count()
+            
+            # going to have to balance this later
+            placement_rewards = {1:500, 2:450, 3:400}
+            score_per_coin = 50 # every 50pts = 1 coins
+            percentile_rewards = {0.01:350, 0.1:250, 0.25:100, 0.5:50}
+            percentages = sorted(list(percentile_rewards.keys()))
+            current_percentile = 0
+            
+            for rank,coins, total_score in ranked_users:
+                if rank in placement_rewards:
+                    coins.coins += placement_rewards[rank]
+                elif current_percentile < len(percentages):
                     percent = percentages[current_percentile]
-                
-                if current_percentile < len(percentages):
-                    coins.coins += percentile_rewards[percent]
                     
-            coins.coins += total_score // score_per_coin
+                    while rank/total_participants > percent:
+                        current_percentile += 1
+                        if current_percentile >= len(percentages):
+                            break
+                        percent = percentages[current_percentile]
+                    
+                    if current_percentile < len(percentages):
+                        coins.coins += percentile_rewards[percent]
+                        
+                coins.coins += total_score // score_per_coin
         
-        daily.coins_added = True
+            daily.coins_added = True
+        
         db.session.commit()
-
         print("Coins awarded successfully")
     
     @app.cli.command("clean-db")
