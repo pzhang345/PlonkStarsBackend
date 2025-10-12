@@ -1,4 +1,3 @@
-from flask import jsonify
 from sqlalchemy import func
 
 from api.game.games.challenge import ChallengeGame

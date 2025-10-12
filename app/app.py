@@ -8,12 +8,12 @@ from flask_cors import CORS
 from fsocket import socketio
 from api.routes import api_bp
 from api.socket import register_sockets
-from base_celery import init_celery
+from my_celery.base_celery import init_celery
+from my_celery.db_sync import start_sync_db
 
 from cli.cli import register_commands
 
 from admin import admin
-from db_sync import start_sync_db
 from models.db import db
 from config import Config
 

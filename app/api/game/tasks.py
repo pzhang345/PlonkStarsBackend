@@ -1,7 +1,7 @@
-from base_celery import celery
+from my_celery.base_celery import celery
 from models.db import db
 from models.session import CeleryTaskTracker, GameState, Session
-from db_sync import redis_instance
+from my_celery.db_sync import redis_instance
 
 @celery.task(ignore_result=True)
 def __update_game_state__(data, session_id):

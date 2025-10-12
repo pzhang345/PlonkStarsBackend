@@ -15,7 +15,15 @@ def init_celery(app):
 
     celery.Task = ContextTask
     
-    celery.conf.update(result_expires=3600,)
+    celery.conf.update(
+        result_expires=3600,
+        timezone='UTC', 
+        enable_utc=True
+    )
+    
+    from my_celery.daily_tasks import init_daily_tasks
+    init_daily_tasks(celery)
+    
 
     if Config.REDIS_URL.startswith("rediss://"):
         celery.conf.update(

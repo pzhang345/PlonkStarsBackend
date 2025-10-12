@@ -3,11 +3,11 @@ from flask import Blueprint,request, jsonify
 import pytz
 
 from api.account.auth import login_required
+from api.session.daily import create_daily
 from api.session.session import get_session_info
-from models.db import db
 from models.configs import Configs
 from models.map import GameMap
-from models.session import BaseRules, DailyChallenge, GameType, Session
+from models.session import DailyChallenge, Session
 from utils import return_400_on_error
 
 session_bp = Blueprint("session_bp", __name__)
@@ -29,29 +29,7 @@ def get_daily(user):
     daily = DailyChallenge.query.filter_by(date=today).first()
     
     if not daily:
-        ROUND_NUMBER = int(Configs.get("DAILY_DEFAULT_ROUNDS"))
-        TIME_LIMIT =  int(Configs.get("DAILY_DEFAULT_TIME_LIMIT"))
-        NMPZ = Configs.get("DAILY_DEFAULT_NMPZ").lower() == "true"
-        MAP_ID = int(Configs.get("DAILY_DEFAULT_MAP_ID"))
-        HOST_ID = int(Configs.get("DAILY_DEFAULT_HOST_ID"))
-        rules = BaseRules.query.filter_by(
-            map_id=MAP_ID,
-            time_limit=TIME_LIMIT,
-            max_rounds=ROUND_NUMBER,
-            nmpz=NMPZ
-        ).first()
-        
-        session = Session(
-            host_id=HOST_ID,
-            type=GameType.CHALLENGE, 
-            base_rule_id=rules.id,
-        )
-        db.session.add(session)
-        db.session.flush()
-        
-        daily = DailyChallenge(date=today, session_id=session.id)
-        db.session.add(daily)
-        db.session.commit()    
+        daily = create_daily(today)
     
     info = return_400_on_error(get_session_info, daily.session, user, json=True)
     
