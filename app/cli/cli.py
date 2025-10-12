@@ -1,6 +1,5 @@
-from api.party.party import clean_db
+from api.party.party import clean_db, clean_party
 from api.session.daily import award_prev_daily_challenge_coins, create_daily
-from my_celery.daily_tasks import clean_party
 
 def register_commands(app):
     @app.cli.command("create-daily")
