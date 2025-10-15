@@ -46,8 +46,7 @@ def create_daily(date=datetime.now(tz=pytz.utc).date() + timedelta(days=1)):
 def award_prev_daily_challenge_coins():
     """Award coins to users based on their performance in the daily challenge"""
     today = datetime.now(tz=pytz.utc).date()
-    yesterday = today - timedelta(days=1)
-    for daily in DailyChallenge.query.filter(DailyChallenge.date < yesterday, DailyChallenge.coins_added == False):
+    for daily in DailyChallenge.query.filter(DailyChallenge.date < today, DailyChallenge.coins_added == False):
         award_daily_challenge_coins(daily)
         
     db.session.commit()
