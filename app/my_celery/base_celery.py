@@ -24,7 +24,6 @@ def init_celery(app):
     from my_celery.daily_tasks import init_daily_tasks
     init_daily_tasks(celery)
     
-
     if Config.REDIS_URL.startswith("rediss://"):
         celery.conf.update(
             broker_use_ssl = {"ssl_cert_reqs": ssl.CERT_NONE}
