@@ -2,6 +2,14 @@ from api.party.party import clean_db, clean_party
 from api.session.daily import award_prev_daily_challenge_coins, create_daily
 
 def register_commands(app):
+    @app.cli.command("daily-tasks")
+    def daily_cli():
+        create_daily()
+        clean_party()
+        award_prev_daily_challenge_coins()
+        clean_db()
+        
+    
     @app.cli.command("create-daily")
     def create_daily_cli():
         create_daily()

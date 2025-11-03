@@ -41,9 +41,6 @@ def init_celery(app):
     
     celery.autodiscover_tasks(['api.game.tasks'])
     
-    from my_celery.daily_tasks import init_daily_tasks
-    init_daily_tasks(celery)
-    
     return celery
 
 

@@ -329,7 +329,7 @@ class DuelsGame(PartyGame):
                 }
         
         elif state.state == GameState.RESULTS:
-            if timed_out(state.time,5) and not called:
+            if timed_out(state.time,5) and not called and False:
                 stop_current_task(session)
                 self.update_state({"state":GameState.GUESSING}, session)
                 return self.get_state(data,user,session,called=True)
@@ -398,7 +398,8 @@ class DuelsGame(PartyGame):
                     db.session.commit()
                     self.change_state(session, GameState.RESULTS)
                     if highest_guess:
-                        update_game_state({"state": GameState.GUESSING}, session, 5)
+                        pass
+                        # update_game_state({"state": GameState.GUESSING}, session, 5)
                     
         elif data.get("state") == GameState.GUESSING:
             if state.state == GameState.RESULTS:
