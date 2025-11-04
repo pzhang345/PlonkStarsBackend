@@ -333,6 +333,9 @@ class DuelsGame(PartyGame):
                 stop_current_task(session)
                 self.update_state({"state":GameState.GUESSING}, session)
                 return self.get_state(data,user,session,called=True)
+            
+            ret["next_round"] = state.time + timedelta(seconds=5)
+            ret["now"] = datetime.now(tz=pytz.utc)
         
         return ret
     
