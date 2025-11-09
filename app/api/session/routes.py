@@ -19,6 +19,8 @@ def get_session(user):
     session = Session.query.filter_by(uuid=data.get("id")).first()
     if not session:
         return jsonify({"error":"Session not found"}),404
+    if session.host.username == "demo":
+        return jsonify({"error":"Cannot play a demo session"}),400
     return return_400_on_error(get_session_info, session, user)
 
 @session_bp.route("/daily", methods=["GET"])
