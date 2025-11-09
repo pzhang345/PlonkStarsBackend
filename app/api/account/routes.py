@@ -57,7 +57,7 @@ def login():
     
 # Delete account route
 @account_bp.route("/delete", methods=["DELETE"])
-@login_required
+@login_required()
 def delete_account(user):
     # Delete the user from the database
     db.session.delete(user)
@@ -66,12 +66,12 @@ def delete_account(user):
 
 
 @account_bp.route("/user", methods=["GET"])
-@login_required
+@login_required()
 def get_user(user):
     return jsonify({"user":user.username}), 200
 
 @account_bp.route("/profile",methods=["GET"])
-@login_required
+@login_required()
 def get_profile(user):
     # add some more functionality later
     # ideas:
@@ -88,7 +88,7 @@ def get_profile(user):
     return jsonify(user.to_json()),200
 
 @account_bp.route("/avatar", methods=["GET"])
-@login_required
+@login_required()
 def get_avatar(user):
     data = request.args
     usernames = data.getlist("username")
@@ -100,7 +100,7 @@ def get_avatar(user):
         return jsonify(ret),200
 
 @account_bp.route("/coins", methods=["GET"])
-@login_required
+@login_required()
 def get_coins(user):
     coins = UserCoins.query.filter_by(user_id=user.id).first()
     if not coins:

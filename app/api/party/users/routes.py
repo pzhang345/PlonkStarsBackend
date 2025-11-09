@@ -10,7 +10,7 @@ from utils import return_400_on_error
 party_users_bp =  Blueprint("party_users_bp", __name__)
 
 @party_users_bp.route("", methods=["GET"])
-@login_required
+@login_required()
 def get_users_(user):
     data = request.args
     code = data.get("code")
@@ -25,7 +25,7 @@ def get_users_(user):
     return jsonify({"members": members,"host":party.host.username,"this":user.username}), 200
 
 @party_users_bp.route("/remove", methods=["POST"])
-@login_required
+@login_required()
 def remove_user(user):
     data = request.get_json()
     code = data.get("code")

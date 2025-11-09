@@ -40,12 +40,21 @@ def get_user_from_token(token):
     return User.query.filter_by(id=int(user_id)).first()
 
 # Decorator to check for JWT token
-def login_required(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        token = request.args.get('token') or request.headers.get("Authorization")
-        user = get_user_from_token(token)
-        if not user:
-            return jsonify({"error": "login required"}), 403
-        return f(user, *args, **kwargs)
-    return decorated_function
+def login_required(allow_demo=False):
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            token = request.headers.get("Authorization")
+            if token == "demo":
+                if allow_demo:
+                    user = User.query.filter_by(username="demo").first()
+                    return f(user, *args, **kwargs)
+                else:
+                    return jsonify({"error": "login required cannot use demo account"}), 403
+            
+            user = get_user_from_token(token)
+            if not user:
+                return jsonify({"error": "login required"}), 403
+            return f(user, *args, **kwargs)
+        return decorated_function
+    return decorator

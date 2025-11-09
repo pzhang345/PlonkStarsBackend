@@ -12,7 +12,7 @@ party_rules_bp = Blueprint("party_rules_bp", __name__)
 
 
 @party_rules_bp.route("", methods=["GET"])
-@login_required
+@login_required()
 def get_rules(user):
     data = request.args
     code = data.get("code")
@@ -26,7 +26,7 @@ def get_rules(user):
     return return_400_on_error(game_type[type].get_rules, party, data)
     
 @party_rules_bp.route("", methods=["POST"])
-@login_required
+@login_required()
 def set_rules(user):
     data = request.get_json()
     code = data.get("code")
@@ -55,7 +55,7 @@ def set_rules(user):
     return jsonify({"message": "rules updated"}), 200
 
 @party_rules_bp.route("/config", methods=["GET"])
-@login_required
+@login_required()
 def rules_config(user):
     data = request.args
     code = data.get("code")

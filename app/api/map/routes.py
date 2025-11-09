@@ -15,7 +15,7 @@ map_bp = Blueprint("map",__name__)
 map_bp.register_blueprint(map_edit_bp,url_prefix="/edit")
     
 @map_bp.route("/search",methods=["GET"])
-@login_required
+@login_required(allow_demo=True)
 def get_all_maps(user):
     name = request.args.get("name","")
     page = request.args.get("page", 1, type=int)
@@ -86,7 +86,7 @@ def get_all_maps(user):
     }),200
 
 @map_bp.route("/stats",methods=["GET"])
-@login_required
+@login_required(allow_demo=True)
 def get_map_info(user):
     id = request.args.get("id")
     if not id:
@@ -113,30 +113,30 @@ def get_map_info(user):
     if map.description:
         ret["description"] = map.description
     
-    
-    user_stats= get_stats(map=map,user=user,nmpz=nmpz)
-    if user_stats.total_guesses != None and not user_stats.total_guesses == 0:
-        ret["user_stats"] = {
-            "average":{
-                "score": user_stats.total_score/user_stats.total_guesses,
-                "distance": user_stats.total_distance/user_stats.total_guesses,
-                "time": user_stats.total_time/user_stats.total_guesses,
-                "guesses": user_stats.total_guesses,
+    if user.username != "demo":
+        user_stats= get_stats(map=map,user=user,nmpz=nmpz)
+        if user_stats.total_guesses != None and not user_stats.total_guesses == 0:
+            ret["user_stats"] = {
+                "average":{
+                    "score": user_stats.total_score/user_stats.total_guesses,
+                    "distance": user_stats.total_distance/user_stats.total_guesses,
+                    "time": user_stats.total_time/user_stats.total_guesses,
+                    "guesses": user_stats.total_guesses,
+                }
             }
-        }
-        
-        user_high = UserMapStats.query.filter_by(user_id=user.id,map_id=map.id).order_by(UserMapStats.high_average_score.desc(),UserMapStats.high_round_number.desc(),UserMapStats.high_average_time)
-        if nmpz != None:
-            user_high = user_high.filter_by(nmpz=nmpz)
-        user_high = user_high.first()
-        if user_high.high_session_id != None:
-            ret["user_stats"]["high"] = {
-                "score": user_high.high_average_score,
-                "distance": user_high.high_average_distance,
-                "time": user_high.high_average_time,
-                "rounds": user_high.high_round_number,
-                "session": user_high.high_session.uuid
-            }
+            
+            user_high = UserMapStats.query.filter_by(user_id=user.id,map_id=map.id).order_by(UserMapStats.high_average_score.desc(),UserMapStats.high_round_number.desc(),UserMapStats.high_average_time)
+            if nmpz != None:
+                user_high = user_high.filter_by(nmpz=nmpz)
+            user_high = user_high.first()
+            if user_high.high_session_id != None:
+                ret["user_stats"]["high"] = {
+                    "score": user_high.high_average_score,
+                    "distance": user_high.high_average_distance,
+                    "time": user_high.high_average_time,
+                    "rounds": user_high.high_round_number,
+                    "session": user_high.high_session.uuid
+                }
     
     ret["other"] = {}
     
@@ -164,7 +164,7 @@ def get_map_info(user):
             "stat":top_guesses_stats[4]
         }
     
-    five_ks = Guess.query.filter_by(score=5000).join(Round).join(Session).join(BaseRules).filter(BaseRules.map_id == map.id)
+    five_ks = Guess.query.filter_by(score=5000).join(Round).join(Session).join(BaseRules).filter(BaseRules.map_id == map.id).join(User, User.id == Guess.user_id).filter(User.username != "demo")
     if nmpz != None:
         five_ks = five_ks.filter(BaseRules.nmpz == nmpz)
     
@@ -189,7 +189,7 @@ def get_map_info(user):
             "stat":fastest_5k.time,
         }
     else:
-        highest_score = Guess.query.join(Round).join(Session).join(BaseRules).filter(BaseRules.map_id == map.id).order_by(Guess.score.desc())
+        highest_score = Guess.query.join(Round).join(Session).join(BaseRules).filter(BaseRules.map_id == map.id).join(User, User.id == Guess.user_id).filter(User.username != "demo").order_by(Guess.score.desc())
         if nmpz != None:
             highest_score = highest_score.filter(BaseRules.nmpz == nmpz)
         highest_score = highest_score.first()
@@ -201,7 +201,7 @@ def get_map_info(user):
             }
         
             highest_k = highest_score.score // 1000
-            fastest_nk = Guess.query.join(Round).join(Session).join(BaseRules).filter(BaseRules.map_id == map.id, Guess.score > highest_k * 1000).order_by(Guess.time)
+            fastest_nk = Guess.query.join(Round).join(Session).join(BaseRules).filter(BaseRules.map_id == map.id, Guess.score > highest_k * 1000).join(User, User.id == Guess.user_id).filter(User.username != "demo").order_by(Guess.time)
             if nmpz != None:
                 fastest_nk = fastest_nk.filter(BaseRules.nmpz == nmpz)
             fastest_nk = fastest_nk.first()
@@ -215,7 +215,7 @@ def get_map_info(user):
     return jsonify(ret),200
 
 @map_bp.route("/bounds",methods=["GET"])
-@login_required
+@login_required(allow_demo=True)
 def get_map_bounds(user):
     id = request.args.get("id")
     if not id:
@@ -225,7 +225,7 @@ def get_map_bounds(user):
     return jsonify([{**bound.bound.to_json(),"weight":bound.weight,"id":bound.id} for bound in map.map_bounds]),200
 
 @map_bp.route("/leaderboard",methods=["GET"])
-@login_required
+@login_required(allow_demo=True)
 def get_map_leaderboard(user):
     data = request.args
     map_id = data.get("id")
@@ -250,7 +250,7 @@ def get_map_leaderboard(user):
     }),200
     
 @map_bp.route("/leaderboard/game",methods=["GET"])
-@login_required
+@login_required(allow_demo=True)
 def get_leaderboard_game(user):
     data = request.args
     map_id = data.get("id")

@@ -480,10 +480,7 @@ class DuelsGame(PartyGame):
         rule_names = ["hp","multi_start","multi_mult","multi_add","mult_freq","guess_time"]
         db_names = ["start_hp","damage_multi_start_round","damage_multi_mult","damage_multi_add","damage_multi_freq","guess_time_limit"]
         rules_default = [duel_rules.start_hp, duel_rules.damage_multi_start_round, duel_rules.damage_multi_mult, duel_rules.damage_multi_add, duel_rules.damage_multi_freq, duel_rules.guess_time_limit]
-        values = {}
-        for name,db_name,default in zip(rule_names, db_names, rules_default):
-            values[db_name] = data.get(name, default)
-            self.check_rule(configs[name], values[db_name])
+        values = self.check_rules(data, configs, rule_names, db_names, rules_default)
         
         duel_rules = DuelRules.query.filter_by(**values).first()
         

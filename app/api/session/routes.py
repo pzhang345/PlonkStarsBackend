@@ -13,7 +13,7 @@ from utils import return_400_on_error
 session_bp = Blueprint("session_bp", __name__)
 
 @session_bp.route("/info", methods=["GET"])
-@login_required
+@login_required()
 def get_session(user):
     data = request.args
     session = Session.query.filter_by(uuid=data.get("id")).first()
@@ -22,7 +22,7 @@ def get_session(user):
     return return_400_on_error(get_session_info, session, user)
 
 @session_bp.route("/daily", methods=["GET"])
-@login_required
+@login_required(allow_demo=True)
 def get_daily(user):
     now = datetime.now(tz=pytz.utc)
     today = now.date()
@@ -53,14 +53,14 @@ def get_default():
     map = GameMap.query.filter_by(id=MAP_ID).first_or_404("Map not found")
     return jsonify({
         "mapName":map.name, 
-        "mapId":map.uuid, 
-        "seconds":TIME_LIMIT, 
+        "map_id":map.uuid, 
+        "time":TIME_LIMIT, 
         "rounds":ROUND_NUMBER, 
-        "NMPZ":NMPZ,
+        "nmpz":NMPZ,
     }),200
     
 @session_bp.route("/host", methods=["GET"])
-@login_required
+@login_required()
 def is_host(user):
     data = request.args
     session = Session.query.filter_by(uuid=data.get("id")).first_or_404("Session not found")

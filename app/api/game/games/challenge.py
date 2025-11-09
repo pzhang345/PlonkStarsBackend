@@ -17,6 +17,9 @@ class ChallengeGame(BaseGame):
         return {"id":session.uuid},200,session
 
     def join(self,data,user,session):
+        if (user.username == "demo" or session.host_id == "demo") and session.host_id != user.id:
+            raise Exception("Demo users can not interact with non-demo sessions")
+            
         state = self.get_state(data,session.host,session)
         if state["state"] == GameState.RESTRICTED:
             raise Exception("Host has not finished the session")
@@ -153,7 +156,7 @@ class ChallengeGame(BaseGame):
                 "lat":round.location.latitude,
                 "lng":round.location.longitude
             },
-            "this_user": user.to_json(),
+            "this_user": user.username,
             "users":[
                 
             ]
@@ -236,7 +239,7 @@ class ChallengeGame(BaseGame):
         leaderboard = ranked_users.paginate(page=page,per_page=per_page,error_out=False)
         
         json = {
-            "this_user":user.to_json(),
+            "this_user": user.username,
             "users": [],
             "rounds": []
         }
@@ -278,21 +281,22 @@ class ChallengeGame(BaseGame):
                 "guesses":[guess_to_json(user,round) for round in rounds]
             }
         
-        user_map_stat = UserMapStats.query.filter_by(user_id=user.id,map_id=session.base_rules.map_id, nmpz=session.base_rules.nmpz).first()
-        if not user_map_stat:
-            user_map_stat = UserMapStats(user_id=user.id,map_id=session.base_rules.map_id, nmpz=session.base_rules.nmpz)
-            db.session.add(user_map_stat)
-            db.session.commit()
+        if user.username != "demo":
+            user_map_stat = UserMapStats.query.filter_by(user_id=user.id,map_id=session.base_rules.map_id, nmpz=session.base_rules.nmpz).first()
+            if not user_map_stat:
+                user_map_stat = UserMapStats(user_id=user.id,map_id=session.base_rules.map_id, nmpz=session.base_rules.nmpz)
+                db.session.add(user_map_stat)
+                db.session.commit()
+                
+            max_round = session.base_rules.max_rounds
+            if session.host_id == user.id and (user_map_stat.high_average_score,user_map_stat.high_round_number,-user_map_stat.high_average_time) < (user_stats.total_score/max_round,max_round,-user_stats.total_time/max_round):
+                user_map_stat.high_round_number = max_round
+                user_map_stat.high_average_score = user_stats.total_score/max_round
+                user_map_stat.high_average_distance = user_stats.total_distance/max_round
+                user_map_stat.high_average_time = user_stats.total_time/max_round
+                user_map_stat.high_session_id = session.id
+                db.session.commit()
             
-        max_round = session.base_rules.max_rounds
-        if session.host_id == user.id and (user_map_stat.high_average_score,user_map_stat.high_round_number,-user_map_stat.high_average_time) < (user_stats.total_score/max_round,max_round,-user_stats.total_time/max_round):
-            user_map_stat.high_round_number = max_round
-            user_map_stat.high_average_score = user_stats.total_score/max_round
-            user_map_stat.high_average_distance = user_stats.total_distance/max_round
-            user_map_stat.high_average_time = user_stats.total_time/max_round
-            user_map_stat.high_session_id = session.id
-            db.session.commit()
-        
         return json
 
     def rules_config(self):
@@ -321,3 +325,5 @@ class ChallengeGame(BaseGame):
             guess = create_guess_on_timeout(user,round)
             create_round_stats(user,session,round_num=player.current_round,guess=guess)
         
+    def allow_demo(self):
+        return True

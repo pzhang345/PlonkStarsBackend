@@ -1,5 +1,4 @@
 from decimal import Decimal
-import math
 from flask import Blueprint,request, jsonify
 from sqlalchemy import Float, cast, func
 
@@ -16,11 +15,11 @@ from models.cosmetics import UserCoins, UserCosmetics, Cosmetic_Type, Tier, Cosm
 admin_bp = Blueprint("admin_bp",__name__)
 
 @admin_bp.route("/usercosmetics/initialize",methods=["POST"])
-@login_required
+@login_required()
 def initialize_user_cosmetics(user):
     if not user.is_admin:
         return jsonify({"error":"You are not an admin"}),403
-    users = User.query.all()
+    users = User.query.filter(User.username != "demo").all()
     for user in users:
         if not user.cosmetics:
             cosmetics = UserCosmetics(user_id = user.id)
@@ -29,7 +28,7 @@ def initialize_user_cosmetics(user):
     return jsonify({"message":"User cosmetics initialized"}),200
 
 @admin_bp.route("/scores/recalculate",methods=["POST"])
-@login_required
+@login_required()
 def recalculate_scores(user):
     if not user.is_admin:
         return jsonify({"error":"You are not an admin"}),403
@@ -52,6 +51,7 @@ def recalculate_scores(user):
         .join(Session, Round.session_id == Session.id)
         .join(BaseRules, Session.base_rule_id == BaseRules.id)
         .join(GameMap, BaseRules.map_id == GameMap.id)
+        .filter(User.username != "demo")
     )
     
     map_query = MapStats.query
@@ -115,7 +115,7 @@ def recalculate_scores(user):
     return jsonify({"message":"Scores recalculated"}),200
 
 @admin_bp.route("/configs/set",methods=["POST"])
-@login_required
+@login_required()
 def set_config(user):
     if not user.is_admin:
         return jsonify({"error":"You are not an admin"}),403
@@ -139,7 +139,7 @@ def set_config(user):
     return jsonify({"message":"Config updated"}),200
 
 @admin_bp.route("/configs/get",methods=["GET"])
-@login_required
+@login_required()
 def get_config(user):
     if not user.is_admin:
         return jsonify({"error":"You are not an admin"}),403
@@ -159,7 +159,7 @@ def get_config(user):
     return jsonify({"value":value}),200
 
 @admin_bp.route("/cosmetic/add",methods=["POST"])
-@login_required
+@login_required()
 def add_cosmetic(user):
     if not user.is_admin:
         return jsonify({"error":"You are not an admin"}),403
@@ -196,11 +196,11 @@ def add_cosmetic(user):
     
     
 @admin_bp.route("/coins/init",methods=["POST"])
-@login_required
+@login_required()
 def init_coins(user):
     if not user.is_admin:
         return jsonify({"error":"You are not an admin"}),400
-    for user in User.query:
+    for user in User.query.filter(User.username != "demo"):
         user_coins = UserCoins.query.filter_by(user_id=user.id).first()
         if not user_coins:
             user_coins = UserCoins(user_id=user.id, coins=0)
@@ -210,7 +210,7 @@ def init_coins(user):
     return jsonify({"message":"Coins initialized"}),200
 
 @admin_bp.route("/crate/add",methods=["POST"])
-@login_required
+@login_required()
 def add_crate(user):
     if not user.is_admin:
         return jsonify({"error":"You are not an admin"}),403
@@ -267,7 +267,7 @@ def add_crate(user):
     return jsonify({"message":f"{name} added"}),200
 
 @admin_bp.route("/rules/config",methods=["POST"])
-@login_required
+@login_required()
 def reconfig_rules(user):
     if not user.is_admin:
         return jsonify({"error":"You are not an admin"}),403

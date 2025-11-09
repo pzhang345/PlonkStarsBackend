@@ -20,7 +20,7 @@ dupe_refund = {
 }
 
 @crates_bp.route("/buy", methods=["POST"])
-@login_required
+@login_required()
 def buy_crate(user):
     data = request.get_json()
     crate_name = data.get("crate")
@@ -86,7 +86,7 @@ def buy_crate(user):
     }), 200
     
 @crates_bp.route("/shop", methods=["GET"])
-@login_required
+@login_required()
 def get_crates(user):
     crates = Crate.query.order_by(Crate.price).all()
     return jsonify([

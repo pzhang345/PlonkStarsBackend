@@ -11,7 +11,7 @@ cosmetics_bp.register_blueprint(crates_bp, url_prefix="/crates")
 
 # Avatar customize route
 @cosmetics_bp.route("/customize", methods=["PUT"])
-@login_required
+@login_required()
 def avatar_customize(user):
     data = request.get_json()
     hue = data.get("hue")
@@ -57,7 +57,7 @@ def avatar_customize(user):
 
 
 @cosmetics_bp.route("/all", methods=["GET"])
-@login_required
+@login_required(allow_demo=True)
 def get_cosmetic_ownership(user):
 
     # Create subquery

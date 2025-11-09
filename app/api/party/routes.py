@@ -23,7 +23,7 @@ party_bp.register_blueprint(party_teams_bp, url_prefix="/teams")
 party_bp.register_blueprint(party_users_bp, url_prefix="/users")
 
 @party_bp.route("/create", methods=["POST"])
-@login_required
+@login_required()
 def create_party(user):
     party = Party(host_id=user.id)
     db.session.add(party)
@@ -90,7 +90,7 @@ def create_party(user):
     return jsonify({"code": party.code}), 200
 
 @party_bp.route("/join", methods=["POST"])
-@login_required
+@login_required()
 def join_party(user):
     data = request.get_json()
     code = data.get("code")
@@ -113,7 +113,7 @@ def join_party(user):
     return jsonify({"message": "joined party"}), 200
 
 @party_bp.route("/host", methods=["GET"])
-@login_required
+@login_required()
 def is_host(user):
     data = request.args
     code = data.get("code")
@@ -122,7 +122,7 @@ def is_host(user):
     return jsonify({"is_host":party.host_id==user.id}), 200
 
 @party_bp.route("/leave", methods=["POST"])
-@login_required
+@login_required()
 def leave_party(user):
     data = request.get_json()
     code = data.get("code")
@@ -132,7 +132,7 @@ def leave_party(user):
     return return_400_on_error(remove_user_from_party, party, user, reason="Party left")
 
 @party_bp.route("/delete", methods=["POST"])
-@login_required
+@login_required()
 def delete_party(user):
     data = request.get_json()
     code = data.get("code")
@@ -151,7 +151,7 @@ def delete_party(user):
     return jsonify({"message": "deleted party"}), 200
 
 @party_bp.route("/lobby/join", methods=["POST"])
-@login_required
+@login_required()
 def join_lobby(user):
     data = request.get_json()
     code = data.get("code")
@@ -164,7 +164,7 @@ def join_lobby(user):
     return jsonify({"message": "joined lobby"}), 200
 
 @party_bp.route("/lobby/leave", methods=["POST"])
-@login_required
+@login_required()
 def leave_lobby(user):
     data = request.get_json()
     code = data.get("code")

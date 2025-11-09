@@ -77,10 +77,7 @@ class PartyGame(BaseGame):
         rule_names = ["time","rounds","nmpz"]
         db_names = ["time_limit","max_rounds","nmpz"]
         rules_default = [base_rules.time_limit, base_rules.max_rounds, base_rules.nmpz]
-        values = {}
-        for name,db_name,default in zip(rule_names,db_names,rules_default):
-            values[db_name] = data.get(name, default)
-            self.check_rule(configs[name], values[db_name])
+        values = self.check_rules(data, configs, rule_names, db_names, rules_default)
         
         base_rule = BaseRules.query.filter_by(map_id=map_id, **values).first()
         if not base_rule:
@@ -118,18 +115,3 @@ class PartyGame(BaseGame):
         
     def join_socket(self,session,user):
         join_room(session.uuid)
-        
-    def check_rule(self,rule,value):
-        if (rule["type"] == "integer" and not isinstance(value,int)) or \
-            (rule["type"] == "number" and not isinstance(value,(int,float))) or \
-            (rule["type"] == "boolean" and not isinstance(value,bool)):
-            raise Exception(f"Invalid value for {rule['name']}")
-        
-        if "min" in rule and value < rule["min"] and value != -1:
-            raise Exception(f"Value for {rule['name']} too low")
-        
-        if "max" in rule and value > rule["max"]:
-            raise Exception(f"Value for {rule['name']} too high")
-        
-        if (not "infinity" in rule or not rule["infinity"]) and value == -1:
-            raise Exception(f"Invalid value for {rule['name']}")

@@ -12,7 +12,7 @@ from utils import return_400_on_error
 party_teams_bp =  Blueprint("party_teams_bp", __name__)
 
 @party_teams_bp.route("", methods=["GET"])
-@login_required
+@login_required()
 def get_teams(user):
     data = request.args
     code = data.get("code")
@@ -21,7 +21,7 @@ def get_teams(user):
     return jsonify([team.to_json() for team in party.teams]), 200
 
 @party_teams_bp.route("/create", methods=["POST"])
-@login_required
+@login_required()
 def create_team(user):
     data = request.get_json()
     code = data.get("code")
@@ -44,7 +44,7 @@ def create_team(user):
     return jsonify({"message":"team created"}),200
 
 @party_teams_bp.route("/update", methods=["POST"])
-@login_required
+@login_required()
 def edit_team(user):
     data = request.get_json()
     team = PartyTeam.query.filter_by(uuid=data.get("id")).first_or_404("Cannot find team")
@@ -57,7 +57,7 @@ def edit_team(user):
     
 
 @party_teams_bp.route("/delete", methods=["POST"])
-@login_required
+@login_required()
 def delete_team(user):
     data = request.get_json()
     code = data.get("code")
@@ -78,7 +78,7 @@ def delete_team(user):
     return jsonify({"message":"team deleted"}),200
 
 @party_teams_bp.route("/leave",methods=["POST"])
-@login_required
+@login_required()
 def leave_team(user):
     data = request.get_json()
     code = data.get("code")
@@ -89,7 +89,7 @@ def leave_team(user):
     return jsonify({"message":"team left"}),200
 
 @party_teams_bp.route("/join", methods=["POST"])
-@login_required
+@login_required()
 def join_team(user):
     data = request.get_json()
     code = data.get("code")
@@ -105,7 +105,7 @@ def join_team(user):
 
 
 @party_teams_bp.route("/kick", methods=["POST"])
-@login_required
+@login_required()
 def kick_player(user):
     data = request.get_json()
     code = data.get("code")

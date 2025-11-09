@@ -87,33 +87,34 @@ def create_guess(lat,lng,user,round,time):
         time=min(time,rules.time_limit) if rules.time_limit != -1 else time
     )
     
-    stats = MapStats.query.filter_by(map_id=rules.map.id,nmpz=rules.nmpz).first()
-    if not stats:
-        stats = MapStats(
-            map_id=rules.map.id,
-            nmpz=rules.nmpz
-        )
-        db.session.add(stats)
-        db.session.flush()
-    
-    stats.total_distance = stats.total_distance + distance
-    stats.total_score += guess.score
-    stats.total_time += time
-    stats.total_guesses += 1
-    db.session.commit()
-    
-    user_stat = UserMapStats.query.filter_by(user_id=user.id,map_id=rules.map_id, nmpz=rules.nmpz).first()
-    if not user_stat:
-        user_stat = UserMapStats(user_id=user.id,map_id=rules.map_id, nmpz=rules.nmpz)
-        db.session.add(user_stat)
-        db.session.flush()
-    
-    user_stat.total_time += guess.time
-    user_stat.total_distance += guess.distance
-    user_stat.total_score += guess.score
-    user_stat.total_guesses += 1
-    db.session.commit()
-    
+    if user.username != "demo":
+        stats = MapStats.query.filter_by(map_id=rules.map.id,nmpz=rules.nmpz).first()
+        if not stats:
+            stats = MapStats(
+                map_id=rules.map.id,
+                nmpz=rules.nmpz
+            )
+            db.session.add(stats)
+            db.session.flush()
+        
+        stats.total_distance = stats.total_distance + distance
+        stats.total_score += guess.score
+        stats.total_time += time
+        stats.total_guesses += 1
+        db.session.commit()
+        
+        user_stat = UserMapStats.query.filter_by(user_id=user.id,map_id=rules.map_id, nmpz=rules.nmpz).first()
+        if not user_stat:
+            user_stat = UserMapStats(user_id=user.id,map_id=rules.map_id, nmpz=rules.nmpz)
+            db.session.add(user_stat)
+            db.session.flush()
+        
+        user_stat.total_time += guess.time
+        user_stat.total_distance += guess.distance
+        user_stat.total_score += guess.score
+        user_stat.total_guesses += 1
+        db.session.commit()
+        
     db.session.add(guess)
     db.session.commit()
     

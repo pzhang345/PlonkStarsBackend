@@ -13,7 +13,7 @@ from utils import return_400_on_error
 party_game_bp = Blueprint("party_game_bp", __name__)
 
 @party_game_bp.route("/start", methods=["POST"])
-@login_required
+@login_required()
 def start_party(user):
     data = request.get_json()
     code = data.get("code")
@@ -42,7 +42,7 @@ def start_party(user):
     return jsonify({"message": "session started"}), 200
 
 @party_game_bp.route("/join", methods=["POST"])
-@login_required
+@login_required()
 def join_game(user):
     data = request.get_json()
     code = data.get("code")
@@ -55,7 +55,7 @@ def join_game(user):
     return return_400_on_error(game_type[session.type].join, data, user, session)
 
 @party_game_bp.route("/state", methods=["GET"])
-@login_required
+@login_required()
 def get_game_state(user):
     data = request.args
     code = data.get("code")
