@@ -1,9 +1,12 @@
-from sqlalchemy import func
+from datetime import datetime, timedelta
+import pytz
+from sqlalchemy import func, select
 
 from api.game.games.challenge import ChallengeGame
 from models.db import db
 from models.map import GameMap
-from models.session import GameState, GameType
+from models.session import GameState, GameType, Session, Player
+from models.user import User
 from models.stats import MapStats
 
 
@@ -40,3 +43,20 @@ def get_session_info(session,user):
         },
         "state": state["state"].name,
     }
+    
+def clean_demo_sessions():
+    demo = User.query.filter_by(username="demo").first()
+    now = datetime.now(tz=pytz.utc)
+    
+    old_session_ids = (
+        select(Session.id)
+        .join(Player, Player.session_id == Session.id)
+        .filter(Session.host_id == demo.id)
+        .filter(Player.start_time < now - timedelta(days=1))
+        .subquery()
+    )
+
+    Session.query.filter(
+        Session.id.in_(select(old_session_ids.c.id))
+    ).delete(synchronize_session=False)
+    db.session.commit()

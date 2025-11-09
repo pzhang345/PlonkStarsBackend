@@ -1,5 +1,6 @@
 from api.party.party import clean_db, clean_party
 from api.session.daily import award_prev_daily_challenge_coins, create_daily
+from api.session.session import clean_demo_sessions
 from models.db import db
 from models.user import User
 
@@ -33,11 +34,12 @@ def register_commands(app):
     def clean_db_cli():
         """Cleans up the database"""
         clean_db()
+        clean_demo_sessions()
         print("Database cleaned successfully")
         
     @app.cli.command("create-demo")
     def create_demo_cli():
-        """Creates a demo user for testing purposes"""
+        """Creates a demo user"""
         demo_user = User(username="demo", password='a')
         db.session.add(demo_user)
         db.session.commit()
