@@ -50,7 +50,7 @@ def login_required(allow_demo=False):
                     user = User.query.filter_by(username="demo").first()
                     return f(user, *args, **kwargs)
                 else:
-                    return jsonify({"error": "login required cannot use demo account"}), 403
+                    return jsonify({"error": "login required"}), 403
             
             user = get_user_from_token(token)
             if not user:
