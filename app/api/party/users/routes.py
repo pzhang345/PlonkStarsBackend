@@ -20,7 +20,7 @@ def get_users_(user):
     if not party:
         return jsonify({"error": "No session yet"}), 404
     
-    members = [member.user.to_json() for member in party.members]
+    members = [{**member.user.to_json(), "in_lobby": member.in_lobby} for member in party.members]
     
     return jsonify({"members": members,"host":party.host.username,"this":user.username}), 200
 

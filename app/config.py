@@ -9,6 +9,7 @@ class Config:
     SECRET_KEY = os.environ.get("SECRET_KEY")
     GOOGLE_MAPS_API_KEY = os.environ.get("GOOGLE_MAPS_API_KEY")
     REDIS_URL = os.environ.get("REDIS_URL")
+    EMAILS = os.environ.get("EMAILS").split(",") if os.environ.get("EMAILS") else []
     
     
     if os.environ.get("DOCKER_CONTAINER") == "true":

@@ -7,9 +7,11 @@ from api.session.routes import session_bp
 from api.admin.routes import admin_bp
 from api.party.routes import party_bp
 from api.cosmetics.routes import cosmetics_bp
+from api.feedback.routes import feedback_bp
 
 api_bp = Blueprint("api", __name__)
 
+api_bp.register_blueprint(feedback_bp, url_prefix="/feedback")
 api_bp.register_blueprint(account_bp, url_prefix="/account")
 api_bp.register_blueprint(game_bp, url_prefix="/game")
 api_bp.register_blueprint(map_bp, url_prefix="/map")

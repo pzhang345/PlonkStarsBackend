@@ -160,6 +160,8 @@ def join_lobby(user):
     member = PartyMember.query.filter_by(party_id=party.id, user_id=user.id).first_or_404("Cannot find member")
     member.in_lobby = True
     db.session.commit()
+    
+    socketio.emit("join_lobby",{"user":user.username},namespace="/socket/party", room=party.code)
         
     return jsonify({"message": "joined lobby"}), 200
 
