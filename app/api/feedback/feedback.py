@@ -4,6 +4,8 @@ from config import Config
 from models.feedback import Feedback
 from models.db import db
 import html
+from datetime import datetime, timedelta
+import pytz
 
 def send_feedback():
     unsent_feedback = Feedback.query.filter_by(sent=False).all()
@@ -42,7 +44,7 @@ def send_feedback():
     """
 
     msg = Message(
-        subject="Plonk Stars Feedback Summary",
+        subject="Plonk Stars Feedback Summary for " + datetime.now(tz=pytz.utc).strftime("%Y-%m-%d"),
         sender=("Plonk Stars Feedback Bot", Config.MAIL_USERNAME),
         recipients=Config.EMAILS,
         html=html_body
