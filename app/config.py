@@ -10,8 +10,16 @@ class Config:
     GOOGLE_MAPS_API_KEY = os.environ.get("GOOGLE_MAPS_API_KEY")
     REDIS_URL = os.environ.get("REDIS_URL")
     EMAILS = os.environ.get("EMAILS").split(",") if os.environ.get("EMAILS") else []
+    MAIL_SERVER = os.environ.get("MAILGUN_SMTP_SERVER") if os.environ.get("MAILGUN_SMTP_SERVER") else "localhost"
+    MAIL_PORT = int(os.environ.get("MAILGUN_SMTP_PORT")) if os.environ.get("MAILGUN_SMTP_PORT") else 8025
+    MAIL_USERNAME = os.environ.get("MAILGUN_SMTP_LOGIN")
+    MAIL_PASSWORD = os.environ.get("MAILGUN_SMTP_PASSWORD")
+    MAIL_USE_TLS = True if MAIL_SERVER != "localhost" else False
+    MAIL_USE_SSL = False
     
     
     if os.environ.get("DOCKER_CONTAINER") == "true":
         SQLALCHEMY_DATABASE_URI = SQLALCHEMY_DATABASE_URI.replace("localhost", "host.docker.internal")
         
+# Running a local SMTP server for testing purposes
+# python -m smtpd -c DebuggingServer -n localhost:8025

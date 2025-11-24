@@ -1,6 +1,7 @@
 from api.party.party import clean_db, clean_party
 from api.session.daily import award_prev_daily_challenge_coins, create_daily
 from api.session.session import clean_demo_sessions
+from api.feedback.feedback import send_feedback
 from models.db import db
 from models.user import User
 
@@ -11,8 +12,13 @@ def register_commands(app):
         clean_party()
         award_prev_daily_challenge_coins()
         clean_db()
+        send_feedback()
         
-    
+    @app.cli.command("send-feedback")
+    def send_feedback_cli():
+        send_feedback()
+        print("Feedback sent successfully.")
+        
     @app.cli.command("create-daily")
     def create_daily_cli():
         create_daily()

@@ -25,6 +25,7 @@ class User(db.Model):
     team_players = db.relationship("TeamPlayer", backref="user", cascade="all, delete", passive_deletes=True)
     party_leader = db.relationship("PartyTeam", backref="leader", cascade="all, delete", passive_deletes=True)
     plonks = db.relationship("PlayerPlonk", backref="user", cascade="all, delete", passive_deletes=True)
+    feedback_entries = db.relationship("Feedback", backref="user", cascade="all, delete", passive_deletes=True)
 
     def __str__(self):
         return self.username

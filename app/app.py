@@ -9,6 +9,7 @@ from fsocket import socketio
 from api.routes import api_bp
 from api.socket import register_sockets
 from my_celery.base_celery import init_celery
+from mail.mail import mail
 from my_celery.db_sync import start_sync_db
 
 from cli.cli import register_commands
@@ -29,6 +30,7 @@ migrate = Migrate(app, db,directory=app.config["MIGRATION_DIR"])
 
 
 init_celery(app)
+mail.init_app(app)
 admin.init_app(app)
 socketio.init_app(app)
 app.register_blueprint(api_bp, url_prefix="/api")
