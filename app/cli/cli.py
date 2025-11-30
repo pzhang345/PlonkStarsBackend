@@ -12,6 +12,7 @@ def register_commands(app):
         clean_party()
         award_prev_daily_challenge_coins()
         clean_db()
+        clean_demo_sessions()
         send_feedback()
         
     @app.cli.command("send-feedback")
