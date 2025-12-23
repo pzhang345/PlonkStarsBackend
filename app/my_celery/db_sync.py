@@ -3,7 +3,7 @@ import redis
 from config import Config
 from models.db import db
 
-redis_instance = redis.from_url(Config.REDIS_URL)
+redis_instance = redis.from_url(Config.REDIS_SSL_URL)
 def start_sync_db(app):
     def sync_db():
         pubsub = redis_instance.pubsub()

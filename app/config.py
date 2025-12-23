@@ -9,6 +9,8 @@ class Config:
     SECRET_KEY = os.environ.get("SECRET_KEY")
     GOOGLE_MAPS_API_KEY = os.environ.get("GOOGLE_MAPS_API_KEY")
     REDIS_URL = os.environ.get("REDIS_URL")
+    REDIS_SSL_URL = REDIS_URL + "/0?ssl_cert_reqs=CERT_NONE" if REDIS_URL.startswith("rediss://") else REDIS_URL
+
     EMAILS = os.environ.get("EMAILS").split(",") if os.environ.get("EMAILS") else []
     MAIL_SERVER = os.environ.get("MAILGUN_SMTP_SERVER") if os.environ.get("MAILGUN_SMTP_SERVER") else "localhost"
     MAIL_PORT = int(os.environ.get("MAILGUN_SMTP_PORT")) if os.environ.get("MAILGUN_SMTP_PORT") else 8025

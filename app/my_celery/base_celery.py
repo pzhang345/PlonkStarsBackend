@@ -3,16 +3,14 @@ from config import Config
 import ssl
 from models.db import db
 
-redis_ssl_url = Config.REDIS_URL + "/0?ssl_cert_reqs=CERT_NONE" if Config.REDIS_URL.startswith("rediss://") else Config.REDIS_URL
-
 broker_use_ssl_config = None
 if Config.REDIS_URL.startswith("rediss://"):
     broker_use_ssl_config = {"ssl_cert_reqs": ssl.CERT_NONE}
     
 celery = Celery(
     __name__, 
-    broker=redis_ssl_url, 
-    backend=redis_ssl_url,
+    broker=Config.REDIS_SSL_URL, 
+    backend=Config.REDIS_SSL_URL,
     broker_use_ssl=broker_use_ssl_config
 )
 
