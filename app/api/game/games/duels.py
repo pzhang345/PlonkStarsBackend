@@ -409,8 +409,9 @@ class DuelsGame(PartyGame):
         elif data.get("state") == GameState.FINISHED:
             if state.state == GameState.RESULTS:
                 party = session.party
-                party.session_id = None
-                db.session.commit()
+                if party != None:
+                    party.session_id = None
+                    db.session.commit()
                 self.change_state(session, GameState.FINISHED)
         
         
