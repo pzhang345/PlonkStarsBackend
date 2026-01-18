@@ -251,14 +251,14 @@ class ChallengeGame(BaseGame):
             }]
         
         if this_user.rank < (page - 1) * per_page + 1:
-            json["users"] = {
+            json["users"] += [{
                 "user":user.to_json(),
                 "score":user_stats.total_score,
                 "distance":user_stats.total_distance,
                 "time":user_stats.total_time,
                 "rank":this_user.rank,
                 "rounds":[guess_to_json(user,round) for round in rounds]
-            }
+            }]
         
         for users in leaderboard.items:
             curr_user = User.query.filter_by(id=users.user_id).first()
@@ -272,14 +272,14 @@ class ChallengeGame(BaseGame):
             }]
         
         if this_user.rank > page * per_page:
-            json["users"] = {
+            json["users"] += [{
                 "user":user.to_json(),
                 "score":user_stats.total_score,
                 "distance":user_stats.total_distance,
                 "time":user_stats.total_time,
                 "rank":this_user.rank,
                 "guesses":[guess_to_json(user,round) for round in rounds]
-            }
+            }]
         
         if user.username != "demo":
             user_map_stat = UserMapStats.query.filter_by(user_id=user.id,map_id=session.base_rules.map_id, nmpz=session.base_rules.nmpz).first()
