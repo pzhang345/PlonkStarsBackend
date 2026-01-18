@@ -16,3 +16,10 @@ Backend - Flask, PostgreSQL
 
 Server-side is hosted on Heroku<br>
 Client-side is hosted on Vercel
+
+To run the backend locally, run these commands in different terminal tabs:
+```
+docker run --name redis --rm -p 6379:6379 redis redis-server
+celery -A my_celery.celery_worker.celery worker --loglevel=info --pool=threads
+flask run
+```
