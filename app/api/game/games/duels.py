@@ -241,6 +241,29 @@ class DuelsGame(PartyGame):
             .group_by(GameTeamLinker.id)
             .order_by(func.max(Round.round_number).desc(), func.min(DuelHp.hp).desc())
         )
+        
+        # Compute global ranks for each guess
+        global_ranks = {}
+        rounds = (
+            Round.query
+            .filter(Round.session_id == session.id)
+            .all()
+        )
+
+        for round in rounds:
+            global_ranks[round.id] = {}
+            guesses = (
+                Guess.query
+                .join(User)
+                .filter(Guess.round_id == round.id)
+                .order_by(Guess.distance)
+                .all()
+            )
+
+            for rank, guess in enumerate(guesses, start=1):
+                global_ranks[round.id][guess.id] = rank
+        
+        # Build the summary data per team
         for team in teams:
             team_data = {
                 "team": team.to_json(),
@@ -258,6 +281,7 @@ class DuelsGame(PartyGame):
                             "score": guess.score,
                             "distance": guess.distance,
                             "time": guess.time,
+                            "rank": global_ranks[round.id][guess.id]
                         } for guess in Guess.query.join(User).join(TeamPlayer, User.id == TeamPlayer.user_id).join(Round).filter(team.team.id == TeamPlayer.team_id,Round.id==round.id).order_by(Guess.distance)
                     ]
                 })
