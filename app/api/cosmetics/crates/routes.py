@@ -19,6 +19,16 @@ dupe_refund = {
     Tier.LEGENDARY: 4000,
 }
 
+
+def roll_crate_item(items, total_weight):
+    roll = random.randint(1, total_weight)
+    for item in items:
+        roll -= item.weight
+        if roll <= 0:
+            return item
+    return None
+
+
 @crates_bp.route("/buy", methods=["POST"])
 @login_required()
 def buy_crate(user):
@@ -31,15 +41,8 @@ def buy_crate(user):
     
     user_coins.coins -= crate.price
 
+    item_rarity = roll_crate_item(crate.items, crate.total_weight)
 
-    item_rarity = None
-    roll = random.randint(1,crate.total_weight)
-    for items in crate.items:
-        roll -= items.weight
-        if roll <= 0:
-            item_rarity = items
-            break
-    
     if not item_rarity:
         db.session.commit()
         return jsonify({"coins": user_coins.coins}), 200

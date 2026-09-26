@@ -4,7 +4,7 @@ import ssl
 from models.db import db
 
 broker_use_ssl_config = None
-if Config.REDIS_URL.startswith("rediss://"):
+if Config.REDIS_URL and Config.REDIS_URL.startswith("rediss://"):
     broker_use_ssl_config = {"ssl_cert_reqs": ssl.CERT_NONE}
     
 celery = Celery(
