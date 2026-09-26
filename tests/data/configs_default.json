@@ -1,0 +1,17 @@
+[
+  {"key": "GAME_DEFAULT_MAP_ID", "value": "1"},
+  {"key": "GAME_DEFAULT_ROUNDS", "value": "5"},
+  {"key": "GAME_DEFAULT_TIME_LIMIT", "value": "60"},
+  {"key": "GAME_DEFAULT_NMPZ", "value": "False"},
+
+  {"key": "DUELS_DEFAULT_ROUNDS", "value": "-1"},
+  {"key": "DUELS_DEFAULT_TIME_LIMIT", "value": "-1"},
+  {"key": "DUELS_DEFAULT_NMPZ", "value": "False"},
+  {"key": "DUELS_DEFAULT_HP", "value": "6000"},
+  {"key": "DUELS_DEFAULT_START_HP", "value": "6000"},
+  {"key": "DUELS_DEFAULT_GUESS_TIME_LIMIT", "value": "15"},
+  {"key": "DUELS_DEFAULT_DAMAGE_MULTI_START_ROUND", "value": "1"},
+  {"key": "DUELS_DEFAULT_DAMAGE_MULTI_MULT", "value": "1"},
+  {"key": "DUELS_DEFAULT_DAMAGE_MULTI_ADD", "value": "0"},
+  {"key": "DUELS_DEFAULT_DAMAGE_MULTI_FREQ", "value": "1"}
+]
