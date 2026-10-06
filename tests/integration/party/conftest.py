@@ -11,8 +11,8 @@
 - game_configs: seeded Configs rows (GAME_DEFAULT_*/DUELS_DEFAULT_*) that
   POST /api/party/create and the rules routes (set_default_rules,
   DuelsGame.rules_config, etc.) read via Configs.get(...). Copied verbatim
-  from tests/integration/game/conftest.py, per the task brief, since a
-  file-local conftest can't see a sibling directory's fixtures.
+  from tests/integration/game/conftest.py, since a file-local conftest
+  can't see a sibling directory's fixtures.
 """
 
 import json

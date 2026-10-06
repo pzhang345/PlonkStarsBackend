@@ -11,7 +11,7 @@
   local `game_configs`/`duels_configs` fixtures (predating this one); a
   file-local fixture of the same name shadows this one for that file, so
   there's no conflict.
-- started_challenge: not implemented - no Phase 2 duels test needs it, left
+- started_challenge: not implemented - no current test needs it, left
   as a TODO for whichever future test does.
 """
 

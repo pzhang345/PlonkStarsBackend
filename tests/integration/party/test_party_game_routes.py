@@ -1,7 +1,6 @@
 """Party game start/join/state routes.
 
-Scope (TESTING_PLAN.md section 2 comment: "start/join/state"). No Phase-3
-bullet names this file directly - the full duel flow through these routes is
+Scope: start/join/state. The full duel flow through these routes is
 covered end-to-end in integration/game/test_duels_game.py - so these stubs
 cover the party-side game routes in isolation.
 

@@ -1,6 +1,6 @@
 """Party team management: create/update/delete/join/leave/kick.
 
-Scope (TESTING_PLAN.md section 3 Phase 3):
+Scope:
 - Teams: create, update, delete, join, leave, and kick. Only the host can
   kick. A user can't be on two teams.
 
@@ -19,7 +19,7 @@ app/api/party/teams/teams.py:
   * POST /leave: remove_from_team(); a no-op if the caller isn't on a team
     (no error either way).
   * POST /kick: allowed for the party host OR the KICKED user's OWN team
-    leader (not "host-only", despite the plan's phrasing) - otherwise 400.
+    leader (not "host-only") - otherwise 400.
 """
 
 import pytest
@@ -326,10 +326,9 @@ def test_host_can_kick_any_team_member(client, party_with_members):
 
 
 def test_team_leader_can_also_kick_their_own_teammate(client, party_with_members):
-    """Documents that kicking is NOT host-exclusive, despite the plan's
-    "only the host can kick" phrasing: a team's own leader can kick a
-    teammate off that same team too (see the `kick_player > 0` branch of
-    api/party/teams/routes.py:kick_player)."""
+    """Documents that kicking is NOT host-exclusive: a team's own leader can
+    kick a teammate off that same team too (see the `kick_player > 0` branch
+    of api/party/teams/routes.py:kick_player)."""
     party, host, members = party_with_members
     leader = members[0]
     team = make_team(party, users=[leader, members[1]], leader=leader)

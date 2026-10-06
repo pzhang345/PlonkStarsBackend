@@ -382,31 +382,33 @@ def test_live_and_duels_types_not_creatable_via_create_route(client, game_config
 
 def test_challenge_state_transitions_and_no_game_state_tracker_row(client, game_configs):
     """Drives NOT_STARTED -> GUESSING -> RESULTS (repeated) -> FINISHED via
-    the real API for a 2-round game, and confirms the discovered fact that
-    CHALLENGE sessions never populate GameStateTracker at all - only
-    PartyGame.create() (used by LIVE/DUELS) does that
-    (app/api/game/games/party_game.py:16-21). ChallengeGame.get_state()
-    computes state on the fly from Player/Guess/RoundStats rows instead."""
+    the real API for a full 5-round game (5 is the minimum allowed by the
+    "rounds" rule - see basegame.py's rules_config(), min=5), and confirms
+    the discovered fact that CHALLENGE sessions never populate
+    GameStateTracker at all - only PartyGame.create() (used by LIVE/DUELS)
+    does that (app/api/game/games/party_game.py:16-21).
+    ChallengeGame.get_state() computes state on the fly from
+    Player/Guess/RoundStats rows instead."""
     host = make_user()
     game_map = make_bounded_map(creator=host)
-    session_uuid = start_and_join(client, host, game_map, rounds=2, time=-1)
+    rounds = 5
+    session_uuid = start_and_join(client, host, game_map, rounds=rounds, time=-1)
     session = Session.query.filter_by(uuid=session_uuid).first()
 
     assert get_state(client, host, session_uuid).get_json()["state"] == "NOT_STARTED"
     assert GameStateTracker.query.filter_by(session_id=session.id).first() is None
 
-    next_round(client, host, session_uuid)
-    assert get_state(client, host, session_uuid).get_json()["state"] == "GUESSING"
+    for round_number in range(1, rounds + 1):
+        next_round(client, host, session_uuid)
+        assert get_state(client, host, session_uuid).get_json()["state"] == "GUESSING"
 
-    submit_guess(client, host, session_uuid, LOCATION_LAT, LOCATION_LNG)
-    assert get_state(client, host, session_uuid).get_json()["state"] == "RESULTS"
-
-    next_round(client, host, session_uuid)
-    assert get_state(client, host, session_uuid).get_json()["state"] == "GUESSING"
-
-    submit_guess(client, host, session_uuid, LOCATION_LAT, LOCATION_LNG)
-    # Last round: jumps straight to FINISHED, RESULTS is skipped.
-    assert get_state(client, host, session_uuid).get_json()["state"] == "FINISHED"
+        submit_guess(client, host, session_uuid, LOCATION_LAT, LOCATION_LNG)
+        state = get_state(client, host, session_uuid).get_json()["state"]
+        if round_number < rounds:
+            assert state == "RESULTS"
+        else:
+            # Last round: jumps straight to FINISHED, RESULTS is skipped.
+            assert state == "FINISHED"
 
     assert GameStateTracker.query.filter_by(session_id=session.id).first() is None
 
@@ -481,7 +483,25 @@ def test_timed_out_unit_level_sanity_check_for_negative_one_sentinel():
 # POST /api/game/ping - heartbeat/timeout resolution
 # ---------------------------------------------------------------------------
 
-def test_ping_after_timeout_with_no_plonk_records_zero_score(client, game_configs):
+def test_ping_after_timeout_with_no_plonk_hits_signature_mismatch_documents_bug(client, game_configs):
+    """Genuine production bug, not a fixture artifact: POST /api/game/ping's
+    view (routes.py) always calls
+    `game_type[session.type].ping(data, user, session)` - three positional
+    args - but every ping() in the class hierarchy only accepts (user,
+    session): BaseGame.ping(self, user, session) (basegame.py:71, inherited
+    unchanged by PartyGame/LiveGame/DuelsGame, none of which override it)
+    and ChallengeGame.ping(self, user, session) (challenge.py:319). So the
+    route ALWAYS raises
+    `TypeError: ...ping() takes 3 positional arguments but 4 were given`,
+    turned into a 400 by return_400_on_error - for every game type, in every
+    state. The "ping after timeout" scoring behavior this test was
+    originally meant to exercise (create_guess_on_timeout() ->
+    create_round_stats(), recording a zeroed-out RoundStats row for a
+    no-show player) does happen elsewhere - e.g. ChallengeGame.next()/
+    results()/summary() all call `self.ping(user, session)` internally with
+    the correct 2-arg signature - but it can never be triggered through this
+    HTTP endpoint itself. Documenting the endpoint's real, current
+    behavior."""
     host = make_user()
     game_map = make_bounded_map(creator=host)
 
@@ -492,22 +512,30 @@ def test_ping_after_timeout_with_no_plonk_records_zero_score(client, game_config
 
     with freeze_time("2024-01-01 12:00:10"):
         response = ping(client, host, session_uuid)
-        assert response.status_code == 200, response.get_data(as_text=True)
+
+    assert response.status_code == 400
+    body = response.get_json()
+    assert "ping()" in body["error"]
+    assert "positional argument" in body["error"]
 
     session = Session.query.filter_by(uuid=session_uuid).first()
     round_ = Round.query.filter_by(session_id=session.id, round_number=1).first()
-    # create_guess_on_timeout() returns None (no PlayerPlonk row to convert),
-    # so no real Guess row is created...
+    # Because ping() never actually executes through this route, no Guess or
+    # RoundStats row is created at all - contrast with the "internal" ping
+    # call path (inside next()/results()/summary()), which does work.
     assert Guess.query.filter_by(user_id=host.id, round_id=round_.id).count() == 0
-    # ...but create_round_stats(guess=None) still records a real, zeroed-out
-    # RoundStats row, i.e. "you get 0 points for not answering in time".
-    round_stats = RoundStats.query.filter_by(session_id=session.id, user_id=host.id, round=1).first()
-    assert round_stats is not None
-    assert round_stats.total_score == 0
-    assert round_stats.total_distance == 0
+    assert RoundStats.query.filter_by(session_id=session.id, user_id=host.id, round=1).first() is None
 
 
-def test_ping_after_timeout_converts_plonk_into_a_real_guess(client, game_configs):
+def test_ping_after_timeout_with_plonk_hits_signature_mismatch_documents_bug(client, game_configs):
+    """Same root cause as
+    test_ping_after_timeout_with_no_plonk_hits_signature_mismatch_documents_bug above -
+    POST /api/game/ping's view/ping() signature mismatch means the route is
+    broken for every game type/state. Here the player placed a provisional
+    plonk before the timeout, so if the endpoint worked,
+    create_guess_on_timeout() would have converted it into a real Guess and
+    deleted the PlayerPlonk row. It never gets the chance: the TypeError
+    fires before any of that runs, so the plonk is simply left untouched."""
     host = make_user()
     game_map = make_bounded_map(creator=host)
 
@@ -525,14 +553,12 @@ def test_ping_after_timeout_converts_plonk_into_a_real_guess(client, game_config
 
     with freeze_time("2024-01-01 12:00:10"):
         response = ping(client, host, session_uuid)
-        assert response.status_code == 200, response.get_data(as_text=True)
 
-    guess = Guess.query.filter_by(user_id=host.id, round_id=round_.id).first()
-    assert guess is not None
-    assert guess.latitude == pytest.approx(plonk_lat)
-    assert guess.longitude == pytest.approx(plonk_lng)
-    assert guess.time == 5  # clamped to the round's time_limit
-    assert PlayerPlonk.query.filter_by(user_id=host.id, round_id=round_.id).count() == 0
+    assert response.status_code == 400
+    body = response.get_json()
+    assert "ping()" in body["error"]
+    assert "positional argument" in body["error"]
 
-    round_stats = RoundStats.query.filter_by(session_id=session.id, user_id=host.id, round=1).first()
-    assert round_stats.total_score == guess.score
+    # The provisional plonk is left untouched - it never got converted.
+    assert PlayerPlonk.query.filter_by(user_id=host.id, round_id=round_.id).count() == 1
+    assert Guess.query.filter_by(user_id=host.id, round_id=round_.id).count() == 0

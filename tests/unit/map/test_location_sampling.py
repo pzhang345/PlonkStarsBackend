@@ -1,9 +1,8 @@
 """Pure-logic unit tests for map location sampling helpers.
 
-Scope (TESTING_PLAN.md section 2 comment: "weighted bound selection,
-in-bounds"). No Phase-3 bullet names this file directly - Phase 3's map
-bullets target the integration/map/* route tests - so these stubs cover the
-underlying pure-logic sampling helpers used by generate_location.
+Scope: weighted bound selection and in-bounds checks - the underlying
+pure-logic sampling helpers used by generate_location, as opposed to the
+integration/map/* route tests that exercise it end-to-end.
 
 No DB/app/network needed: `get_random_bounds` (app/api/location/generate.py)
 is exercised with `MapBound` stubbed out to a plain in-memory list (it's only

@@ -1,7 +1,6 @@
 """Map editing routes: create, bounds, name, description, delete, editors.
 
-Scope (TESTING_PLAN.md section 2 comment:
-"create/bounds/reweight/name/desc/delete" and section 3 Phase 3):
+Scope:
 - Edit routes: create, bound/add, bound/add/all, bound/remove(/all),
   bound/reweight, name, description, delete, and editor add/remove.
   Validation rejects inverted or out-of-range bounds, zero or negative
@@ -229,9 +228,8 @@ def test_bound_add_documents_zero_and_negative_weight_are_not_rejected_bug(clien
     # BUG: bound/add does `weight = max(1, weight) if weight else <default>`.
     # A negative weight is truthy, so it's silently clamped to 1 instead of
     # being rejected; a zero weight is falsy, so it silently falls back to
-    # the computed default instead of being rejected either. The testing
-    # plan expects zero/negative weights to be rejected with 400 - they
-    # aren't.
+    # the computed default instead of being rejected either. Zero/negative
+    # weights should be rejected with 400 - they aren't.
     game_map, owner = owned_map
     payload = {
         "id": game_map.uuid,

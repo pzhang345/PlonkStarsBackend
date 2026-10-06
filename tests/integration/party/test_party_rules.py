@@ -1,6 +1,6 @@
 """Party rules routes: GET/POST per game type.
 
-Scope (TESTING_PLAN.md section 3 Phase 3):
+Scope:
 - Rules: GET/POST per game type, validated against rules_config.
 
 Route shapes confirmed by reading app/api/party/rules/routes.py and

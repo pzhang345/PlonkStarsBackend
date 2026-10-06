@@ -1,7 +1,6 @@
 """Socket.IO /socket/map/edit namespace.
 
-Scope (TESTING_PLAN.md section 2 comment: "/socket/map/edit" and section 3
-Phase 3):
+Scope:
 - Socket /socket/map/edit: an editor can join the room and a non-editor
   can't.
 

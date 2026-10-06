@@ -1,7 +1,6 @@
 """PUT /customize and GET /all cosmetics routes.
 
-Scope (TESTING_PLAN.md section 2 comment: "customize, all" and section 3
-Phase 1):
+Scope:
 - PUT /customize: equipping an item you don't own is rejected, and equipping
   one you own persists. Omitting hue/saturation/brightness keeps the
   existing value; sending null for a slot unequips it. Unauthenticated and

@@ -1,6 +1,6 @@
 """Party create/join/leave/delete/lobby routes.
 
-Scope (TESTING_PLAN.md section 3 Phase 3):
+Scope:
 - Routes: create, join by code, leave, and delete. Only the host can delete.
   An unknown code returns 404. Joining twice is idempotent.
 - Lobby join and leave. The host leaving either transfers or deletes the

@@ -1,7 +1,6 @@
 """Map search and bounds routes.
 
-Scope (TESTING_PLAN.md section 2 comment: "search, bounds" and section 3
-Phase 3):
+Scope:
 - Search: pagination, the name filter, and empty results. `bounds` returns
   the map's bounds.
 
@@ -48,65 +47,79 @@ def _add_bound(game_map, s_lat, s_lng, e_lat, e_lng, weight=1):
 
 
 # ---------------------------------------------------------------------------
-# Search - BUG: the whole route crashes before returning anything
+# Search
 # ---------------------------------------------------------------------------
 #
-# BUG: get_all_maps builds its query with `db.session.query(GameMap, ...)`,
-# which is a plain sqlalchemy.orm.Query - not the Flask-SQLAlchemy Query
-# subclass (only `Model.query`, e.g. `GameMap.query`, uses that subclass).
-# The plain Query has no `.paginate()` method at all, so the final
-# `.paginate(page=page, per_page=per_page)` call raises AttributeError on
-# every single request to this route, unconditionally - regardless of
-# pagination params, the name filter, or whether there are zero or many
-# matching maps. Verified directly: `hasattr(sqlalchemy.orm.Query,
-# "paginate")` is False, `hasattr(flask_sqlalchemy.query.Query, "paginate")`
-# is True. TESTING is True, so the exception propagates out of
-# client.get(...) instead of becoming a 500 response, exactly like the
-# UserCoins bug pinned in test_crates_shop.py.
-#
-# The three tests below pin this for the three scenarios named in
-# TESTING_PLAN.md's map bullet (pagination, name filter, empty results) -
-# each documents that the route crashes, not that the feature works. Once
-# fixed, each becomes a real assertion on the (currently unreachable) JSON
-# shape the scenario setup below is already built for.
+# get_all_maps returns {"maps": [...], "pages": <int>}, where each map entry
+# is {name, id (the map's uuid, not its db id), creator (username),
+# average_score, average_generation_time, total_guesses}. Results are
+# paginated via `.paginate(page=page, per_page=per_page)` and ordered by
+# (creator priority, desc total_guesses); `pages` follows Flask-SQLAlchemy's
+# Pagination.pages, which is 0 when there are no matching rows and otherwise
+# ceil(total / per_page).
 
-def test_search_paginates_results_documents_bug(client):
+def test_search_paginates_results(client):
     """15 maps owned by the same user, with distinct (seeded) total_guesses
-    so the search route's `desc(total_guesses)` sort would be deterministic
-    across pages once the route works - but the route currently crashes
-    before pagination ever runs."""
+    so the search route's `desc(total_guesses)` sort is deterministic across
+    pages. All 15 share a creator, so they all get the same (highest) sort
+    priority and the tie is broken purely by total_guesses - map 0 has the
+    most guesses (100) down to map 14 (86), so page 1 (per_page=10) is maps
+    0-9 and page 2 is maps 10-14."""
     user = make_user()
     names = [f"paginate-map-{i}" for i in range(15)]
+    maps_by_name = {}
     for i, name in enumerate(names):
         game_map = make_map(creator=user, name=name)
         _seed_map_stats(game_map, total_guesses=100 - i)  # descending: map 0 has the most guesses
+        maps_by_name[name] = game_map
 
-    with pytest.raises(AttributeError):
-        client.get(SEARCH_URL, query_string={"page": 1, "per_page": 10}, headers=auth_header(user))
+    page_1 = client.get(SEARCH_URL, query_string={"page": 1, "per_page": 10}, headers=auth_header(user))
+    assert page_1.status_code == 200
+    body_1 = page_1.get_json()
+    assert body_1["pages"] == 2
+    assert [m["name"] for m in body_1["maps"]] == names[:10]
+    assert [m["total_guesses"] for m in body_1["maps"]] == [100 - i for i in range(10)]
+    assert [m["average_score"] for m in body_1["maps"]] == [0] * 10
+    first = body_1["maps"][0]
+    assert first["id"] == maps_by_name[names[0]].uuid
+    assert first["creator"] == user.username
+
+    page_2 = client.get(SEARCH_URL, query_string={"page": 2, "per_page": 10}, headers=auth_header(user))
+    assert page_2.status_code == 200
+    body_2 = page_2.get_json()
+    assert body_2["pages"] == 2
+    assert [m["name"] for m in body_2["maps"]] == names[10:]
+    assert [m["total_guesses"] for m in body_2["maps"]] == [100 - i for i in range(10, 15)]
 
 
-def test_search_filters_by_name_documents_bug(client):
-    """The `name` query param is meant to do a case-insensitive substring
-    match against GameMap.name (also uuid/creator username), but the route
-    crashes on `.paginate()` before that filter's results can ever be
-    returned."""
+def test_search_filters_by_name(client):
+    """The `name` query param does a case-insensitive substring match
+    against GameMap.name (also uuid/creator username) - a query matching one
+    of two maps returns only that map."""
     user = make_user()
-    make_map(creator=user, name="Alpha Desert")
+    alpha = make_map(creator=user, name="Alpha Desert")
     make_map(creator=user, name="Beta Ocean")
 
-    with pytest.raises(AttributeError):
-        client.get(SEARCH_URL, query_string={"name": "desert"}, headers=auth_header(user))
+    response = client.get(SEARCH_URL, query_string={"name": "desert"}, headers=auth_header(user))
+
+    assert response.status_code == 200
+    body = response.get_json()
+    assert body["pages"] == 1
+    assert [m["name"] for m in body["maps"]] == ["Alpha Desert"]
+    assert body["maps"][0]["id"] == alpha.uuid
 
 
-def test_search_with_no_matches_returns_empty_results_documents_bug(client):
-    """Even a name filter matching nothing still hits the same
-    `.paginate()` call and crashes - it does not short-circuit to an empty
-    result set."""
+def test_search_with_no_matches_returns_empty_results(client):
+    """A name filter matching nothing returns an empty `maps` list and
+    `pages` 0 (Flask-SQLAlchemy's Pagination.pages is 0 when total is 0),
+    rather than e.g. omitting the fields or erroring."""
     user = make_user()
     make_map(creator=user, name="Something")
 
-    with pytest.raises(AttributeError):
-        client.get(SEARCH_URL, query_string={"name": "zzz-no-such-map-zzz"}, headers=auth_header(user))
+    response = client.get(SEARCH_URL, query_string={"name": "zzz-no-such-map-zzz"}, headers=auth_header(user))
+
+    assert response.status_code == 200
+    assert response.get_json() == {"maps": [], "pages": 0}
 
 
 # ---------------------------------------------------------------------------

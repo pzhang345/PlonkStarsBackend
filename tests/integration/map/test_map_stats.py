@@ -1,7 +1,6 @@
 """Map stats and leaderboards.
 
-Scope (TESTING_PLAN.md section 2 comment: "stats, leaderboard,
-leaderboard/game" and section 3 Phase 3):
+Scope:
 - Stats and leaderboards: seed guesses and assert ordering, ties, and the
   per-game leaderboard.
 

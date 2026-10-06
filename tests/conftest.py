@@ -66,7 +66,11 @@ def db_session(app):
         connection = db.engine.connect()
         transaction = connection.begin()
 
-        session_factory = sessionmaker(bind=connection, join_transaction_mode="create_savepoint")
+        # query_cls matches what Flask-SQLAlchemy's own session uses, so
+        # db.session.query(...) returns a Query with .paginate() like in prod.
+        session_factory = sessionmaker(
+            bind=connection, join_transaction_mode="create_savepoint", query_cls=db.Query
+        )
         test_session = scoped_session(session_factory)
 
         original_session = db.session
@@ -109,14 +113,16 @@ def socketio_client(app, client):
         if auth is not None:
             kwargs["auth"] = auth
         test_client = sio.test_client(app, **kwargs)
-        created.append(test_client)
+        created.append((test_client, namespace))
         return test_client
 
     yield _make
 
-    for test_client in created:
-        if test_client.is_connected():
-            test_client.disconnect()
+    # is_connected()/disconnect() default to the "/" namespace, so pass the
+    # one each client actually connected to or it never gets disconnected.
+    for test_client, namespace in created:
+        if test_client.is_connected(namespace):
+            test_client.disconnect(namespace=namespace)
 
 
 # ---------------------------------------------------------------------------

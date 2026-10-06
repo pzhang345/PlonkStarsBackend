@@ -1,6 +1,6 @@
 """Party user listing and removal.
 
-Scope (TESTING_PLAN.md section 3 Phase 3):
+Scope:
 - Users: listing works and remove is host-only.
 
 Route shapes confirmed by reading app/api/party/users/routes.py and

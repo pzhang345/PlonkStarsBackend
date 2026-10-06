@@ -1,6 +1,6 @@
 """Socket.IO /socket/party namespace.
 
-Scope (TESTING_PLAN.md section 3 Phase 3):
+Scope:
 - Socket /socket/party: connect with and without auth, and join places the
   client in a room. With two socketio_client() instances, the second
   receives broadcasts when a user joins, leaves, or rules change.

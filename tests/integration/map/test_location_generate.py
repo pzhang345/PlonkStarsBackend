@@ -1,7 +1,6 @@
 """generate_location via the Street View mock.
 
-Scope (TESTING_PLAN.md section 2 comment: "generate_location via
-street_view_mock" and section 3 Phase 3):
+Scope:
 - generate_location with street_view_mock: the point falls inside a bound,
   and "no street view found" is handled.
 

@@ -1,7 +1,6 @@
 """Map edit permission matrix: owner vs editor vs stranger vs demo vs anon.
 
-Scope (TESTING_PLAN.md section 3 Phase 3, and the task brief extending the
-role set with "anon"):
+Scope:
 - Permissions matrix (parametrized): {owner, editor, stranger, demo, anon} x
   every edit route. Only the owner can delete the map. Editor management
   (editor/add, editor/remove) turns out not to be owner-exclusive - see
@@ -17,7 +16,7 @@ else 0):
 
 `editor_user` (tests/integration/map/conftest.py) is a permission_level=2
 editor, so it clears tiers 1 and 2 but not tier 3 - exactly the "editor can
-edit bounds/name/description but not delete" split the plan describes.
+edit bounds/name/description but not delete" split.
 
 bound/reweight is a special case: it crashes with TypeError for *any* caller
 who clears its permission check (see tests/bugs.md and
@@ -209,8 +208,8 @@ def test_editor_with_sufficient_permission_can_manage_lower_editors(client, owne
     comment on the editor/add and editor/remove routes) design: editor
     management is not restricted to the map's owner - any user whose
     can_edit() level is strictly higher than the target permission/editor can
-    add or remove them. This differs from the plan's simplified "only the
-    owner can add and remove editors" description."""
+    add or remove them. Note: editor management is not owner-exclusive, in
+    contrast to map deletion."""
     game_map, owner = owned_map
     senior_editor = make_user()
     junior_target = make_user()

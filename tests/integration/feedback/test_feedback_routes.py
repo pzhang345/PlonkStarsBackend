@@ -1,6 +1,6 @@
 """Feedback submission route.
 
-Scope (TESTING_PLAN.md section 3 Phase 3):
+Scope:
 - Submitting a valid body works and an empty body is rejected. Mail sending
   is blocked by `_no_network`, so mock it where the route sends mail.
 

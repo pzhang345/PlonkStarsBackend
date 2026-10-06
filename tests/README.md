@@ -5,7 +5,7 @@
 The suite needs a real Postgres instance for integration tests (the `app`
 fixture builds the real Flask app and creates the real schema against it).
 
-The easiest way is to let `run-tests.bat` manage it for you (see "Running the
+The easiest way is to let `make test` manage it for you (see "Running the
 suite" below) - it starts/reuses a container from
 `tests/docker-compose.test.yml` automatically.
 
@@ -48,14 +48,14 @@ The one-command option handles the test DB container (starting or reusing
 `plonkstars-test-db`, waiting for it to be ready) and then runs pytest. From
 `Backend/`:
 
-```bat
-run-tests.bat -q
+```bash
+make test ARGS=-q
 ```
 
-Any extra arguments are passed straight through to pytest, e.g.
-`run-tests.bat -m unit` or `run-tests.bat --cov=app`. It leaves the DB
-container running afterwards; stop it with
-`docker compose -f tests/docker-compose.test.yml down` when you're done.
+Extra pytest arguments go in `ARGS`, e.g. `make test ARGS="-m unit"` or
+`make test ARGS=--cov=app`. It leaves the DB container running afterwards;
+stop it with `make db-down` when you're done. `make db-up` starts the DB
+without running tests.
 
 If you're managing the DB container yourself (see "Prerequisites"), you can
 invoke pytest directly instead:

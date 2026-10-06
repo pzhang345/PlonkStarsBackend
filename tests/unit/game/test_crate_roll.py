@@ -1,8 +1,6 @@
 """Pure-logic unit tests for the crate weighted-roll boundaries.
 
-Scope (TESTING_PLAN.md section 2 comment: "weighted roll boundaries" and the
-relevant bullet in section 3 Phase 1, shared with
-integration/cosmetics/test_crates_shop.py):
+Scope (shared with integration/cosmetics/test_crates_shop.py):
 - Weighted roll: patch `random.randint` to 1, to `total_weight`, and to each
   cumulative boundary, and assert the picked tier each time.
 - A total_weight greater than the sum of item weights (as crate creation

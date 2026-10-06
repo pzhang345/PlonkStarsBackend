@@ -3,12 +3,11 @@
 multiplier, DuelsGame.update_state() applies HP damage from it).
 
 This logic is inline in `next()`/`update_state()`, not a pure function we can
-unit-test in isolation - see tests/bugs.md-adjacent design note in the task
-briefing - so these tests drive the real DuelsGame() against the real DB,
-bypassing Party entirely (next()/update_state() only ever touch Session,
-GameStateTracker, DuelRulesLinker, and GameTeamLinker/GameTeam/TeamPlayer
-rows - never Party/PartyTeam), which keeps the setup here to "one team per
-guess" instead of a full party+team-routes dance.
+unit-test in isolation - so these tests drive the real DuelsGame() against the
+real DB, bypassing Party entirely (next()/update_state() only ever touch
+Session, GameStateTracker, DuelRulesLinker, and GameTeamLinker/GameTeam/
+TeamPlayer rows - never Party/PartyTeam), which keeps the setup here to "one
+team per guess" instead of a full party+team-routes dance.
 
 Multiplier derivation (read directly off duels.py's `next()`):
     prev_multi = prev_round.duels_state.multi if prev_round else 1
@@ -64,10 +63,9 @@ pytestmark = pytest.mark.integration
 
 
 # ---------------------------------------------------------------------------
-# File-local setup helpers (this file's own, per the task's hard rules -
-# tests/factories.py/conftest.py are not touched beyond what the briefing
-# asked for, and this setup - a DUELS session with no Party at all - isn't
-# generally reusable enough to belong there).
+# File-local setup helpers (this file's own - tests/factories.py/conftest.py
+# are not touched, and this setup - a DUELS session with no Party at all -
+# isn't generally reusable enough to belong there).
 # ---------------------------------------------------------------------------
 
 @pytest.fixture(autouse=True)

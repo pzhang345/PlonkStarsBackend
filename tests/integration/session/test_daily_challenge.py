@@ -1,7 +1,6 @@
 """Daily challenge generation and day rollover.
 
-Scope (TESTING_PLAN.md section 2 comment: "freezegun day rollover, timezone"
-and section 3 Phase 2):
+Scope:
 - Use freezegun to cross midnight: a new day creates a new challenge, and the
   same day returns the existing one.
 - Pin the timezone boundary (UTC vs local).

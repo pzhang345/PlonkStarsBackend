@@ -1,7 +1,6 @@
 """Crate buying, refunds, and the shop listing.
 
-Scope (TESTING_PLAN.md section 2 comment: "buy, refunds, insufficient coins,
-shop" and section 3 Phase 1, shared with unit/game/test_crate_roll.py):
+Scope (shared with unit/game/test_crate_roll.py):
 - Buying a crate with enough coins subtracts crate.price, grants a
   CosmeticsOwnership, and returns the new balance.
 - Not enough coins returns 403 (body key is "message", not "error") and

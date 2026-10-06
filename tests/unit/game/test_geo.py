@@ -70,21 +70,12 @@ def test_haversine_antipodal_points_is_about_half_earth_circumference(lat1, lng1
     assert distance == pytest.approx(20015.09, rel=1e-4)
 
 
-@pytest.mark.xfail(
-    strict=True, raises=ValueError,
-    reason=(
-        "BUG in production haversine (app/api/map/map.py): for some exactly-"
-        "antipodal coordinate pairs, floating-point rounding pushes the "
-        "intermediate `a` value fractionally above 1.0 (e.g. a == "
-        "1.0000000000000002), making `math.sqrt(1 - a)` compute sqrt() of a "
-        "tiny negative number and raise 'math domain error'. Not every "
-        "antipodal pair triggers it (rounding direction dependent) - "
-        "(45.0, -30.0) / (-45.0, 150.0) reliably does. No clamping of `a` "
-        "to [0, 1] is done before the sqrt calls."
-    ),
-)
-def test_haversine_antipodal_points_can_raise_domain_error_due_to_float_rounding():
-    haversine(45.0, -30.0, -45.0, 150.0)
+def test_haversine_antipodal_points_survive_float_rounding_past_one():
+    # Regression: for this pair, float rounding pushes the intermediate `a`
+    # to 1.0000000000000002, which used to make sqrt(1 - a) raise
+    # 'math domain error' before `a` was clamped to [0, 1].
+    distance = haversine(45.0, -30.0, -45.0, 150.0)
+    assert distance == pytest.approx(math.pi * 6371.0, rel=1e-6)
 
 
 def test_haversine_sign_handling_across_the_equator():

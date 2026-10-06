@@ -37,10 +37,8 @@ Route shapes exercised here (confirmed by reading the source, not guessed):
   * GET  /api/game/state?id=..            -> {"state": ...} (LiveGame.get_state, tracker-driven)
   * GET  /api/game/results?id=..          -> only reachable once the tracker is in
         RESULTS (LiveGame.results() 400s with "not correct state" otherwise),
-        and even then delegates to ChallengeGame().results(), which is
-        independently broken by the query.paginate bug already pinned in
-        tests/bugs.md ("Game and session" section) - see
-        test_results_after_round_ends_still_hits_known_paginate_bug_documents_bug.
+        and even then delegates straight to ChallengeGame().results() - see
+        test_results_after_round_ends_returns_leaderboard_for_both_players.
 
 Celery: LiveGame.next()/guess() call `update_game_state`/`stop_current_task`,
 imported by name into api.game.games.live (`from api.game.tasks import
@@ -303,17 +301,11 @@ def test_results_hidden_while_round_is_still_guessing(client):
     assert response.get_json() == {"error": "not correct state"}
 
 
-def test_results_after_round_ends_still_hits_known_paginate_bug_documents_bug(client):
+def test_results_after_round_ends_returns_leaderboard_for_both_players(client):
     """Once the round genuinely reaches RESULTS, LiveGame.results()'s own
-    gate (`state.state != GameState.RESULTS`) opens - but it then delegates
-    straight to ChallengeGame().results(), which is independently broken by
-    the query.paginate bug already pinned in tests/bugs.md ("Game and
-    session" -> query.paginate doesn't exist, pinned by
-    test_challenge_game.py::test_results_endpoint_is_broken_by_query_paginate_bug,
-    whose docstring already notes "This affects LIVE too"). So results are
-    never actually visible through this route today, in either state -
-    just with a different error message. Documenting actual behavior, not
-    fixing app code."""
+    gate (`state.state != GameState.RESULTS`) opens, and it delegates
+    straight to ChallengeGame().results() - which returns the round's
+    correct location plus both players' ranked leaderboard entries."""
     host = make_user()
     member = make_user()
     code, _ = _make_live_party(client, host, [member])
@@ -326,9 +318,20 @@ def test_results_after_round_ends_still_hits_known_paginate_bug_documents_bug(cl
 
     response = _results(client, host, session.uuid, round=1)
 
-    assert response.status_code == 400
+    assert response.status_code == 200, response.get_data(as_text=True)
     body = response.get_json()
-    assert "paginate" in body["error"]
+    assert body["round"] == 1
+    assert body["correct"]["lat"] == pytest.approx(LIVE_LAT)
+    assert body["correct"]["lng"] == pytest.approx(LIVE_LNG)
+    assert body["this_user"] == host.username
+
+    assert len(body["users"]) == 2
+    assert {entry["user"]["username"] for entry in body["users"]} == {host.username, member.username}
+    for entry in body["users"]:
+        # Both players guessed the exact location -> tied perfect score.
+        assert entry["score"] == 5000
+        assert entry["distance"] == pytest.approx(0.0, abs=1e-9)
+        assert entry["rank"] in (1, 2)
 
 
 # ---------------------------------------------------------------------------

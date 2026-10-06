@@ -1,7 +1,6 @@
 """Celery game-state tasks.
 
-Scope (TESTING_PLAN.md section 2 comment: "Celery
-update_game_state/stop_current_task" and section 3 Phase 2):
+Scope: Celery update_game_state/stop_current_task.
 - Mock celery.control.revoke, apply_async, and redis_instance.publish.
 - update_game_state creates a CeleryTaskTracker. Calling it again revokes the
   old task and replaces the row.

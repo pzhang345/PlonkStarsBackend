@@ -1,7 +1,6 @@
 """Concurrent crate purchases racing against a single user's coin balance.
 
-Scope (TESTING_PLAN.md section 2 comment: "two threads buy with coins for one
-crate" and section 3 Phase 1):
+Scope:
 - Two concurrent buys should never both succeed when the user has coins for
   only one. They can today, because the balance is read without
   SELECT ... FOR UPDATE.

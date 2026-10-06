@@ -389,7 +389,15 @@ def test_full_game_state_transitions_and_summary_totals(client, game_configs):
 
     for round_number, (lat, lng) in enumerate(guesses, start=1):
         state = get_state(client, host, session_uuid).get_json()
-        assert state["state"] == "NOT_STARTED" if round_number == 1 else True
+        if round_number == 1:
+            assert state["state"] == "NOT_STARTED"
+        else:
+            # Between rounds 2-5: the previous round's guess was already
+            # submitted (last thing the prior loop iteration did), so
+            # get_state() reports RESULTS - it isn't NOT_STARTED again and
+            # doesn't jump ahead to GUESSING until next_round() is called
+            # below.
+            assert state["state"] == "RESULTS"
 
         response = next_round(client, host, session_uuid)
         assert response.status_code == 200, response.get_data(as_text=True)
@@ -416,11 +424,21 @@ def test_full_game_state_transitions_and_summary_totals(client, game_configs):
 
         if round_number < total_rounds:
             assert state["state"] == "RESULTS"
-            # NOTE: GET /api/game/results is broken independent of anything
-            # under test here - see
-            # test_results_endpoint_is_broken_by_query_paginate_bug below.
-            # RoundStats (above) is used as the ground truth for the
-            # "totals reflect the guesses actually made" assertion instead.
+            # GET /api/game/results reports the same cumulative total
+            # RoundStats already tracks (above), plus the round's correct
+            # location and this player's ranked leaderboard entry.
+            results_body = get_results(client, host, session_uuid, round=round_number).get_json()
+            assert results_body["round"] == round_number
+            assert results_body["correct"]["lat"] == pytest.approx(LOCATION_LAT)
+            assert results_body["correct"]["lng"] == pytest.approx(LOCATION_LNG)
+            assert results_body["this_user"] == host.username
+            assert len(results_body["users"]) == 1  # solo game, no other players
+            host_entry = results_body["users"][0]
+            assert host_entry["user"] == host.to_json()
+            assert host_entry["rank"] == 1
+            assert host_entry["score"] == round_stats.total_score
+            assert host_entry["guess"]["lat"] == pytest.approx(lat)
+            assert host_entry["guess"]["lng"] == pytest.approx(lng)
         else:
             # Last round: get_state() jumps straight from GUESSING to
             # FINISHED, skipping RESULTS entirely (next_round == max_rounds+1
@@ -436,14 +454,29 @@ def test_full_game_state_transitions_and_summary_totals(client, game_configs):
     final_state = get_state(client, host, session_uuid).get_json()
     assert final_state["state"] == "FINISHED"
 
-    # GET /api/game/summary is also broken (see
-    # test_summary_endpoint_is_broken_by_query_paginate_bug below), so the
-    # "final totals equal the sum of the per-round scores" assertion - the
-    # key thing this test needs to prove - is made directly against
-    # RoundStats, which is exactly what the (currently unreachable) summary
-    # response would have been built from.
+    # RoundStats is the ground truth "final totals equal the sum of the
+    # per-round scores" check; confirm GET /api/game/summary reports exactly
+    # the same numbers, plus every round's location and this player's
+    # per-round guesses.
     final_stats = RoundStats.query.filter_by(session_id=session.id, user_id=host.id, round=total_rounds).first()
     assert final_stats.total_score == sum(expected_scores)
+
+    summary_body = get_summary(client, host, session_uuid).get_json()
+    assert summary_body["this_user"] == host.username
+    assert len(summary_body["rounds"]) == total_rounds
+    for round_entry in summary_body["rounds"]:
+        assert round_entry["lat"] == pytest.approx(LOCATION_LAT)
+        assert round_entry["lng"] == pytest.approx(LOCATION_LNG)
+
+    assert len(summary_body["users"]) == 1  # solo game, no other players
+    host_summary_entry = summary_body["users"][0]
+    assert host_summary_entry["user"] == host.to_json()
+    assert host_summary_entry["rank"] == 1
+    assert host_summary_entry["score"] == sum(expected_scores)
+    assert len(host_summary_entry["guesses"]) == total_rounds
+    for guess_json, (guess_lat, guess_lng) in zip(host_summary_entry["guesses"], guesses):
+        assert guess_json["lat"] == pytest.approx(guess_lat)
+        assert guess_json["lng"] == pytest.approx(guess_lng)
 
 
 def test_advance_past_max_rounds_rejected(client, game_configs):
@@ -492,26 +525,22 @@ def test_plonk_then_guess_clears_provisional_marker(client, game_configs):
 
 
 # ---------------------------------------------------------------------------
-# BUG: GET /api/game/results and /api/game/summary are both currently broken
+# GET /api/game/results and /api/game/summary
 # ---------------------------------------------------------------------------
 
-def test_results_endpoint_is_broken_by_query_paginate_bug(client, game_configs):
+def test_results_endpoint_returns_leaderboard_and_this_users_guess(client, game_configs):
     """ChallengeGame.results() builds its leaderboard as:
 
         ranked_users = db.session.query(stats.c.user_id, ..., func.rank()...)
         ...
         leaderboard = ranked_users.paginate(page=page, per_page=per_page, error_out=False)
 
-    `db.session.query(...)` returns a plain sqlalchemy.orm.Query. Under the
-    installed flask-sqlalchemy 3.1.1 / SQLAlchemy 2.0.38, `.paginate()` is
-    only available via `db.paginate(select(...))` or on the legacy
-    `Model.query` object - NOT on a bare `db.session.query(...)` Query. So
-    every single call to GET /api/game/results (for any player, in any
-    state) currently raises AttributeError, which return_400_on_error turns
-    into a 400 instead of the real leaderboard. This affects LIVE too
-    (LiveGame.results() delegates straight to ChallengeGame().results()).
-    Flagging prominently: this endpoint is dead in its current state.
-    """
+    `.paginate()` works because Flask-SQLAlchemy's session uses `db.Query`
+    as its query class (mirrored by tests/conftest.py's `db_session`).
+    Confirms GET /api/game/results
+    returns 200 with the round's correct location, `this_user`, and a
+    single-entry leaderboard (solo game) with this player's rank/score/
+    distance/time/guess."""
     host = make_user()
     game_map = make_bounded_map(creator=host)
     session_uuid = start_and_join(client, host, game_map, rounds=5, time=-1)
@@ -520,26 +549,53 @@ def test_results_endpoint_is_broken_by_query_paginate_bug(client, game_configs):
 
     response = get_results(client, host, session_uuid, round=1)
 
-    assert response.status_code == 400
+    assert response.status_code == 200, response.get_data(as_text=True)
     body = response.get_json()
-    assert "paginate" in body["error"]
+    assert body["round"] == 1
+    assert body["correct"]["lat"] == pytest.approx(LOCATION_LAT)
+    assert body["correct"]["lng"] == pytest.approx(LOCATION_LNG)
+    assert body["this_user"] == host.username
+
+    assert len(body["users"]) == 1  # solo game, no other players
+    entry = body["users"][0]
+    assert entry["user"] == host.to_json()
+    assert entry["rank"] == 1
+    assert entry["score"] == MAX_SCORE
+    assert entry["distance"] == pytest.approx(0.0, abs=1e-9)
+    assert entry["guess"]["score"] == MAX_SCORE
+    assert entry["guess"]["lat"] == pytest.approx(LOCATION_LAT)
+    assert entry["guess"]["lng"] == pytest.approx(LOCATION_LNG)
 
 
-def test_summary_endpoint_is_broken_by_query_paginate_bug(client, game_configs):
-    """Same root cause as test_results_endpoint_is_broken_by_query_paginate_bug
-    above: ChallengeGame.summary() also calls `.paginate()` on a bare
-    `db.session.query(...)` result, so GET /api/game/summary always 400s
-    too, even once the game is legitimately FINISHED."""
+def test_summary_endpoint_returns_totals_and_all_round_locations(client, game_configs):
+    """Same shape as results() (ChallengeGame.summary() also paginates a
+    `db.session.query(...)` result), but aggregated across every round of a
+    FINISHED game: `rounds` lists every round's correct location, and each
+    leaderboard entry's `guesses` list has one entry per round."""
     host = make_user()
     game_map = make_bounded_map(creator=host)
     session_uuid = start_and_join(client, host, game_map, rounds=5, time=-1)
-    play_all_rounds(client, host, session_uuid, rounds=5)
+    scores = play_all_rounds(client, host, session_uuid, rounds=5)
+    assert scores == [MAX_SCORE] * 5  # perfect guesses throughout
 
     response = get_summary(client, host, session_uuid)
 
-    assert response.status_code == 400
+    assert response.status_code == 200, response.get_data(as_text=True)
     body = response.get_json()
-    assert "paginate" in body["error"]
+    assert body["this_user"] == host.username
+    assert len(body["rounds"]) == 5
+    for round_entry in body["rounds"]:
+        assert round_entry["lat"] == pytest.approx(LOCATION_LAT)
+        assert round_entry["lng"] == pytest.approx(LOCATION_LNG)
+
+    assert len(body["users"]) == 1  # solo game, no other players
+    entry = body["users"][0]
+    assert entry["user"] == host.to_json()
+    assert entry["rank"] == 1
+    assert entry["score"] == sum(scores)
+    assert len(entry["guesses"]) == 5
+    for guess_json in entry["guesses"]:
+        assert guess_json["score"] == MAX_SCORE
 
 
 # ---------------------------------------------------------------------------
@@ -588,10 +644,10 @@ def test_unauthenticated_request_rejected(client, game_configs):
 
 
 def test_non_host_player_is_restricted_until_host_finishes(client, game_configs):
-    """Discovered behavior, not something the task briefing assumed:
-    ChallengeGame.get_state() special-cases CHALLENGE-type sessions so that
-    ANY user who isn't session.host_id gets back {"state": "RESTRICTED"}
-    until the *host's own* run reaches FINISHED (challenge.py:99-103). So
+    """Discovered behavior: ChallengeGame.get_state() special-cases
+    CHALLENGE-type sessions so that ANY user who isn't session.host_id gets
+    back {"state": "RESTRICTED"} until the *host's own* run reaches FINISHED
+    (challenge.py:99-103). So
     CHALLENGE is really "solo run now, friends can replay it once you're
     done" - not concurrent same-round multiplayer. (Player.join() itself
     doesn't actually enforce this - it computes get_state(host) which can

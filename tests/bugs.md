@@ -5,8 +5,7 @@ the test that pins the current (buggy) behavior. Those tests are named
 `..._documents_bug`, or they have a `# BUG:` comment.
 
 **How to fix a bug:** change the app code, turn its pinning test into a normal
-assertion of the correct behavior, and delete the entry from this file. See
-"Conventions" in `TESTING_PLAN.md`.
+assertion of the correct behavior, and delete the entry from this file.
 
 **How to add a bug:** add an entry under the right area with its location, its
 symptom, the suggested fix, and the pinning test.
@@ -107,22 +106,12 @@ unhandled 500.
 
 ### Unauthenticated requests return 403, not 401 (design note)
 - **Where:** `app/api/account/auth.py`, `login_required`
-- **Symptom:** A missing or invalid token gets 403. The testing plan originally expected 401. Tests assert the current 403.
+- **Symptom:** A missing or invalid token gets 403. Tests assert the current 403.
 - **Fix:** Optional. If this changes, update the auth and admin authz tests.
 
 ---
 
 ## Game and session
-
-### `query.paginate` doesn't exist on the query objects used
-- **Where:** `app/api/game/games/challenge.py:186` and `:239` (`/game/results` and `/game/summary`), and `app/api/map/routes.py:66` (`/map/search`)
-- **Symptom:** `AttributeError: 'Query' object has no attribute 'paginate'`.
-- **Fix:** Use `db.paginate(select(...))`, or apply `.paginate` to a Flask-SQLAlchemy query.
-- **Pinned by:** these tests in `tests/integration/game/test_challenge_game.py`:
-  - `test_results_endpoint_is_broken_by_query_paginate_bug`
-  - `test_summary_endpoint_is_broken_by_query_paginate_bug`
-
-  No test pins `/map/search` yet (Phase 3).
 
 ### `/game/create` without `map_id` uses a broken default-map lookup
 - **Where:** `app/api/game`, the default map lookup filters the wrong column
@@ -144,6 +133,14 @@ unhandled 500.
 - **Fix:** Return early (no-op) when the session lookup comes back `None`.
 - **Pinned by:** `tests/integration/game/test_game_tasks.py::test_task_fired_after_session_deleted_raises_attribute_error_documents_bug`
 
+### `POST /api/game/ping` always fails with a `TypeError`
+- **Where:** `app/api/game/routes.py`, `ping` calls `game_type[session.type].ping(data, user, session)`, but `BaseGame.ping` and `ChallengeGame.ping` take only `(user, session)`
+- **Symptom:** Every request 400s with `ping() takes 3 positional arguments but 4 were given`, for every game type and state. The timeout handling in `ping()` (scoring a no-show as 0, turning a provisional plonk into a real guess) never runs through this route. It does still run when `next`/`results`/`summary` call `self.ping(user, session)` internally.
+- **Fix:** Drop `data` from the call in the route.
+- **Pinned by:** these tests in `tests/integration/game/test_game_rules_and_state.py`:
+  - `test_ping_after_timeout_with_no_plonk_hits_signature_mismatch_documents_bug`
+  - `test_ping_after_timeout_with_plonk_hits_signature_mismatch_documents_bug`
+
 ### `create_daily()`'s default date argument is frozen at import time
 - **Where:** `app/api/session/daily.py`, `def create_daily(date=datetime.now(tz=pytz.utc).date() + timedelta(days=1))`
 - **Symptom:** The default is evaluated once, when the module is first imported (process startup) - not on every call. `create_daily()` called with no arguments (as `app/cli/cli.py`'s `daily-tasks`/`create-daily` commands do, from what looks like a daily cron/scheduler) always targets "tomorrow relative to when the process started", not "tomorrow relative to now". `GET /api/session/daily` itself is unaffected - it always calls `create_daily(today)` with an explicit date.
@@ -155,16 +152,6 @@ unhandled 500.
 - **Symptom:** Unlike `app/api/game/games/basegame.py`'s `BaseGame.create()` (which creates a `BaseRules` row on the fly if none matches), `create_daily()` assumes one already exists: `rules = BaseRules.query.filter_by(map_id=..., time_limit=..., max_rounds=..., nmpz=...).first()` can be `None`, and `Session(..., base_rule_id=rules.id)` then raises `AttributeError`.
 - **Fix:** Create the missing `BaseRules` row on demand (mirroring `BaseGame.create()`), or validate the Configs combination up front and fail cleanly.
 - **Pinned by:** `tests/integration/session/test_daily_challenge.py::test_create_daily_without_matching_base_rules_crashes_documents_bug`
-
----
-
-## Live games
-
-### LIVE game results are unreachable even after the round ends (same root cause as the CHALLENGE `query.paginate` bug)
-- **Where:** `app/api/game/games/live.py`, `LiveGame.results()` delegates to `ChallengeGame().results()` once the `GameStateTracker` reaches `RESULTS`.
-- **Symptom:** Same underlying bug as "`query.paginate` doesn't exist on the query objects used" above (already pinned for CHALLENGE, whose docstring already notes "This affects LIVE too"): `GET /api/game/results` 400s with "not correct state" while `GUESSING`, and once the round genuinely reaches `RESULTS` it 400s again anyway, now with an `AttributeError` mentioning `paginate`. Results are never actually visible through this route for a LIVE game either.
-- **Fix:** Same fix as the CHALLENGE entry above.
-- **Pinned by:** `tests/integration/game/test_live_game.py::test_results_after_round_ends_still_hits_known_paginate_bug_documents_bug`
 
 ---
 
@@ -180,12 +167,6 @@ unhandled 500.
 - **Where:** `app/api/map`, `get_new_bound`, the flat `s_lat/s_lng/e_lat/e_lng` branch
 - **Symptom:** Out-of-range coordinates are accepted. The nested `start`/`end` shape rejects them.
 - **Pinned by:** `tests/unit/map/test_bound_parsing.py::test_get_new_bound_flat_shape_does_not_validate_lat_lng_range`
-
-### `GET /api/map/search` always crashes
-- **Where:** `app/api/map/routes.py`, `get_all_maps`
-- **Symptom:** The query is built with `db.session.query(...)`, a plain SQLAlchemy `Query` with no `.paginate()`. Every request raises `AttributeError`, whatever the page, filter, or result count.
-- **Fix:** `db.paginate(query, page=page, per_page=per_page)`.
-- **Pinned by:** `tests/integration/map/test_map_routes.py::test_search_paginates_results_documents_bug`, `::test_search_filters_by_name_documents_bug`, `::test_search_with_no_matches_returns_empty_results_documents_bug`
 
 ### `GET /api/map/stats?nmpz=...` crashes when no `MapStats` row exists for that nmpz value
 - **Where:** `app/api/map/map.py`, `get_stats`, called from `app/api/map/routes.py`, `get_map_info`
@@ -261,6 +242,6 @@ unhandled 500.
 ---
 
 ## Other observations (not yet pinned)
-- `/api/feedback` has no `login_required`, and the Phase 3 feedback tests submit anonymously and succeed. Confirm that anonymous feedback is intended.
-- Party behaviors that differ from what `TESTING_PLAN.md` assumed (asserted as-is, not bugs unless you decide otherwise): a team leader can kick their own teammates, not just the host (`test_team_leader_can_also_kick_their_own_teammate`). Joining a second team moves the user instead of rejecting the join (`test_joining_a_second_team_moves_the_user`). Joining the same party twice returns 403 instead of being a no-op (`test_joining_twice_returns_403_without_duplicate_membership`). `/party/game/join` is a no-op for DUELS, and `joined` is always False there.
-- Map editors can add or remove editors with a strictly lower permission level. This is intended according to a source comment, but it contradicts the plan's "only the owner manages editors".
+- `/api/feedback` has no `login_required`, and the feedback tests submit anonymously and succeed. Confirm that anonymous feedback is intended.
+- Party behaviors that may be surprising (asserted as-is, not bugs unless you decide otherwise): a team leader can kick their own teammates, not just the host (`test_team_leader_can_also_kick_their_own_teammate`). Joining a second team moves the user instead of rejecting the join (`test_joining_a_second_team_moves_the_user`). Joining the same party twice returns 403 instead of being a no-op (`test_joining_twice_returns_403_without_duplicate_membership`). `/party/game/join` is a no-op for DUELS, and `joined` is always False there.
+- Map editors can add or remove editors with a strictly lower permission level. This is intended according to a source comment, but it contradicts the idea that "only the owner manages editors".

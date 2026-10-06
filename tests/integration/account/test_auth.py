@@ -15,16 +15,18 @@ import pytest
 import pytz
 from jwt.utils import base64url_encode
 
-from api.account.auth import generate_token, get_user_from_token
+from api.account.auth import JWT_SECRET_KEY, generate_token, get_user_from_token
 from models.db import db
-from tests.config import TestConfig
 from tests.factories import make_user
 from tests.helpers import assert_json_error, auth_header, demo_header
 
 pytestmark = pytest.mark.integration
 
 
-def _forge_token(secret=TestConfig.SECRET_KEY, exp_delta=timedelta(days=30), sub=None, username="whoever"):
+# Default to the key auth.py actually verifies with (bound from the base
+# Config at import time, not TestConfig), so the expired-token tests differ
+# from a valid token only in `exp`.
+def _forge_token(secret=JWT_SECRET_KEY, exp_delta=timedelta(days=30), sub=None, username="whoever"):
     payload = {
         "sub": sub,
         "name": username,
@@ -62,8 +64,12 @@ def test_bearer_prefix_works_identically_to_bare_token(db_session):
 
 def test_expired_token_is_rejected(db_session):
     user = make_user()
+    valid_token = _forge_token(sub=str(user.id), username=user.username)
     expired_token = _forge_token(sub=str(user.id), username=user.username, exp_delta=timedelta(days=-1))
 
+    # Control: the same forged token minus the past `exp` is accepted, so the
+    # rejection below is down to expiry, not the signature.
+    assert get_user_from_token(valid_token).id == user.id
     assert get_user_from_token(expired_token) is None
 
 
@@ -312,11 +318,7 @@ def test_demo_token_cannot_reach_non_demo_routes(client, method, path):
 
 def test_demo_token_accepted_on_map_bounds(client):
     # GET /api/map/bounds (app/api/map/routes.py:217-218) is allow_demo=True.
-    # Note: GET /api/map/search on the same blueprint is also allow_demo=True
-    # but was ruled out here - its view crashes on `.paginate()` (not a
-    # flask_sqlalchemy query) even with zero maps in the DB, which is an
-    # unrelated pre-existing bug and heavier to work around than this test's
-    # scope calls for. /bounds needs no setup beyond a "demo" user: with no
+    # /bounds needs no setup beyond a "demo" user: with no
     # `id` query param it takes the clean early-return 400 branch, which
     # only proves the auth layer let it through - it never yields the 403
     # `{"error": "login required"}` a rejected demo token would.
