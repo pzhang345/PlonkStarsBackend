@@ -1,5 +1,5 @@
-import aiohttp
-import asyncio
+import requests
+from concurrent.futures import ThreadPoolExecutor
 import random
 import math
 from sqlalchemy.sql.expression import func
@@ -18,26 +18,25 @@ def randomize(bound):
     lng = random.uniform(bound.start_longitude,bound.end_longitude)
     return (lat,lng)
     
-async def call_api(session,bound):
+def call_api(bound):
     lat,lng = randomize(bound)
-    async with session.get(f"https://maps.googleapis.com/maps/api/streetview/metadata?location={lat},{lng}&key={GOOGLE_MAPS_API_KEY}") as response:
-        return await response.json()
+    response = requests.get(f"https://maps.googleapis.com/maps/api/streetview/metadata?location={lat},{lng}&key={GOOGLE_MAPS_API_KEY}", timeout=10)
+    return response.json()
 
-async def check_multiple_street_views(bound,num_checks=100):
-    async with aiohttp.ClientSession() as session:
-        tasks = [call_api(session,bound) for _ in range(num_checks)]
-        results = await asyncio.gather(*tasks)
+def check_multiple_street_views(bound,num_checks=100):
+    with ThreadPoolExecutor(max_workers=min(num_checks,50)) as executor:
+        results = list(executor.map(lambda _: call_api(bound), range(num_checks)))
     
-        location = None
-        count = 0
-        for d in results:
-            if d["status"] == "OK":
-                location = add_coord(d["location"]["lat"],d["location"]["lng"])
-                count += 1
-                if count >= 3:
-                    break
+    location = None
+    count = 0
+    for d in results:
+        if d["status"] == "OK":
+            location = add_coord(d["location"]["lat"],d["location"]["lng"])
+            count += 1
+            if count >= 3:
+                break
 
-        return location
+    return location
     
 def get_random_bounds(map):
     num = random.uniform(0,map.total_weight)
@@ -54,9 +53,9 @@ def generate_location(map):
     for _ in range(10):
         bound = get_random_bounds(map)
         if (bound.start_latitude == bound.end_latitude and bound.start_longitude == bound.end_longitude):
-            gen = asyncio.run(check_multiple_street_views(bound,1))
+            gen = check_multiple_street_views(bound,1)
         else:
-            gen = asyncio.run(check_multiple_street_views(bound))
+            gen = check_multiple_street_views(bound)
         if gen != None:
             break
     
