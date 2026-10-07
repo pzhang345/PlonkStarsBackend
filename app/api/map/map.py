@@ -15,6 +15,8 @@ def haversine(lat1, lng1, lat2, lng2):
     dlat = lat2 - lat1
     dlng = lng2 - lng1
     a = math.sin(dlat / 2)**2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlng / 2)**2
+    # Clamp to [0, 1]: float rounding can push a just past 1 for antipodal points
+    a = min(1.0, max(0.0, a))
     c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
     
     # Radius of Earth in kilometers (use 3958.8 for miles)

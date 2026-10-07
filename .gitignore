@@ -1,6 +1,9 @@
 /.venv
 /.vscode
 **/__pycache__
-test*
+/scripts/
 app/.env*
-scripts*
+.pytest_cache/
+.coverage
+htmlcov/
+*.pyc
