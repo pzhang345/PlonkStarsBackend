@@ -101,7 +101,7 @@ def _run_and_assert(client, actor_level, headers, action):
 
 
 @pytest.mark.parametrize("action_name", ACTION_NAMES)
-def test_owner_can_use_every_edit_route(client, mapedit_street_view_mock, map_with_bounds, action_name):
+def test_owner_can_use_every_edit_route(client, street_view_mock, map_with_bounds, action_name):
     game_map, owner, bounds = map_with_bounds
     action = next(a for a in _actions(game_map, bounds) if a[0] == action_name)
 
@@ -109,7 +109,7 @@ def test_owner_can_use_every_edit_route(client, mapedit_street_view_mock, map_wi
 
 
 @pytest.mark.parametrize("action_name", ACTION_NAMES)
-def test_editor_can_use_bound_and_metadata_edit_routes_but_not_delete(client, mapedit_street_view_mock, map_with_bounds, editor_user, action_name):
+def test_editor_can_use_bound_and_metadata_edit_routes_but_not_delete(client, street_view_mock, map_with_bounds, editor_user, action_name):
     game_map, _owner, bounds = map_with_bounds
     action = next(a for a in _actions(game_map, bounds) if a[0] == action_name)
 
@@ -117,7 +117,7 @@ def test_editor_can_use_bound_and_metadata_edit_routes_but_not_delete(client, ma
 
 
 @pytest.mark.parametrize("action_name", ACTION_NAMES)
-def test_stranger_is_rejected_from_every_edit_route(client, mapedit_street_view_mock, map_with_bounds, action_name):
+def test_stranger_is_rejected_from_every_edit_route(client, street_view_mock, map_with_bounds, action_name):
     game_map, _owner, bounds = map_with_bounds
     stranger = make_user()
     action = next(a for a in _actions(game_map, bounds) if a[0] == action_name)

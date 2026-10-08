@@ -146,7 +146,7 @@ def test_create_map_with_whitespace_only_name_documents_bug(client):
 # POST bound/add
 # ---------------------------------------------------------------------------
 
-def test_bound_add_adds_a_single_bound(client, mapedit_street_view_mock, owned_map):
+def test_bound_add_adds_a_single_bound(client, street_view_mock, owned_map):
     game_map, owner = owned_map
     payload = {
         "id": game_map.uuid,
@@ -165,7 +165,7 @@ def test_bound_add_adds_a_single_bound(client, mapedit_street_view_mock, owned_m
     assert MapBound.query.filter_by(id=body["id"], map_id=game_map.id).first() is not None
 
 
-def test_bound_add_rejects_duplicate_bound(client, mapedit_street_view_mock, map_with_bounds):
+def test_bound_add_rejects_duplicate_bound(client, street_view_mock, map_with_bounds):
     game_map, owner, bounds = map_with_bounds
     existing = Bound.query.filter_by(id=bounds[0].bound_id).first()
     payload = {
@@ -224,7 +224,7 @@ def test_bound_add_unauthorized_user_returns_403(client, owned_map):
 
 
 @pytest.mark.parametrize("weight", [0, -5])
-def test_bound_add_documents_zero_and_negative_weight_are_not_rejected_bug(client, mapedit_street_view_mock, owned_map, weight):
+def test_bound_add_documents_zero_and_negative_weight_are_not_rejected_bug(client, street_view_mock, owned_map, weight):
     # BUG: bound/add does `weight = max(1, weight) if weight else <default>`.
     # A negative weight is truthy, so it's silently clamped to 1 instead of
     # being rejected; a zero weight is falsy, so it silently falls back to
@@ -248,7 +248,7 @@ def test_bound_add_documents_zero_and_negative_weight_are_not_rejected_bug(clien
 # POST bound/add/all
 # ---------------------------------------------------------------------------
 
-def test_bound_add_all_adds_multiple_bounds(client, mapedit_street_view_mock, owned_map):
+def test_bound_add_all_adds_multiple_bounds(client, street_view_mock, owned_map):
     game_map, owner = owned_map
     payload = {
         "id": game_map.uuid,
@@ -266,7 +266,7 @@ def test_bound_add_all_adds_multiple_bounds(client, mapedit_street_view_mock, ow
     assert MapBound.query.filter_by(map_id=game_map.id).count() == 2
 
 
-def test_bound_add_all_silently_skips_invalid_entries(client, mapedit_street_view_mock, owned_map):
+def test_bound_add_all_silently_skips_invalid_entries(client, street_view_mock, owned_map):
     """A batch with one invalid (inverted) bound still succeeds overall - the
     route wraps each bound in its own try/except and only reports the valid
     ones, dropping the invalid one with no error surfaced for it."""

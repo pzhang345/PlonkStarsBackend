@@ -90,11 +90,13 @@ class MapBound(db.Model):
     bound_id = Column(Integer, ForeignKey("bounds.id", ondelete="CASCADE"), nullable=False)
     map_id = Column(Integer, ForeignKey("maps.id", ondelete="CASCADE"), nullable=False)
     weight = Column(Integer, nullable=False)
-    
+
     __table_args__ = (
         UniqueConstraint('bound_id', 'map_id'),
     )
-    
+    # delete_map deletes rows that the DB's ON DELETE CASCADE may already have removed
+    __mapper_args__ = {"confirm_deleted_rows": False}
+
 class MapEditor(db.Model):
     __tablename__="mapeditors"
     

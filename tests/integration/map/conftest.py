@@ -92,35 +92,3 @@ def grant_editor(game_map, user, permission_level):
     db.session.add(editor)
     db.session.commit()
     return editor
-
-
-@pytest.fixture()
-def mapedit_street_view_mock(monkeypatch, db_session):
-    """Patch `api.map.edit.mapedit.check_multiple_street_views` - NOT the
-    root conftest's `street_view_mock`, which patches
-    `api.location.generate.check_multiple_street_views`. That works for code
-    that calls it as `generate_module.check_multiple_street_views(...)` (like
-    `api.location.generate.generate_location` itself), but
-    `api/api/map/edit/mapedit.py` does `from api.location.generate import
-    check_multiple_street_views` at import time - a separate name binding in
-    mapedit's own module namespace - so patching the origin module's
-    attribute never reaches map_add_bound's call site. This fixture patches
-    the right name for bound/add and bound/add/all. Same deterministic
-    behavior as street_view_mock: returns a real SVLocation at the bound's
-    start corner."""
-    import api.map.edit.mapedit as mapedit_module
-    from models.location import SVLocation
-
-    async def fake_check_multiple_street_views(bound, num_checks=100):
-        latitude = bound.start_latitude
-        longitude = bound.start_longitude
-        existing = SVLocation.query.filter_by(latitude=latitude, longitude=longitude).first()
-        if existing:
-            return existing
-        location = SVLocation(latitude=latitude, longitude=longitude)
-        db.session.add(location)
-        db.session.commit()
-        return location
-
-    monkeypatch.setattr(mapedit_module, "check_multiple_street_views", fake_check_multiple_street_views)
-    return fake_check_multiple_street_views

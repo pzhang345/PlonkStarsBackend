@@ -142,7 +142,6 @@ def _no_network(monkeypatch):
     """Make any accidental outbound HTTP or mail send fail loudly instead of
     hitting the real network. Applies to every test automatically."""
     monkeypatch.setattr("requests.sessions.Session.request", _blocked)
-    monkeypatch.setattr("aiohttp.client.ClientSession._request", _blocked)
     monkeypatch.setattr(smtplib.SMTP, "connect", _blocked)
     monkeypatch.setattr(smtplib.SMTP_SSL, "connect", _blocked)
     yield
@@ -154,22 +153,28 @@ def _no_network(monkeypatch):
 
 @pytest.fixture()
 def street_view_mock(monkeypatch, db_session):
-    """Patch api.location.generate.check_multiple_street_views so location
-    generation never calls the real Google Street View API.
+    """Patch check_multiple_street_views so location generation and
+    map_add_bound never call the real Google Street View API.
 
-    The real function is `async def check_multiple_street_views(bound,
-    num_checks=100)` and returns an `SVLocation` row (via `add_coord`) or
-    `None`. It is always invoked as `asyncio.run(check_multiple_street_views(...))`
-    by api/location/generate.py:generate_location, so the replacement must
-    also be an `async def` (asyncio.run needs a coroutine to run).
+    Both api.location.generate and api.map.edit.mapedit are patched:
+    mapedit does `from api.location.generate import
+    check_multiple_street_views`, which binds its own copy of the name, so
+    patching only the generate module would not reach map_add_bound.
+
+    The real function is `def check_multiple_street_views(bound,
+    num_checks=100)`: it fans `num_checks` Street View metadata requests out
+    over a ThreadPoolExecutor and returns an `SVLocation` row (via
+    `add_coord`) or `None`. generate_location calls it synchronously, so the
+    replacement is a plain function too.
 
     The fake deterministically returns a point at the bound's start corner,
     persisted as a real SVLocation row so downstream code (which expects an
     ORM object with .id/.latitude/.longitude) works unchanged.
     """
     import api.location.generate as generate_module
+    import api.map.edit.mapedit as mapedit_module
 
-    async def fake_check_multiple_street_views(bound, num_checks=100):
+    def fake_check_multiple_street_views(bound, num_checks=100):
         latitude = bound.start_latitude
         longitude = bound.start_longitude
         existing = SVLocation.query.filter_by(latitude=latitude, longitude=longitude).first()
@@ -181,6 +186,7 @@ def street_view_mock(monkeypatch, db_session):
         return location
 
     monkeypatch.setattr(generate_module, "check_multiple_street_views", fake_check_multiple_street_views)
+    monkeypatch.setattr(mapedit_module, "check_multiple_street_views", fake_check_multiple_street_views)
     return fake_check_multiple_street_views
 
 

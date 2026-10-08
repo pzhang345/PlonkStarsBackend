@@ -13,13 +13,26 @@ PYTHON := $(firstword $(wildcard $(BACKEND_DIR).venv/Scripts/python.exe $(BACKEN
 # Extra pytest arguments, e.g. `make test ARGS="-m unit"`.
 ARGS ?=
 
-.PHONY: test db-up db-down
+.PHONY: test test-changed db-up db-down
 
 test: db-up
 	@cd "$(BACKEND_DIR)"
 	# Run pytest through the venv interpreter, forwarding any extra args.
 	status=0
 	"$(PYTHON)" -m pytest $(ARGS) || status=$$?
+	echo
+	echo "Test DB left running. Stop it with:"
+	echo "  make db-down"
+	exit $$status
+
+# Run only tests affected by code changes since the last run (pytest-testmon).
+# The first run, or a run after deleting .testmondata, runs the full suite to
+# build the baseline. Only Python changes are tracked: run `make test` after
+# changing config, migrations, or test DB data.
+test-diff: db-up
+	@cd "$(BACKEND_DIR)"
+	status=0
+	"$(PYTHON)" -m pytest --testmon $(ARGS) || status=$$?
 	echo
 	echo "Test DB left running. Stop it with:"
 	echo "  make db-down"

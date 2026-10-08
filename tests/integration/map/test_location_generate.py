@@ -6,7 +6,7 @@ Scope:
 
 `generate_location` (app/api/location/generate.py) picks a random weighted
 Bound via `get_random_bounds`, then calls `check_multiple_street_views`
-(wrapped in `asyncio.run`) to find a Street-View-covered point in it. The
+(which checks candidate points on a thread pool) to find a Street-View-covered point in it. The
 `street_view_mock` fixture (tests/conftest.py) replaces that call with a fake
 that deterministically returns the bound's start corner as a real SVLocation
 row. random.uniform is patched to a fixed midpoint value everywhere below so
@@ -84,7 +84,7 @@ def test_no_street_view_found_is_handled_gracefully(client, street_view_mock, mo
     generate_location falls back to db_location(bound) instead of raising -
     and returns None (rather than blowing up) when that fallback also finds
     nothing nearby."""
-    async def _always_none(bound, num_checks=100):
+    def _always_none(bound, num_checks=100):
         return None
     monkeypatch.setattr(generate_module, "check_multiple_street_views", _always_none)
 
@@ -101,7 +101,7 @@ def test_no_street_view_found_falls_back_to_a_nearby_existing_location(client, s
     """Same "no coverage" scenario, but this time an SVLocation already
     exists just inside db_location's +/-50m buffer around the bound - the
     fallback should return that row instead of None."""
-    async def _always_none(bound, num_checks=100):
+    def _always_none(bound, num_checks=100):
         return None
     monkeypatch.setattr(generate_module, "check_multiple_street_views", _always_none)
 
